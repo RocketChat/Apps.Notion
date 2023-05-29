@@ -1,0 +1,16 @@
+{
+    "id": "fb6e4e74-f99d-41b6-96da-2486e9aafea8",
+    "version": "0.0.1",
+    "requiredApiVersion": "^1.39.1",
+    "iconFile": "icon.png",
+    "author": {
+        "name": "Nabhag Motivaras",
+        "homepage": "https://github.com/RocketChat/Apps.Notion",
+        "support": "https://github.com/RocketChat/Apps.Notion/issues"
+    },
+    "name": "Notion",
+    "nameSlug": "notion",
+    "classFile": "NotionApp.ts",
+    "description": "Integrating Notion With Rocket.Chat",
+    "implements": []
+}
