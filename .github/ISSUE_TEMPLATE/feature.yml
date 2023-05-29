@@ -1,0 +1,37 @@
+name: Feature Request
+description: Create a feature request
+title: "[Feat]"
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for providing ideas for new feature
+  - type: textarea
+    id: why-need
+    attributes:
+      label: What do we need?
+      description: Also tell us, what problem is solves ?
+      placeholder: Tell us what you expect!
+    validations:
+      required: true
+  - type: textarea
+    id: criteria
+    attributes:
+      label: Acceptance Criteria
+      description: Please list the sub task required
+      placeholder: |
+        - [ ] Task 1
+        - [ ] Task 2
+        - [ ] Task 3
+    validations:
+      required: true
+  - type: textarea
+    id: screenshot
+    attributes:
+      label: Relevant ScreenShots
+      description: Please attach any relevant log output or screenshot.
+  - type: textarea
+    id: comment
+    attributes:
+      label: Further Comments
