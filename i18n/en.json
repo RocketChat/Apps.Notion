@@ -1,0 +1,7 @@
+{
+    "ClientIdLabel": "notion-client-id",
+    "ClientIdPlaceholder": "paste your clientId here",
+    "ClientSecretLabel": "notion-client-secret",
+    "ClientSecretPlaceholder": "Shhh! This is super secret",
+    "CredentialsSettings": "Authorization Settings"
+}
