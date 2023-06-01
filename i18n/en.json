@@ -3,5 +3,7 @@
     "ClientIdPlaceholder": "paste your clientId here",
     "ClientSecretLabel": "notion-client-secret",
     "ClientSecretPlaceholder": "Shhh! This is super secret",
-    "CredentialsSettings": "Authorization Settings"
+    "CredentialsSettings": "Authorization Settings",
+    "NotionCommandParams": "connect | disconnect | workspace | create | schema | comment",
+    "NotionCommandDescription": "Create Notion pages and database from Rocket.Chat"
 }
