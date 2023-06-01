@@ -4,7 +4,8 @@ import {
 } from "@rocket.chat/apps-engine/definition/settings";
 
 // The settings that will be available for the App
-enum OAuth2Setting {
+// warning(AppsEngine Error): Having OAuth2Setting in enums folder causing an error in deployment reason not known.
+export enum OAuth2Setting {
     CLIENT_ID = "notion-client-id",
     CLIENT_SECRET = "notion-client-secret",
 }

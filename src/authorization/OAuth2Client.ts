@@ -25,6 +25,4 @@ export class OAuth2Client implements IOAuth2Client {
         http: IHttp,
         persis: IPersistence
     ) {}
-
-    private async getCredentials(read: IRead) {}
 }
