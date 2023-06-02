@@ -12,18 +12,18 @@ import { ErrorName } from "../enum/Error";
 class Error implements IError {
     name: string;
     message: string;
-    status: number;
+    statusCode: number;
     additionalInfo?: string;
 
     constructor(
         name: string,
         message: string,
-        status: number,
+        statusCode: number,
         additionalInfo?: string
     ) {
         this.name = name;
         this.message = message;
-        this.status = status;
+        this.statusCode = statusCode;
         this.additionalInfo = additionalInfo;
     }
 }

@@ -1,4 +1,4 @@
 export interface IError extends Error {
-    status: number;
+    statusCode: number;
     additionalInfo?: string;
 }
