@@ -1,13 +1,11 @@
-import { IUser } from "@rocket.chat/apps-engine/definition/users";
 import { INotionSDK } from "../../definition/lib/INotion";
-import { IHttp, IRead } from "@rocket.chat/apps-engine/definition/accessors";
+import { IHttp } from "@rocket.chat/apps-engine/definition/accessors";
 import { URL } from "url";
 import { ITokenInfo } from "../../definition/authorization/IOAuth2Storage";
 import { ClientError } from "../../errors/Error";
 import { NotionApi } from "../../enum/Notion";
 import { OAuth2Credential, OAuth2Locator } from "../../enum/OAuth2";
 import { AppsEngineException } from "@rocket.chat/apps-engine/definition/exceptions";
-import { getCredentials } from "../helper/getCredential";
 
 export class NotionSDK implements INotionSDK {
     baseUrl: string;
@@ -15,24 +13,6 @@ export class NotionSDK implements INotionSDK {
     constructor() {
         this.baseUrl = NotionApi.BASE_URL;
         this.NotionVersion = NotionApi.VERSION;
-    }
-    public async getAuthorizationUrl(
-        user: IUser,
-        read: IRead
-    ): Promise<string> {
-        const userId = user.id;
-        const { clientId, siteUrl } = await getCredentials(read);
-
-        const redirectUrl = new URL(OAuth2Locator.redirectUrlPath, siteUrl);
-        const authorizationUrl = new URL(OAuth2Locator.authUri);
-        authorizationUrl.searchParams.set(OAuth2Credential.CLIENT_ID, clientId);
-        authorizationUrl.searchParams.set(
-            OAuth2Credential.REDIRECT_URI,
-            redirectUrl.toString()
-        );
-        authorizationUrl.searchParams.set(OAuth2Credential.STATE, userId);
-
-        return authorizationUrl.toString();
     }
 
     public async createToken(

@@ -1,5 +1,4 @@
-import { IHttp, IRead } from "@rocket.chat/apps-engine/definition/accessors";
-import { IUser } from "@rocket.chat/apps-engine/definition/users";
+import { IHttp } from "@rocket.chat/apps-engine/definition/accessors";
 import { URL } from "url";
 import { ITokenInfo } from "../authorization/IOAuth2Storage";
 import { ClientError } from "../../errors/Error";
@@ -11,7 +10,6 @@ export interface INotion {
 }
 
 export interface INotionSDK extends INotion {
-    getAuthorizationUrl(user: IUser, read: IRead): Promise<string>;
     createToken(
         http: IHttp,
         redirectUrl: URL,

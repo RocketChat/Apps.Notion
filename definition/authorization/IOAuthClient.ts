@@ -5,6 +5,7 @@ import {
     IRead,
 } from "@rocket.chat/apps-engine/definition/accessors";
 import { SlashCommandContext } from "@rocket.chat/apps-engine/definition/slashcommands";
+import { IUser } from "@rocket.chat/apps-engine/definition/users";
 
 export interface IOAuth2Client {
     connect(
@@ -22,4 +23,6 @@ export interface IOAuth2Client {
         http: IHttp,
         persis: IPersistence
     ): Promise<void>;
+
+    getAuthorizationUrl(user: IUser, read: IRead): Promise<string>;
 }
