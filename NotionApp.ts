@@ -2,7 +2,11 @@ import {
     IAppAccessors,
     IConfigurationExtend,
     IEnvironmentRead,
+    IHttp,
     ILogger,
+    IModify,
+    IPersistence,
+    IRead,
 } from "@rocket.chat/apps-engine/definition/accessors";
 import { App } from "@rocket.chat/apps-engine/definition/App";
 import { IAppInfo } from "@rocket.chat/apps-engine/definition/metadata";
@@ -12,6 +16,12 @@ import { NotionCommand } from "./src/commands/NotionCommand";
 import { NotionSDK } from "./src/lib/NotionSDK";
 import { ElementBuilder } from "./src/lib/ElementBuilder";
 import { BlockBuilder } from "./src/lib/BlockBuilder";
+import {
+    IUIKitResponse,
+    UIKitBlockInteractionContext,
+} from "@rocket.chat/apps-engine/definition/uikit";
+import { RoomInteractionStorage } from "./src/storage/RoomInteraction";
+import { OAuth2Action } from "./enum/OAuth2";
 import { IAppUtils } from "./definition/lib/IAppUtils";
 
 export class NotionApp extends App {
@@ -51,5 +61,28 @@ export class NotionApp extends App {
             elementBuilder: this.elementBuilder,
             blockBuilder: this.blockBuilder,
         };
+    }
+
+    public async executeBlockActionHandler(
+        context: UIKitBlockInteractionContext,
+        read: IRead,
+        http: IHttp,
+        persistence: IPersistence,
+        modify: IModify
+    ): Promise<IUIKitResponse> {
+        // Todo[Week 2]: Make a Interface and Class
+        const { actionId, user, room } = context.getInteractionData();
+
+        if (actionId == OAuth2Action.CONNECT_TO_WORKSPACE) {
+            const persistenceRead = read.getPersistenceReader();
+            const roomId = room?.id as string;
+            const roomInteraction = new RoomInteractionStorage(
+                persistence,
+                persistenceRead
+            );
+            await roomInteraction.storeInteractionRoomId(user.id, roomId);
+        }
+
+        return context.getInteractionResponder().successResponse();
     }
 }
