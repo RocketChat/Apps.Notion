@@ -14,6 +14,11 @@ import { settings } from "./config/settings";
 import { OAuth2Client } from "./src/authorization/OAuth2Client";
 import { NotionCommand } from "./src/commands/NotionCommand";
 import { NotionSDK } from "./src/lib/NotionSDK";
+import {
+    ApiSecurity,
+    ApiVisibility,
+} from "@rocket.chat/apps-engine/definition/api";
+import { WebHookEndpoint } from "./src/endpoints/webhook";
 import { ElementBuilder } from "./src/lib/ElementBuilder";
 import { BlockBuilder } from "./src/lib/BlockBuilder";
 import {
@@ -45,6 +50,12 @@ export class NotionApp extends App {
                 configurationExtend.settings.provideSetting(setting);
             })
         );
+
+        await configurationExtend.api.provideApi({
+            visibility: ApiVisibility.PUBLIC,
+            security: ApiSecurity.UNSECURE,
+            endpoints: [new WebHookEndpoint(this)],
+        });
 
         this.oAuth2Client = new OAuth2Client(this);
         this.NotionSdk = new NotionSDK();
