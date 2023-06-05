@@ -27,3 +27,11 @@ export enum OAuth2Credential {
     REDIRECT_URI = "redirect_uri",
     STATE = "state",
 }
+
+export enum OAuth2Block {
+    CONNECT_TO_WORKSPACE = "connect-to-workspace-block",
+}
+
+export enum OAuth2Action {
+    CONNECT_TO_WORKSPACE = "connect-to-workspace-action",
+}
