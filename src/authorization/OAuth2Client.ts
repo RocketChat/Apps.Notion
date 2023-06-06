@@ -28,7 +28,7 @@ export class OAuth2Client implements IOAuth2Client {
         const user = context.getSender();
         const room = context.getRoom();
         const authorizationUrl = await this.getAuthorizationUrl(user, read);
-        const message = `Hey👋 ${user.username}!`;
+        const message = `Hey **${user.username}**!👋 Connect your Notion Workspace`;
         const blocks = await getConnectBlock(
             this.app,
             message,
@@ -58,13 +58,13 @@ export class OAuth2Client implements IOAuth2Client {
 
         if (tokenInfo) {
             await oAuthStorage.disconnectUserFromCurrentWorkspace(userId);
-            const message = `you are being disconnected from the Workspace **${tokenInfo.workspace_name}**`;
+            const message = `👋 You are disconnected from the Workspace **${tokenInfo.workspace_name}**`;
             await sendNotification(read, modify, user, room, { message });
             return;
         }
 
         const authorizationUrl = await this.getAuthorizationUrl(user, read);
-        const message = `you are not connected to workspace!`;
+        const message = `👋 You are not Connected to **Workspace**!`;
         const blocks = await getConnectBlock(
             this.app,
             message,
