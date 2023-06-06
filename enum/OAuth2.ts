@@ -6,17 +6,8 @@ export enum OAuth2Locator {
 }
 
 export enum OAuth2Content {
-    success = '<div style="display: flex;align-items: center;justify-content: center; height: 100%;">\
-                        <h1 style="text-align: center; font-family: Helvetica Neue;">\
-                            Authorization went successfully<br>\
-                            You can close this tab now<br>\
-                        </h1>\
-              </div>',
-    failed = '<div style="display: flex;align-items: center;justify-content: center; height: 100%;">\
-                    <h1 style="text-align: center; font-family: Helvetica Neue;">\
-                        Oops, something went wrong, please try again or in case it still does not work, contact the administrator.\
-                    </h1>\
-             </div>',
+    success = "https://github-production-user-asset-6210df.s3.amazonaws.com/65061890/243671111-9964efff-3b23-4223-aadd-5f4be441037c.svg",
+    failed = "https://open.rocket.chat/assets/logo.png",
 }
 
 export enum OAuth2Credential {

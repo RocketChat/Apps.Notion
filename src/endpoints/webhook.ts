@@ -26,6 +26,7 @@ import { BlockBuilder } from "../lib/BlockBuilder";
 import { NotionSDK } from "../lib/NotionSDK";
 import { RoomInteractionStorage } from "../storage/RoomInteraction";
 import { getConnectPreview } from "../helper/getConnectLayout";
+import { getAuthPageTemplate } from "../helper/getAuthPageTemplate";
 
 export class WebHookEndpoint extends ApiEndpoint {
     public path: string = "webhook";
@@ -41,12 +42,19 @@ export class WebHookEndpoint extends ApiEndpoint {
     ): Promise<IApiResponse> {
         const { code, state, error } = request.query;
 
+        const failedTemplate = getAuthPageTemplate(
+            "Something Went Wrong",
+            OAuth2Content.failed,
+            "🚫 Something went wrong while Connecting to Workspace",
+            "PLEASE TRY AGAIN IN CASE IT STILL DOES NOT WORK, CONTACT ADMINISTRATOR"
+        );
+
         // incase when user leaves in between the auth process
         if (error) {
             this.app.getLogger().warn(error);
             return {
                 status: HttpStatusCode.UNAUTHORIZED,
-                content: OAuth2Content.failed,
+                content: failedTemplate,
             };
         }
 
@@ -58,7 +66,7 @@ export class WebHookEndpoint extends ApiEndpoint {
                 .warn(`User not found before access token request`);
             return {
                 status: HttpStatusCode.NON_AUTHORITATIVE_INFORMATION,
-                content: OAuth2Content.failed,
+                content: failedTemplate,
             };
         }
 
@@ -81,9 +89,16 @@ export class WebHookEndpoint extends ApiEndpoint {
             this.app.getLogger().warn(response.message);
             return {
                 status: response.statusCode,
-                content: OAuth2Content.failed,
+                content: failedTemplate,
             };
         }
+
+        const successTemplate = getAuthPageTemplate(
+            "Connected to Workspace",
+            OAuth2Content.success,
+            `👋 Connected to ${response.workspace_name}❗`,
+            "YOU CAN NOW CLOSE THIS WINDOW"
+        );
 
         const persistenceRead = read.getPersistenceReader();
         const oAuth2Storage = new OAuth2Storage(persis, persistenceRead);
@@ -102,6 +117,6 @@ export class WebHookEndpoint extends ApiEndpoint {
         });
         await roomInteraction.clearInteractionRoomId(user.id);
 
-        return this.success(OAuth2Content.success);
+        return this.success(successTemplate);
     }
 }
