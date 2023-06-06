@@ -25,6 +25,7 @@ import { sendNotification } from "../helper/message";
 import { BlockBuilder } from "../lib/BlockBuilder";
 import { NotionSDK } from "../lib/NotionSDK";
 import { RoomInteractionStorage } from "../storage/RoomInteraction";
+import { getConnectPreview } from "../helper/getConnectLayout";
 
 export class WebHookEndpoint extends ApiEndpoint {
     public path: string = "webhook";
@@ -95,15 +96,9 @@ export class WebHookEndpoint extends ApiEndpoint {
         const roomId = await roomInteraction.getInteractionRoomId(user.id);
         const room = (await read.getRoomReader().getById(roomId)) as IRoom;
 
-        const workspaceName = response.workspace_name as string;
-
-        const blockBuilder = new BlockBuilder(this.app.getID());
-        const sectionBlock = blockBuilder.createSectionBlock({
-            text: `👋You are connected to Workspace **${workspaceName}**`,
-        });
-
+        const connectPreview = getConnectPreview(this.app.getID(), response);
         await sendNotification(read, modify, user, room, {
-            blocks: [sectionBlock],
+            blocks: [connectPreview],
         });
         await roomInteraction.clearInteractionRoomId(user.id);
 
