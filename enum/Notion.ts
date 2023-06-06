@@ -15,3 +15,7 @@ export enum NotionApi {
     USER_AGENT = "Rocket.Chat-Apps-Engine",
     CONTENT_TYPE = "application/json",
 }
+
+export enum Notion {
+    WEBSITE_URL = "https://www.notion.so",
+}
