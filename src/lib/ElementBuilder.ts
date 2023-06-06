@@ -6,8 +6,10 @@ import {
     ButtonElement,
     BlockElementType,
     TextObjectType,
+    ImageElement,
 } from "@rocket.chat/ui-kit";
 import { ButtonParam } from "../../definition/ui-kit/Element/IButtonElement";
+import { ImageParam } from "../../definition/ui-kit/Element/IImageElement";
 
 export class ElementBuilder implements IElementBuilder {
     constructor(private readonly appId: string) {}
@@ -32,4 +34,15 @@ export class ElementBuilder implements IElementBuilder {
         };
         return button;
     }
+
+    public addImage(param: ImageParam): ImageElement {
+        const { imageUrl, altText } = param;
+        const image: ImageElement = {
+            type: BlockElementType.IMAGE,
+            imageUrl,
+            altText,
+        };
+        return image;
+    }
+    
 }
