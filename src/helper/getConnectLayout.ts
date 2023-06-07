@@ -20,8 +20,11 @@ export function getConnectPreview(
         ? `${workspace_icon}`
         : undefined;
     const thumb = workspace_icon_url ? { url: workspace_icon_url } : undefined;
-    const title = [`[**${workspace_name}**](${Notion.WEBSITE_URL})`];
-    const description = ["**👋 You are Connected to Workspace**"];
+    const title = [
+        `**📚 [**${workspace_name}**](${Notion.WEBSITE_URL})**`,
+        "**👋 Connected to Workspace**",
+    ];
+    const description = [""];
     const avatarElement = elementBuilder.addImage({
         imageUrl: avatar_url as string,
         altText: name as string,
