@@ -70,7 +70,24 @@ export class WebHookEndpoint extends ApiEndpoint {
             };
         }
 
-        const { clientId, clientSecret, siteUrl } = await getCredentials(read);
+        const persistenceRead = read.getPersistenceReader();
+        const roomInteraction = new RoomInteractionStorage(
+            persis,
+            persistenceRead
+        );
+        const roomId = await roomInteraction.getInteractionRoomId(user.id);
+        const room = (await read.getRoomReader().getById(roomId)) as IRoom;
+
+        const appCredentials = await getCredentials(read, modify, user, room);
+        // incase there is no credentials in between auth interaction
+        if (!appCredentials) {
+            return {
+                status: HttpStatusCode.UNAUTHORIZED,
+                content: failedTemplate,
+            };
+        }
+
+        const { clientId, clientSecret, siteUrl } = appCredentials;
         const redirectUrl = new URL(this.url_path, siteUrl);
         const credentials = new Buffer(`${clientId}:${clientSecret}`).toString(
             OAuth2Credential.FORMAT
@@ -100,16 +117,8 @@ export class WebHookEndpoint extends ApiEndpoint {
             "YOU CAN NOW CLOSE THIS WINDOW"
         );
 
-        const persistenceRead = read.getPersistenceReader();
         const oAuth2Storage = new OAuth2Storage(persis, persistenceRead);
         await oAuth2Storage.connectUserToWorkspace(response, state);
-
-        const roomInteraction = new RoomInteractionStorage(
-            persis,
-            persistenceRead
-        );
-        const roomId = await roomInteraction.getInteractionRoomId(user.id);
-        const room = (await read.getRoomReader().getById(roomId)) as IRoom;
 
         const connectPreview = getConnectPreview(this.app.getID(), response);
         await sendNotification(read, modify, user, room, {

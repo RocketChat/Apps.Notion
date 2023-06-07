@@ -26,5 +26,10 @@ export interface IOAuth2Client {
         persis: IPersistence
     ): Promise<void>;
 
-    getAuthorizationUrl(user: IUser, read: IRead): Promise<string>;
+    getAuthorizationUrl(
+        user: IUser,
+        read: IRead,
+        modify: IModify,
+        room: IRoom
+    ): Promise<string | null>;
 }

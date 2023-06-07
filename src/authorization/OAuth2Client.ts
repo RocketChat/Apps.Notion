@@ -26,7 +26,17 @@ export class OAuth2Client implements IOAuth2Client {
         persis: IPersistence
     ) {
         const { blockBuilder, elementBuilder } = this.app.getUtils();
-        const authorizationUrl = await this.getAuthorizationUrl(sender, read);
+        const authorizationUrl = await this.getAuthorizationUrl(
+            sender,
+            read,
+            modify,
+            room
+        );
+
+        if (!authorizationUrl) {
+            return;
+        }
+
         const message = `Hey **${sender.username}**!👋 Connect your Notion Workspace`;
         const blocks = await getConnectBlock(
             this.app,
@@ -61,7 +71,17 @@ export class OAuth2Client implements IOAuth2Client {
             return;
         }
 
-        const authorizationUrl = await this.getAuthorizationUrl(sender, read);
+        const authorizationUrl = await this.getAuthorizationUrl(
+            sender,
+            read,
+            modify,
+            room
+        );
+
+        if (!authorizationUrl) {
+            return;
+        }
+
         const message = `👋 You are not Connected to **Workspace**!`;
         const blocks = await getConnectBlock(
             this.app,
@@ -75,10 +95,18 @@ export class OAuth2Client implements IOAuth2Client {
 
     public async getAuthorizationUrl(
         user: IUser,
-        read: IRead
-    ): Promise<string> {
+        read: IRead,
+        modify: IModify,
+        room: IRoom
+    ): Promise<string | null> {
         const userId = user.id;
-        const { clientId, siteUrl } = await getCredentials(read);
+        const credentials = await getCredentials(read, modify, user, room);
+
+        if (!credentials) {
+            return null;
+        }
+
+        const { clientId, siteUrl } = credentials;
 
         const redirectUrl = new URL(OAuth2Locator.redirectUrlPath, siteUrl);
         const authorizationUrl = new URL(OAuth2Locator.authUri);
