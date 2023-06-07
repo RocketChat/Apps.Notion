@@ -27,8 +27,18 @@ export class NotionCommand implements ISlashCommand {
         http: IHttp,
         persis: IPersistence
     ): Promise<void> {
+        const params = context.getArguments();
+        const sender = context.getSender();
+        const room = context.getRoom();
+        const triggerId = context.getTriggerId();
+        const threadId = context.getThreadId();
+
         const commandUtilityParams: ICommandUtilityParams = {
-            context,
+            params,
+            sender,
+            room,
+            triggerId,
+            threadId,
             read,
             modify,
             http,

@@ -1,4 +1,3 @@
-import { SlashCommandContext } from "@rocket.chat/apps-engine/definition/slashcommands";
 import { NotionApp } from "../../NotionApp";
 import {
     IHttp,
@@ -14,34 +13,35 @@ import { getCredentials } from "../helper/getCredential";
 import { OAuth2Credential, OAuth2Locator } from "../../enum/OAuth2";
 import { URL } from "url";
 import { getConnectBlock } from "../helper/getConnectBlock";
+import { IRoom } from "@rocket.chat/apps-engine/definition/rooms";
 
 export class OAuth2Client implements IOAuth2Client {
     constructor(private readonly app: NotionApp) {}
     public async connect(
-        context: SlashCommandContext,
+        room: IRoom,
+        sender: IUser,
         read: IRead,
         modify: IModify,
         http: IHttp,
         persis: IPersistence
     ) {
         const { blockBuilder, elementBuilder } = this.app.getUtils();
-        const user = context.getSender();
-        const room = context.getRoom();
-        const authorizationUrl = await this.getAuthorizationUrl(user, read);
-        const message = `Hey **${user.username}**!👋 Connect your Notion Workspace`;
+        const authorizationUrl = await this.getAuthorizationUrl(sender, read);
+        const message = `Hey **${sender.username}**!👋 Connect your Notion Workspace`;
         const blocks = await getConnectBlock(
             this.app,
             message,
             authorizationUrl
         );
 
-        await sendNotification(read, modify, user, room, {
+        await sendNotification(read, modify, sender, room, {
             blocks,
         });
     }
 
     public async disconnect(
-        context: SlashCommandContext,
+        room: IRoom,
+        sender: IUser,
         read: IRead,
         modify: IModify,
         http: IHttp,
@@ -51,26 +51,24 @@ export class OAuth2Client implements IOAuth2Client {
         const oAuthStorage = new OAuth2Storage(persis, persistenceRead);
         const { blockBuilder, elementBuilder } = this.app.getUtils();
 
-        const room = context.getRoom();
-        const user = context.getSender();
-        const userId = user.id;
+        const userId = sender.id;
         const tokenInfo = await oAuthStorage.getCurrentWorkspace(userId);
 
         if (tokenInfo) {
             await oAuthStorage.disconnectUserFromCurrentWorkspace(userId);
             const message = `👋 You are disconnected from the Workspace **${tokenInfo.workspace_name}**`;
-            await sendNotification(read, modify, user, room, { message });
+            await sendNotification(read, modify, sender, room, { message });
             return;
         }
 
-        const authorizationUrl = await this.getAuthorizationUrl(user, read);
+        const authorizationUrl = await this.getAuthorizationUrl(sender, read);
         const message = `👋 You are not Connected to **Workspace**!`;
         const blocks = await getConnectBlock(
             this.app,
             message,
             authorizationUrl
         );
-        await sendNotification(read, modify, user, room, {
+        await sendNotification(read, modify, sender, room, {
             blocks,
         });
     }

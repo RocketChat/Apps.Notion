@@ -12,11 +12,9 @@ import {
     ICommandUtilityParams,
 } from "../../definition/command/ICommandUtility";
 import { CommandParam } from "../../enum/CommandParam";
-import { SlashCommandContext } from "@rocket.chat/apps-engine/definition/slashcommands";
 
 export class CommandUtility implements ICommandUtility {
     public app: NotionApp;
-    public context: SlashCommandContext;
     public params: Array<string>;
     public sender: IUser;
     public room: IRoom;
@@ -29,16 +27,15 @@ export class CommandUtility implements ICommandUtility {
 
     constructor(props: ICommandUtilityParams) {
         this.app = props.app;
-        this.context = props.context;
+        this.params = props.params;
+        this.sender = props.sender;
+        this.room = props.room;
         this.read = props.read;
         this.modify = props.modify;
         this.http = props.http;
         this.persis = props.persis;
-        this.params = props.context.getArguments();
-        this.sender = props.context.getSender();
-        this.room = props.context.getRoom();
-        this.triggerId = props.context.getTriggerId();
-        this.threadId = props.context.getThreadId();
+        this.triggerId = props.triggerId;
+        this.threadId = props.threadId;
     }
 
     public async resolveCommand(): Promise<void> {
@@ -60,7 +57,8 @@ export class CommandUtility implements ICommandUtility {
         switch (this.params[0]) {
             case CommandParam.CONNECT: {
                 await oAuth2ClientInstance.connect(
-                    this.context,
+                    this.room,
+                    this.sender,
                     this.read,
                     this.modify,
                     this.http,
@@ -70,7 +68,8 @@ export class CommandUtility implements ICommandUtility {
             }
             case CommandParam.DISCONNECT: {
                 await oAuth2ClientInstance.disconnect(
-                    this.context,
+                    this.room,
+                    this.sender,
                     this.read,
                     this.modify,
                     this.http,

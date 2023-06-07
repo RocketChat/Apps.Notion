@@ -4,12 +4,13 @@ import {
     IPersistence,
     IRead,
 } from "@rocket.chat/apps-engine/definition/accessors";
-import { SlashCommandContext } from "@rocket.chat/apps-engine/definition/slashcommands";
+import { IRoom } from "@rocket.chat/apps-engine/definition/rooms";
 import { IUser } from "@rocket.chat/apps-engine/definition/users";
 
 export interface IOAuth2Client {
     connect(
-        context: SlashCommandContext,
+        room: IRoom,
+        sender: IUser,
         read: IRead,
         modify: IModify,
         http: IHttp,
@@ -17,7 +18,8 @@ export interface IOAuth2Client {
     ): Promise<void>;
 
     disconnect(
-        context: SlashCommandContext,
+        room: IRoom,
+        sender: IUser,
         read: IRead,
         modify: IModify,
         http: IHttp,
