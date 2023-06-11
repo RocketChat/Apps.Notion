@@ -23,18 +23,21 @@ export class NotionSDK implements INotionSDK {
         credentials: string
     ): Promise<ITokenInfo | ClientError> {
         try {
-            const response = await this.http.post(OAuth2Locator.accessTokenUrl, {
-                data: {
-                    grant_type: OAuth2Credential.GRANT_TYPE,
-                    redirect_uri: redirectUrl.toString(),
-                    code,
-                },
-                headers: {
-                    Authorization: `Basic ${credentials}`,
-                    "Content-Type": NotionApi.CONTENT_TYPE,
-                    "User-Agent": NotionApi.USER_AGENT,
-                },
-            });
+            const response = await this.http.post(
+                OAuth2Locator.accessTokenUrl,
+                {
+                    data: {
+                        grant_type: OAuth2Credential.GRANT_TYPE,
+                        redirect_uri: redirectUrl.toString(),
+                        code,
+                    },
+                    headers: {
+                        Authorization: `Basic ${credentials}`,
+                        "Content-Type": NotionApi.CONTENT_TYPE,
+                        "User-Agent": NotionApi.USER_AGENT,
+                    },
+                }
+            );
 
             if (!response.statusCode.toString().startsWith("2")) {
                 return new ClientError(
