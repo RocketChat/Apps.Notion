@@ -58,7 +58,7 @@ export class NotionApp extends App {
         });
 
         this.oAuth2Client = new OAuth2Client(this);
-        this.NotionSdk = new NotionSDK();
+        this.NotionSdk = new NotionSDK(this.getAccessors().http);
         this.elementBuilder = new ElementBuilder(this.getID());
         this.blockBuilder = new BlockBuilder(this.getID());
     }

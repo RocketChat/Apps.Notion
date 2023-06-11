@@ -10,19 +10,20 @@ import { AppsEngineException } from "@rocket.chat/apps-engine/definition/excepti
 export class NotionSDK implements INotionSDK {
     baseUrl: string;
     NotionVersion: string;
-    constructor() {
+    http: IHttp;
+    constructor(http: IHttp) {
         this.baseUrl = NotionApi.BASE_URL;
         this.NotionVersion = NotionApi.VERSION;
+        this.http = http;
     }
 
     public async createToken(
-        http: IHttp,
         redirectUrl: URL,
         code: string,
         credentials: string
     ): Promise<ITokenInfo | ClientError> {
         try {
-            const response = await http.post(OAuth2Locator.accessTokenUrl, {
+            const response = await this.http.post(OAuth2Locator.accessTokenUrl, {
                 data: {
                     grant_type: OAuth2Credential.GRANT_TYPE,
                     redirect_uri: redirectUrl.toString(),

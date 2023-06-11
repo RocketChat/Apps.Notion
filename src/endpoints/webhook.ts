@@ -93,9 +93,8 @@ export class WebHookEndpoint extends ApiEndpoint {
             OAuth2Credential.FORMAT
         );
 
-        const notionSDK = new NotionSDK();
+        const notionSDK = new NotionSDK(http);
         const response = await notionSDK.createToken(
-            http,
             redirectUrl,
             code,
             credentials

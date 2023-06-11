@@ -10,8 +10,8 @@ export interface INotion {
 }
 
 export interface INotionSDK extends INotion {
+    http: IHttp;
     createToken(
-        http: IHttp,
         redirectUrl: URL,
         code: string,
         credentials: string
