@@ -54,7 +54,7 @@ export class CommandUtility implements ICommandUtility {
 
     private async handleSingleParam(): Promise<void> {
         const oAuth2ClientInstance = await this.app.getOAuth2Client();
-        switch (this.params[0]) {
+        switch (this.params[0].toLowerCase()) {
             case CommandParam.CONNECT: {
                 await oAuth2ClientInstance.connect(
                     this.room,
