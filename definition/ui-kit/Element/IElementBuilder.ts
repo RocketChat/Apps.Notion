@@ -3,6 +3,7 @@ import {
     ButtonElement,
     ImageElement,
     StaticSelectElement,
+    PlainTextInputElement,
     Option,
 } from "@rocket.chat/ui-kit";
 import { ButtonParam } from "./IButtonElement";
@@ -11,6 +12,7 @@ import {
     StaticSelectElementParam,
     StaticSelectOptionsParam,
 } from "./IStaticSelectElement";
+import { PlainTextInputParam } from "./IPlainTextInputElement";
 
 export interface IElementBuilder {
     addButton(
@@ -23,6 +25,7 @@ export interface IElementBuilder {
         interaction: ElementInteractionParam
     ): StaticSelectElement;
     createDropDownOptions(param: StaticSelectOptionsParam): Array<Option>;
+    createPlainTextInput(param: PlainTextInputParam, interaction: ElementInteractionParam): PlainTextInputElement;
 }
 
 export type ElementInteractionParam = { blockId: string; actionId: string };

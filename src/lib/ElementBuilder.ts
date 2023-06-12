@@ -8,6 +8,7 @@ import {
     TextObjectType,
     ImageElement,
     StaticSelectElement,
+    PlainTextInputElement,
     Option,
 } from "@rocket.chat/ui-kit";
 import { ButtonParam } from "../../definition/ui-kit/Element/IButtonElement";
@@ -16,6 +17,7 @@ import {
     StaticSelectElementParam,
     StaticSelectOptionsParam,
 } from "../../definition/ui-kit/Element/IStaticSelectElement";
+import { PlainTextInputParam } from "../../definition/ui-kit/Element/IPlainTextInputElement";
 
 export class ElementBuilder implements IElementBuilder {
     constructor(private readonly appId: string) {}
@@ -104,5 +106,29 @@ export class ElementBuilder implements IElementBuilder {
             return optionObject;
         });
         return options;
+    }
+
+    public createPlainTextInput(
+        param: PlainTextInputParam,
+        interaction: ElementInteractionParam
+    ): PlainTextInputElement {
+        const { text, initialValue, multiline, minLength, maxLength } = param;
+        const { blockId, actionId } = interaction;
+        const plainTextInput: PlainTextInputElement = {
+            type: BlockElementType.PLAIN_TEXT_INPUT,
+            placeholder: {
+                type: TextObjectType.PLAIN_TEXT,
+                text,
+            },
+            appId: this.appId,
+            blockId,
+            actionId,
+            initialValue,
+            multiline,
+            minLength,
+            maxLength,
+        };
+
+        return plainTextInput;
     }
 }
