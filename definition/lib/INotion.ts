@@ -1,8 +1,8 @@
 import { IHttp } from "@rocket.chat/apps-engine/definition/accessors";
 import { URL } from "url";
 import { ITokenInfo } from "../authorization/IOAuth2Storage";
-import { ClientError } from "../../errors/Error";
-import { NotionApi } from "../../enum/Notion";
+import { ClientError, Error } from "../../errors/Error";
+import { NotionObjectTypes } from "../../enum/Notion";
 
 export interface INotion {
     baseUrl: string;
@@ -16,4 +16,15 @@ export interface INotionSDK extends INotion {
         code: string,
         credentials: string
     ): Promise<ITokenInfo | ClientError>;
+
+    searchPages(token: string): Promise<Array<IPage> | Error>;
+}
+
+export interface IParentPage {
+    type: NotionObjectTypes.PAGE_ID;
+    page_id: string;
+}
+export interface IPage {
+    name: string;
+    parent: IParentPage;
 }

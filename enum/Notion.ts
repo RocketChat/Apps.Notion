@@ -14,8 +14,16 @@ export enum NotionApi {
     VERSION = "2022-06-28",
     USER_AGENT = "Rocket.Chat-Apps-Engine",
     CONTENT_TYPE = "application/json",
+    SEARCH = `https://api.notion.com/v1/search`,
 }
 
 export enum Notion {
     WEBSITE_URL = "https://www.notion.so",
+}
+
+export enum NotionObjectTypes {
+    PAGE = "page",
+    PAGE_ID = "page_id",
+    WORKSPACE = "workspace",
+    PROPERTY = "object",
 }
