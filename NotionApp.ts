@@ -24,10 +24,14 @@ import { BlockBuilder } from "./src/lib/BlockBuilder";
 import {
     IUIKitResponse,
     UIKitBlockInteractionContext,
+    UIKitViewCloseInteractionContext,
+    UIKitViewSubmitInteractionContext,
 } from "@rocket.chat/apps-engine/definition/uikit";
 import { RoomInteractionStorage } from "./src/storage/RoomInteraction";
 import { OAuth2Action } from "./enum/OAuth2";
 import { IAppUtils } from "./definition/lib/IAppUtils";
+import { ExecuteViewClosedHandler } from "./src/handlers/ExecuteViewClosedHandler";
+import { ExecuteViewSubmitHandler } from "./src/handlers/ExecuteViewSubmitHandler";
 
 export class NotionApp extends App {
     private oAuth2Client: OAuth2Client;
@@ -95,5 +99,43 @@ export class NotionApp extends App {
         }
 
         return context.getInteractionResponder().successResponse();
+    }
+
+    public async executeViewSubmitHandler(
+        context: UIKitViewSubmitInteractionContext,
+        read: IRead,
+        http: IHttp,
+        persistence: IPersistence,
+        modify: IModify
+    ): Promise<IUIKitResponse> {
+        const handler = new ExecuteViewSubmitHandler(
+            this,
+            read,
+            http,
+            persistence,
+            modify,
+            context
+        );
+
+        return handler.handleActions();
+    }
+
+    public async executeViewClosedHandler(
+        context: UIKitViewCloseInteractionContext,
+        read: IRead,
+        http: IHttp,
+        persistence: IPersistence,
+        modify: IModify
+    ): Promise<IUIKitResponse> {
+        const handler = new ExecuteViewClosedHandler(
+            this,
+            read,
+            http,
+            persistence,
+            modify,
+            context
+        );
+
+        return handler.handleActions();
     }
 }
