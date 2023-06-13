@@ -27,11 +27,10 @@ import {
     UIKitViewCloseInteractionContext,
     UIKitViewSubmitInteractionContext,
 } from "@rocket.chat/apps-engine/definition/uikit";
-import { RoomInteractionStorage } from "./src/storage/RoomInteraction";
-import { OAuth2Action } from "./enum/OAuth2";
 import { IAppUtils } from "./definition/lib/IAppUtils";
 import { ExecuteViewClosedHandler } from "./src/handlers/ExecuteViewClosedHandler";
 import { ExecuteViewSubmitHandler } from "./src/handlers/ExecuteViewSubmitHandler";
+import { ExecuteBlockActionHandler } from "./src/handlers/ExecuteBlockActionHandler";
 
 export class NotionApp extends App {
     private oAuth2Client: OAuth2Client;
@@ -85,20 +84,16 @@ export class NotionApp extends App {
         persistence: IPersistence,
         modify: IModify
     ): Promise<IUIKitResponse> {
-        // Todo[Week 2]: Make a Interface and Class
-        const { actionId, user, room } = context.getInteractionData();
+        const handler = new ExecuteBlockActionHandler(
+            this,
+            read,
+            http,
+            persistence,
+            modify,
+            context
+        );
 
-        if (actionId == OAuth2Action.CONNECT_TO_WORKSPACE) {
-            const persistenceRead = read.getPersistenceReader();
-            const roomId = room?.id as string;
-            const roomInteraction = new RoomInteractionStorage(
-                persistence,
-                persistenceRead
-            );
-            await roomInteraction.storeInteractionRoomId(user.id, roomId);
-        }
-
-        return context.getInteractionResponder().successResponse();
+        return handler.handleActions();
     }
 
     public async executeViewSubmitHandler(
