@@ -1,5 +1,6 @@
 import { InputBlock } from "@rocket.chat/ui-kit";
 import { NotionApp } from "../../../NotionApp";
+import { ElementInteractionParam } from "../../../definition/ui-kit/Element/IElementBuilder";
 export function inputElementComponent(
     {
         app,
@@ -18,7 +19,7 @@ export function inputElementComponent(
         minLength?: number;
         maxLength?: number;
     },
-    { blockId, actionId }: { blockId: string; actionId: string }
+    { blockId, actionId }: ElementInteractionParam
 ): InputBlock {
     const { elementBuilder, blockBuilder } = app.getUtils();
     const plainTextInputElement = elementBuilder.createPlainTextInput(
