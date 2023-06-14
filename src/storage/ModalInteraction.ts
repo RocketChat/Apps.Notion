@@ -81,4 +81,63 @@ export class ModalInteractionStorage implements IModalInteractionStorage {
         );
         await this.persistence.removeByAssociation(association);
     }
+
+    public async storePagesOrDatabase(
+        records: object,
+        workspaceId: string
+    ): Promise<void> {
+        const userAssociation = new RocketChatAssociationRecord(
+            RocketChatAssociationModel.USER,
+            `${this.userId}`
+        );
+
+        const pageOrDatabaseAssociation = new RocketChatAssociationRecord(
+            RocketChatAssociationModel.MISC,
+            workspaceId
+        );
+
+        await this.persistence.updateByAssociations(
+            [userAssociation, pageOrDatabaseAssociation],
+            records,
+            true
+        );
+    }
+
+    public async getPagesOrDatabase(
+        workspaceId: string
+    ): Promise<object | undefined> {
+        const userAssociation = new RocketChatAssociationRecord(
+            RocketChatAssociationModel.USER,
+            `${this.userId}`
+        );
+
+        const pageOrDatabaseAssociation = new RocketChatAssociationRecord(
+            RocketChatAssociationModel.MISC,
+            workspaceId
+        );
+
+        const [result] = (await this.persistenceRead.readByAssociations([
+            userAssociation,
+            pageOrDatabaseAssociation,
+        ])) as Array<object>;
+
+        return result;
+    }
+
+    public async clearPagesOrDatabase(workspaceId: string): Promise<void> {
+        const userAssociation = new RocketChatAssociationRecord(
+            RocketChatAssociationModel.USER,
+            `${this.userId}`
+        );
+
+        const pageOrDatabaseAssociation = new RocketChatAssociationRecord(
+            RocketChatAssociationModel.MISC,
+            workspaceId
+        );
+
+        await this.persistence.removeByAssociations([
+            userAssociation,
+            pageOrDatabaseAssociation,
+        ]);
+    }
 }
