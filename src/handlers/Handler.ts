@@ -10,6 +10,10 @@ import {
     IPersistence,
     IRead,
 } from "@rocket.chat/apps-engine/definition/accessors";
+import { createDatabaseModal } from "../modals/createDatabaseModal";
+import { Error } from "../../errors/Error";
+import { ModalInteractionStorage } from "../storage/ModalInteraction";
+import { DatabaseModal } from "../../enum/modals/NotionDatabase";
 
 export class Handler implements IHandler {
     public app: NotionApp;
@@ -44,5 +48,50 @@ export class Handler implements IHandler {
     }
 
     public async createNotionDatabase(): Promise<void> {
+        const userId = this.sender.id;
+        const roomId = this.room.id;
+        const accessTokenInfo = await this.oAuth2Storage.getCurrentWorkspace(
+            userId
+        );
+
+        if (!accessTokenInfo) {
+            // send Notification to user to authorize
+            return;
+        }
+
+        await this.roomInteractionStorage.storeInteractionRoomId(
+            roomId
+        );
+
+        const persistenceRead = this.read.getPersistenceReader();
+        const modalInteraction = new ModalInteractionStorage(
+            this.persis,
+            persistenceRead,
+            userId,
+            DatabaseModal.VIEW_ID
+        );
+
+        const modal = await createDatabaseModal(
+            this.app,
+            this.sender,
+            this.read,
+            this.persis,
+            modalInteraction,
+            accessTokenInfo
+        );
+        if (modal instanceof Error) {
+            // Something went Wrong Question: Should we send a notification to the user?
+            return;
+        }
+
+        if (this.triggerId) {
+            await this.modify
+                .getUiController()
+                .openSurfaceView(
+                    modal,
+                    { triggerId: this.triggerId },
+                    this.sender
+                );
+        }
     }
 }
