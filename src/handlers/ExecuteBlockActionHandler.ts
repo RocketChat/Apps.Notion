@@ -50,8 +50,9 @@ export class ExecuteBlockActionHandler {
         const roomId = room?.id as string;
         const roomInteraction = new RoomInteractionStorage(
             this.persistence,
-            persistenceRead
+            persistenceRead,
+            user.id
         );
-        await roomInteraction.storeInteractionRoomId(user.id, roomId);
+        await roomInteraction.storeInteractionRoomId(roomId);
     }
 }

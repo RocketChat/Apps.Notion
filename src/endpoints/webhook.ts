@@ -73,9 +73,10 @@ export class WebHookEndpoint extends ApiEndpoint {
         const persistenceRead = read.getPersistenceReader();
         const roomInteraction = new RoomInteractionStorage(
             persis,
-            persistenceRead
+            persistenceRead,
+            user.id
         );
-        const roomId = await roomInteraction.getInteractionRoomId(user.id);
+        const roomId = await roomInteraction.getInteractionRoomId();
         const room = (await read.getRoomReader().getById(roomId)) as IRoom;
 
         const appCredentials = await getCredentials(read, modify, user, room);
@@ -123,7 +124,7 @@ export class WebHookEndpoint extends ApiEndpoint {
         await sendNotification(read, modify, user, room, {
             blocks: [connectPreview],
         });
-        await roomInteraction.clearInteractionRoomId(user.id);
+        await roomInteraction.clearInteractionRoomId();
 
         return this.success(successTemplate);
     }

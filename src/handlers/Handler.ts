@@ -38,7 +38,8 @@ export class Handler implements IHandler {
         this.oAuth2Storage = new OAuth2Storage(params.persis, persistenceRead);
         this.roomInteractionStorage = new RoomInteractionStorage(
             params.persis,
-            persistenceRead
+            persistenceRead,
+            params.sender.id
         );
     }
 

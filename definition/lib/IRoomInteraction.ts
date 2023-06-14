@@ -1,5 +1,5 @@
 export interface IRoomInteractionStorage {
-    storeInteractionRoomId(userId: string, roomId: string): Promise<void>;
-    getInteractionRoomId(userId: string): Promise<string>;
-    clearInteractionRoomId(userId: string): Promise<void>;
+    storeInteractionRoomId(roomId: string): Promise<void>;
+    getInteractionRoomId(): Promise<string>;
+    clearInteractionRoomId(): Promise<void>;
 }
