@@ -4,6 +4,7 @@ import {
     ImageElement,
     StaticSelectElement,
     PlainTextInputElement,
+    OverflowElement,
     Option,
 } from "@rocket.chat/ui-kit";
 import { ButtonParam } from "./IButtonElement";
@@ -13,6 +14,7 @@ import {
     StaticSelectOptionsParam,
 } from "./IStaticSelectElement";
 import { PlainTextInputParam } from "./IPlainTextInputElement";
+import { OverflowElementParam } from "./IOverflowElement";
 
 export interface IElementBuilder {
     addButton(
@@ -25,7 +27,14 @@ export interface IElementBuilder {
         interaction: ElementInteractionParam
     ): StaticSelectElement;
     createDropDownOptions(param: StaticSelectOptionsParam): Array<Option>;
-    createPlainTextInput(param: PlainTextInputParam, interaction: ElementInteractionParam): PlainTextInputElement;
+    createPlainTextInput(
+        param: PlainTextInputParam,
+        interaction: ElementInteractionParam
+    ): PlainTextInputElement;
+    createOverflow(
+        param: OverflowElementParam,
+        interaction: ElementInteractionParam
+    ): OverflowElement;
 }
 
 export type ElementInteractionParam = { blockId: string; actionId: string };

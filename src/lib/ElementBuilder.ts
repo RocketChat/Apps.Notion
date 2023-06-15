@@ -9,6 +9,7 @@ import {
     ImageElement,
     StaticSelectElement,
     PlainTextInputElement,
+    OverflowElement,
     Option,
 } from "@rocket.chat/ui-kit";
 import { ButtonParam } from "../../definition/ui-kit/Element/IButtonElement";
@@ -18,6 +19,7 @@ import {
     StaticSelectOptionsParam,
 } from "../../definition/ui-kit/Element/IStaticSelectElement";
 import { PlainTextInputParam } from "../../definition/ui-kit/Element/IPlainTextInputElement";
+import { OverflowElementParam } from "../../definition/ui-kit/Element/IOverflowElement";
 
 export class ElementBuilder implements IElementBuilder {
     constructor(private readonly appId: string) {}
@@ -130,5 +132,21 @@ export class ElementBuilder implements IElementBuilder {
         };
 
         return plainTextInput;
+    }
+
+    public createOverflow(
+        param: OverflowElementParam,
+        interaction: ElementInteractionParam
+    ): OverflowElement {
+        const { options } = param;
+        const { blockId, actionId } = interaction;
+        const overflow: OverflowElement = {
+            type: BlockElementType.OVERFLOW,
+            options,
+            appId: this.appId,
+            blockId,
+            actionId,
+        };
+        return overflow;
     }
 }

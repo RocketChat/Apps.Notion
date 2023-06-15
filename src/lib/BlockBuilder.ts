@@ -14,6 +14,7 @@ import {
     PreviewBlockWithThumb,
     ContextBlock,
     InputBlock,
+    DividerBlock,
 } from "@rocket.chat/ui-kit";
 
 export class BlockBuilder implements IBlockBuilder {
@@ -106,5 +107,15 @@ export class BlockBuilder implements IBlockBuilder {
         };
 
         return inputBlock;
+    }
+
+    public createDividerBlock(blockId?: string | undefined): DividerBlock {
+        const dividerBlock: DividerBlock = {
+            type: LayoutBlockType.DIVIDER,
+            appId: this.appId,
+            blockId,
+        };
+
+        return dividerBlock;
     }
 }

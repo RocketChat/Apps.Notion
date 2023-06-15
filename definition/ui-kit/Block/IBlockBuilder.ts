@@ -5,6 +5,7 @@ import {
     PreviewBlockWithThumb,
     ContextBlock,
     InputBlock,
+    DividerBlock,
 } from "@rocket.chat/ui-kit";
 import { SectionBlockParam } from "./ISectionBlock";
 import { ActionBlockParam } from "./IActionBlock";
@@ -20,4 +21,5 @@ export interface IBlockBuilder {
     ): PreviewBlockBase | PreviewBlockWithThumb;
     createContextBlock(param: ContextBlockParam): ContextBlock;
     createInputBlock(param: InputBlockParam): InputBlock;
+    createDividerBlock(blockId?: string): DividerBlock;
 }
