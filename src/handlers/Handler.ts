@@ -79,6 +79,8 @@ export class Handler implements IHandler {
             this.sender,
             this.read,
             this.persis,
+            this.modify,
+            this.room,
             modalInteraction,
             tokenInfo
         );

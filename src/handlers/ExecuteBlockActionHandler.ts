@@ -164,6 +164,8 @@ export class ExecuteBlockActionHandler {
             user,
             this.read,
             this.persistence,
+            this.modify,
+            room,
             modalInteraction,
             tokenInfo
         );

@@ -1,4 +1,5 @@
 import {
+    IModify,
     IPersistence,
     IRead,
     IUIKitSurfaceViewParam,
@@ -20,12 +21,15 @@ import { ITokenInfo } from "../../definition/authorization/IOAuth2Storage";
 import { DropDownComponent } from "./common/DropDownComponent";
 import { getPropertyTypes } from "../helper/getPropertyTypes";
 import { getConnectPreview } from "../helper/getConnectLayout";
+import { IRoom } from "@rocket.chat/apps-engine/definition/rooms";
 
 export async function createDatabaseModal(
     app: NotionApp,
     user: IUser,
     read: IRead,
     persistence: IPersistence,
+    modify: IModify,
+    room: IRoom,
     modalInteraction: ModalInteractionStorage,
     tokenInfo: ITokenInfo
 ): Promise<IUIKitSurfaceViewParam | Error> {

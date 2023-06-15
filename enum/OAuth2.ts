@@ -10,6 +10,11 @@ export enum OAuth2Content {
     failed = "https://open.rocket.chat/assets/logo.png",
     NOT_CONNECTED_MESSAGE = `👋 You are not connected to **Workspace**!`,
     NOT_CONNECTED_MESSAGE_WITH_INFO = `👋 Connect to workspace to access \`pages\` & \`database\``,
+    CONNECT_TO_WORKSPACE = "Connect to Workspace",
+    CREDENTIALS_MISSING_USER = `🚫 Something Went Wrong, Please Contact the Admin!`,
+    CREDENTIALS_MISSING_ADMIN = `Please Configure the App and Ensure the \`SiteUrl\` is correct in the Server Settings.
+            \xa0\xa0• Go to **NotionApp** Settings and add \`ClientId\` and \`ClientSecret\` Generated from a Notion Public Integration
+            `,
 }
 
 export enum OAuth2Credential {

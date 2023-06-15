@@ -5,6 +5,7 @@ import { ServerSetting } from "../../enum/Settings";
 import { sendNotification } from "./message";
 import { IUser } from "@rocket.chat/apps-engine/definition/users";
 import { IRoom } from "@rocket.chat/apps-engine/definition/rooms";
+import { OAuth2Content } from "../../enum/OAuth2";
 
 export async function getCredentials(
     read: IRead,
@@ -35,11 +36,9 @@ export async function getCredentials(
         // based on user role send relevant notification
         let message: string;
         if (user.roles.includes(ServerSetting.USER_ROLE_ADMIN)) {
-            message = `Please Configure the App and Ensure the \`SiteUrl\` is correct in the Server Settings.
-            \xa0\xa0• Go to **NotionApp** Settings and add \`ClientId\` and \`ClientSecret\` Generated from a Notion Public Integration
-            `;
+            message = OAuth2Content.CREDENTIALS_MISSING_ADMIN;
         } else {
-            message = `🚫 Something Went Wrong, Please Contact the Admin!`;
+            message = OAuth2Content.CREDENTIALS_MISSING_USER;
         }
 
         await sendNotification(read, modify, user, room, {
