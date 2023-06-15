@@ -19,6 +19,7 @@ import { ModalInteractionStorage } from "../storage/ModalInteraction";
 import { ITokenInfo } from "../../definition/authorization/IOAuth2Storage";
 import { DropDownComponent } from "./common/DropDownComponent";
 import { getPropertyTypes } from "../helper/getPropertyTypes";
+import { getConnectPreview } from "../helper/getConnectLayout";
 
 export async function createDatabaseModal(
     app: NotionApp,
@@ -29,6 +30,8 @@ export async function createDatabaseModal(
     tokenInfo: ITokenInfo
 ): Promise<IUIKitSurfaceViewParam | Error> {
     const { elementBuilder } = app.getUtils();
+
+    const connectBlock = getConnectPreview(app.getID(), tokenInfo);
 
     const searchForPageComponent = await searchPageComponent(
         app,
@@ -77,6 +80,7 @@ export async function createDatabaseModal(
         }
     );
     const blocks: Block[] = [
+        connectBlock,
         searchForPageComponent,
         titleOfDatabaseBlock,
         titlePropertyOfDatabaseBlock,
