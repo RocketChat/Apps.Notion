@@ -19,6 +19,7 @@ import { ModalInteractionStorage } from "../storage/ModalInteraction";
 import { createDatabaseModal } from "../modals/createDatabaseModal";
 import { OAuth2Storage } from "../authorization/OAuth2Storage";
 import { Error } from "../../errors/Error";
+import { sendNotificationWithConnectBlock } from "../helper/message";
 
 export class ExecuteBlockActionHandler {
     private context: UIKitBlockInteractionContext;
@@ -49,19 +50,30 @@ export class ExecuteBlockActionHandler {
             persistenceRead
         );
 
+        const roomInteractionStorage = new RoomInteractionStorage(
+            this.persistence,
+            persistenceRead,
+            user.id
+        );
+
         switch (actionId) {
             case OAuth2Action.CONNECT_TO_WORKSPACE: {
                 this.handleConnectToWorkspace(user, room);
                 break;
             }
             case DatabaseModal.ADD_PROPERTY_ACTION: {
-                this.handleAddPropertyAction(modalInteraction, oAuth2Storage);
+                this.handleAddPropertyAction(
+                    modalInteraction,
+                    oAuth2Storage,
+                    roomInteractionStorage
+                );
                 break;
             }
             case DatabaseModal.REMOVE_PROPERTY_ACTION: {
                 this.handleRemovePropertyAction(
                     modalInteraction,
-                    oAuth2Storage
+                    oAuth2Storage,
+                    roomInteractionStorage
                 );
                 break;
             }
@@ -88,7 +100,8 @@ export class ExecuteBlockActionHandler {
 
     private async handleAddPropertyAction(
         modalInteraction: ModalInteractionStorage,
-        oAuth2Storage: OAuth2Storage
+        oAuth2Storage: OAuth2Storage,
+        roomInteractionStorage: RoomInteractionStorage
     ) {
         const { user } = this.context.getInteractionData();
         const PropertyName = `${DatabaseModal.PROPERTY_NAME_ACTION}-${uuid()}`;
@@ -101,30 +114,48 @@ export class ExecuteBlockActionHandler {
             PropertyName,
         });
 
-        this.handleUpdateofDatabaseModal(modalInteraction, oAuth2Storage);
+        this.handleUpdateofDatabaseModal(
+            modalInteraction,
+            oAuth2Storage,
+            roomInteractionStorage
+        );
     }
 
     private async handleRemovePropertyAction(
         modalInteraction: ModalInteractionStorage,
-        oAuth2Storage: OAuth2Storage
+        oAuth2Storage: OAuth2Storage,
+        roomInteractionStorage: RoomInteractionStorage
     ) {
         const { user, value } = this.context.getInteractionData();
 
         const record: object = JSON.parse(value as string);
         await modalInteraction.clearInteractionActionId(record);
 
-        this.handleUpdateofDatabaseModal(modalInteraction, oAuth2Storage);
+        this.handleUpdateofDatabaseModal(
+            modalInteraction,
+            oAuth2Storage,
+            roomInteractionStorage
+        );
     }
 
     private async handleUpdateofDatabaseModal(
         modalInteraction: ModalInteractionStorage,
-        oAuth2Storage: OAuth2Storage
+        oAuth2Storage: OAuth2Storage,
+        roomInteractionStorage: RoomInteractionStorage
     ) {
         const { user } = this.context.getInteractionData();
         const tokenInfo = await oAuth2Storage.getCurrentWorkspace(user.id);
+        const roomId = await roomInteractionStorage.getInteractionRoomId();
+        const room = (await this.read.getRoomReader().getById(roomId)) as IRoom;
 
         if (!tokenInfo) {
-            // send Notification to user to authorize and close the modal
+            await sendNotificationWithConnectBlock(
+                this.app,
+                user,
+                this.read,
+                this.modify,
+                room
+            );
             return;
         }
 
@@ -138,7 +169,8 @@ export class ExecuteBlockActionHandler {
         );
 
         if (modal instanceof Error) {
-            // sendNotification later to user to something went wrong and log in the console
+            // Something went Wrong Propably SearchPageComponent Couldn't Fetch the Pages
+            this.app.getLogger().error(modal.message);
             return;
         }
 

@@ -14,6 +14,7 @@ import { createDatabaseModal } from "../modals/createDatabaseModal";
 import { Error } from "../../errors/Error";
 import { ModalInteractionStorage } from "../storage/ModalInteraction";
 import { DatabaseModal } from "../../enum/modals/NotionDatabase";
+import { sendNotificationWithConnectBlock } from "../helper/message";
 
 export class Handler implements IHandler {
     public app: NotionApp;
@@ -50,18 +51,20 @@ export class Handler implements IHandler {
     public async createNotionDatabase(): Promise<void> {
         const userId = this.sender.id;
         const roomId = this.room.id;
-        const accessTokenInfo = await this.oAuth2Storage.getCurrentWorkspace(
-            userId
-        );
+        const tokenInfo = await this.oAuth2Storage.getCurrentWorkspace(userId);
 
-        if (!accessTokenInfo) {
-            // send Notification to user to authorize
+        if (!tokenInfo) {
+            await sendNotificationWithConnectBlock(
+                this.app,
+                this.sender,
+                this.read,
+                this.modify,
+                this.room
+            );
             return;
         }
 
-        await this.roomInteractionStorage.storeInteractionRoomId(
-            roomId
-        );
+        await this.roomInteractionStorage.storeInteractionRoomId(roomId);
 
         const persistenceRead = this.read.getPersistenceReader();
         const modalInteraction = new ModalInteractionStorage(
@@ -77,10 +80,11 @@ export class Handler implements IHandler {
             this.read,
             this.persis,
             modalInteraction,
-            accessTokenInfo
+            tokenInfo
         );
         if (modal instanceof Error) {
-            // Something went Wrong Question: Should we send a notification to the user?
+            // Something went Wrong Propably SearchPageComponent Couldn't Fetch the Pages
+            this.app.getLogger().error(modal.message);
             return;
         }
 
