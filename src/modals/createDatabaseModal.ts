@@ -33,8 +33,8 @@ export async function createDatabaseModal(
     modalInteraction: ModalInteractionStorage,
     tokenInfo: ITokenInfo
 ): Promise<IUIKitSurfaceViewParam | Error> {
-    const { elementBuilder } = app.getUtils();
-
+    const { elementBuilder, blockBuilder } = app.getUtils();
+    const divider = blockBuilder.createDividerBlock();
     const connectBlock = getConnectPreview(app.getID(), tokenInfo);
 
     const searchForPageComponent = await searchPageComponent(
@@ -94,6 +94,7 @@ export async function createDatabaseModal(
     if (records) {
         records.data.forEach((record) => {
             let block: Block;
+            blocks.push(divider);
             const options = getPropertyTypes();
             block = DropDownComponent(
                 {
@@ -137,6 +138,7 @@ export async function createDatabaseModal(
             );
 
             blocks.push(block);
+            blocks.push(divider);
         });
     }
 
