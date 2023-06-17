@@ -92,9 +92,11 @@ export async function createDatabaseModal(
 
     const records = await modalInteraction.getAllInteractionActionId();
     if (records) {
-        records.data.forEach((record) => {
+        records.data.forEach((record, index) => {
             let block: Block;
-            blocks.push(divider);
+            if(index === 0){
+                blocks.push(divider);
+            }
             const options = getPropertyTypes();
             block = DropDownComponent(
                 {
