@@ -73,7 +73,9 @@ export class Handler implements IHandler {
             userId,
             DatabaseModal.VIEW_ID
         );
-
+        const { workspace_id } = tokenInfo;
+        await modalInteraction.clearAllInteractionActionId();
+        await modalInteraction.clearPagesOrDatabase(workspace_id);
         const modal = await createDatabaseModal(
             this.app,
             this.sender,
