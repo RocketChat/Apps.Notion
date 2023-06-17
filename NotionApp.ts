@@ -93,7 +93,7 @@ export class NotionApp extends App {
             context
         );
 
-        return handler.handleActions();
+        return await handler.handleActions();
     }
 
     public async executeViewSubmitHandler(
@@ -112,7 +112,7 @@ export class NotionApp extends App {
             context
         );
 
-        return handler.handleActions();
+        return await handler.handleActions();
     }
 
     public async executeViewClosedHandler(
@@ -131,6 +131,6 @@ export class NotionApp extends App {
             context
         );
 
-        return handler.handleActions();
+        return await handler.handleActions();
     }
 }

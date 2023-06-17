@@ -65,6 +65,7 @@ export class ElementBuilder implements IElementBuilder {
             optionGroups,
             initialOption,
             initialValue,
+            dispatchActionConfig
         } = param;
         const { blockId, actionId } = interaction;
         const dropDown: StaticSelectElement = {
@@ -80,6 +81,7 @@ export class ElementBuilder implements IElementBuilder {
             appId: this.appId,
             blockId,
             actionId,
+            dispatchActionConfig
         };
         return dropDown;
     }

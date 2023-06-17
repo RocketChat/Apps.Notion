@@ -2,7 +2,11 @@ import { StaticSelectElement } from "@rocket.chat/ui-kit";
 
 export type StaticSelectElementParam = Pick<
     StaticSelectElement,
-    "options" | "optionGroups" | "initialOption" | "initialValue"
+    | "options"
+    | "optionGroups"
+    | "initialOption"
+    | "initialValue"
+    | "dispatchActionConfig"
 > & { placeholder: string };
 
 export type StaticSelectOptionsParam = Array<{
