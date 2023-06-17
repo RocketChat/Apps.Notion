@@ -8,7 +8,9 @@ import { ITokenInfo } from "../../definition/authorization/IOAuth2Storage";
 import {
     ClientError,
     Error,
+    ForbiddenError,
     ManyRequestsError,
+    NotFoundError,
     ServerError,
 } from "../../errors/Error";
 import { NotionApi, NotionObjectTypes } from "../../enum/Notion";
@@ -162,9 +164,45 @@ export class NotionSDK implements INotionSDK {
             case HttpStatusCode.TOO_MANY_REQUESTS: {
                 return new ManyRequestsError(message, additionalInfo);
             }
+            case HttpStatusCode.FORBIDDEN: {
+                return new ForbiddenError(message, additionalInfo);
+            }
+            case HttpStatusCode.NOT_FOUND: {
+                return new NotFoundError(message, additionalInfo);
+            }
             default: {
                 return new ServerError(message, additionalInfo);
             }
+        }
+    }
+
+    public async createNotionDatabase(token: string, data: object) {
+        // return type we will create in next PR
+        try {
+            const response = await this.http.post(NotionApi.CREATE_DATABASE, {
+                data,
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": NotionApi.CONTENT_TYPE,
+                    "User-Agent": NotionApi.USER_AGENT,
+                    "Notion-Version": this.NotionVersion,
+                },
+            });
+
+            if (!response.statusCode.toString().startsWith("2")) {
+                return this.handleErrorResponse(
+                    response.statusCode,
+                    `Error While Creating Database: `,
+                    response.content
+                );
+            }
+
+            return {
+                name: response.data.title[0]?.text?.content || "Untitled",
+                link: response.data.url,
+            };
+        } catch (err) {
+            throw new AppsEngineException(err as string);
         }
     }
 }

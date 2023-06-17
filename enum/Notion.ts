@@ -15,6 +15,7 @@ export enum NotionApi {
     USER_AGENT = "Rocket.Chat-Apps-Engine",
     CONTENT_TYPE = "application/json",
     SEARCH = `https://api.notion.com/v1/search`,
+    CREATE_DATABASE = `https://api.notion.com/v1/databases`,
 }
 
 export enum Notion {
@@ -26,4 +27,5 @@ export enum NotionObjectTypes {
     PAGE_ID = "page_id",
     WORKSPACE = "workspace",
     PROPERTY = "object",
+    TEXT = "text"
 }
