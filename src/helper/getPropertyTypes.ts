@@ -2,6 +2,7 @@ import {
     PropertyType,
     PropertyTypeValue,
     Number,
+    Color,
 } from "../../enum/modals/common/NotionProperties";
 import { StaticSelectOptionsParam } from "../../definition/ui-kit/Element/IStaticSelectElement";
 
@@ -26,6 +27,20 @@ export function getNumberPropertyFormat() {
         const text =
             value.charAt(0).toUpperCase() +
             value.slice(1).replace(removedUnderscore, " ");
+        return {
+            text,
+            value,
+        };
+    });
+
+    return options;
+}
+
+export function getSelectOptionColors() {
+    const colors = Object.keys(Color);
+    const options: StaticSelectOptionsParam = colors.map((key) => {
+        const value = Color[key] as string;
+        const text = value.charAt(0).toUpperCase() + value.slice(1);
         return {
             text,
             value,

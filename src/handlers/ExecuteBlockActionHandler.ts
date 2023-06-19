@@ -79,6 +79,15 @@ export class ExecuteBlockActionHandler {
                 );
                 break;
             }
+            case DatabaseModal.REMOVE_OPTION_ACTION:
+            case DatabaseModal.ADD_OPTION_ACTION: {
+                this.handleOptionAction(
+                    modalInteraction,
+                    oAuth2Storage,
+                    roomInteractionStorage
+                );
+                break;
+            }
             default: {
                 // Property Type Select Action
                 const dispactchActionPropertyType = actionId.startsWith(
@@ -90,9 +99,7 @@ export class ExecuteBlockActionHandler {
 
                 switch (dispatchActionConfig) {
                     case DatabaseModal.PROPERTY_TYPE_SELECT_ACTION: {
-
                         this.handlePropertyTypeSelectAction(
-                            actionId,
                             modalInteraction,
                             oAuth2Storage,
                             roomInteractionStorage
@@ -212,12 +219,11 @@ export class ExecuteBlockActionHandler {
     }
 
     private async handlePropertyTypeSelectAction(
-        actionId: string,
         modalInteraction: ModalInteractionStorage,
         oAuth2Storage: OAuth2Storage,
         roomInteractionStorage: RoomInteractionStorage
     ): Promise<void> {
-        const { value } = this.context.getInteractionData();
+        const { value, actionId } = this.context.getInteractionData();
         const { data } = await modalInteraction.getAllInteractionActionId();
         const index = data.findIndex((record) => {
             return record?.[DatabaseModal.PROPERTY_TYPE] === actionId;
@@ -253,11 +259,62 @@ export class ExecuteBlockActionHandler {
                     };
                     break;
                 }
+                case PropertyTypeValue.MULTI_SELECT:
+                case PropertyTypeValue.SELECT: {
+                    data[index] = {
+                        ...commonProperties,
+                        [Modals.ADDITIONAL_CONFIG]: {
+                            type: value,
+                            [Modals.OPTIONS]: [
+                                {
+                                    [Modals.INPUTFIELD]: uuid(),
+                                    [Modals.DROPDOWN]: uuid(),
+                                },
+                            ],
+                        },
+                    };
+                    break;
+                }
                 default: {
                     data[index] = {
                         ...commonProperties,
                     };
                 }
+            }
+
+            await modalInteraction.updateInteractionActionId(data);
+            await this.handleUpdateofDatabaseModal(
+                modalInteraction,
+                oAuth2Storage,
+                roomInteractionStorage
+            );
+        }
+    }
+
+    private async handleOptionAction(
+        modalInteraction: ModalInteractionStorage,
+        oAuth2Storage: OAuth2Storage,
+        roomInteractionStorage: RoomInteractionStorage
+    ): Promise<void> {
+        const { value, actionId } = this.context.getInteractionData();
+        if (value) {
+            const { data } = await modalInteraction.getAllInteractionActionId();
+            const index = data.findIndex((record) => {
+                return record?.[DatabaseModal.PROPERTY_TYPE] === value;
+            });
+
+            const options: Array<{
+                [Modals.INPUTFIELD]: string;
+                [Modals.DROPDOWN]: string;
+            }> = data[index]?.[Modals.ADDITIONAL_CONFIG]?.[Modals.OPTIONS];
+
+            if (actionId.toString() === DatabaseModal.ADD_OPTION_ACTION) {
+                options.push({
+                    [Modals.INPUTFIELD]: uuid(),
+                    [Modals.DROPDOWN]: uuid(),
+                });
+            } else {
+                options.pop();
             }
 
             await modalInteraction.updateInteractionActionId(data);

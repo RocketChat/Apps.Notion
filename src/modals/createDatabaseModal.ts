@@ -22,15 +22,18 @@ import { DropDownComponent } from "./common/DropDownComponent";
 import {
     getNumberPropertyFormat,
     getPropertyTypes,
+    getSelectOptionColors,
 } from "../helper/getPropertyTypes";
 import { getConnectPreview } from "../helper/getConnectLayout";
 import { IRoom } from "@rocket.chat/apps-engine/definition/rooms";
 import { Modals } from "../../enum/modals/common/Modals";
 import {
+    Color,
     Number,
     PropertyTypeValue,
 } from "../../enum/modals/common/NotionProperties";
 import { NotionObjectTypes } from "../../enum/Notion";
+import { ButtonInActionComponent } from "./common/buttonInActionComponent";
 
 export async function createDatabaseModal(
     app: NotionApp,
@@ -188,10 +191,7 @@ export async function createDatabaseModal(
     };
 }
 
-function addConfigPropertyTypeInteraction(
-    record: object,
-    app: NotionApp
-) {
+function addConfigPropertyTypeInteraction(record: object, app: NotionApp) {
     const config: object | undefined = record?.[Modals.ADDITIONAL_CONFIG];
     let blocks: Block[] = [];
 
@@ -235,6 +235,85 @@ function addConfigPropertyTypeInteraction(
                     }
                 );
                 blocks.push(inputField);
+                break;
+            }
+            case PropertyTypeValue.MULTI_SELECT:
+            case PropertyTypeValue.SELECT: {
+                const options: Array<{
+                    [Modals.INPUTFIELD]: string;
+                    [Modals.DROPDOWN]: string;
+                }> = config?.[Modals.OPTIONS];
+
+                const colorOption = getSelectOptionColors();
+                const initialValue = Color.DEFAULT.toString();
+
+                options.forEach((option) => {
+                    const actionIdInputField: string =
+                        option?.[Modals.INPUTFIELD];
+                    const actionIdDropDown: string = option?.[Modals.DROPDOWN];
+                    const inputField = inputElementComponent(
+                        {
+                            app,
+                            placeholder:
+                                DatabaseModal.SELECT_PROPERTY_OPTION_PLACEHOLDER,
+                            label: DatabaseModal.SELECT_PROPERTY_OPTION_LABEL,
+                            optional: false,
+                        },
+                        {
+                            blockId: DatabaseModal.PROPERTY_TYPE_SELECT_BLOCK,
+                            actionId: actionIdInputField,
+                        }
+                    );
+                    blocks.push(inputField);
+
+                    const dropDown = DropDownComponent(
+                        {
+                            app,
+                            placeholder:
+                                DatabaseModal.SELECT_PROPERTY_OPTION_COLOR_PLACEHOLDER,
+                            text: DatabaseModal.SELECT_PROPERTY_OPTION_COLOR_LABEL,
+                            initialValue: initialValue,
+                            options: colorOption,
+                        },
+                        {
+                            blockId: DatabaseModal.PROPERTY_TYPE_SELECT_BLOCK,
+                            actionId: actionIdDropDown,
+                        }
+                    );
+
+                    blocks.push(dropDown);
+                });
+
+                if (options.length > 1) {
+                    const removeOptionButton = ButtonInSectionComponent(
+                        {
+                            app,
+                            buttonText: DatabaseModal.REMOVE_OPTION_BUTTON_TEXT,
+                            style: ButtonStyle.DANGER,
+                            value: record?.[DatabaseModal.PROPERTY_TYPE],
+                        },
+                        {
+                            blockId: DatabaseModal.REMOVE_OPTION_BLOCK,
+                            actionId: DatabaseModal.REMOVE_OPTION_ACTION,
+                        }
+                    );
+                    blocks.push(removeOptionButton);
+                }
+
+                const optionButton = ButtonInActionComponent(
+                    {
+                        app,
+                        buttonText: DatabaseModal.ADD_OPTION_BUTTON_TEXT,
+                        style: ButtonStyle.PRIMARY,
+                        value: record?.[DatabaseModal.PROPERTY_TYPE],
+                    },
+                    {
+                        blockId: DatabaseModal.ADD_OPTION_BLOCK,
+                        actionId: DatabaseModal.ADD_OPTION_ACTION,
+                    }
+                );
+
+                blocks.push(optionButton);
                 break;
             }
             default: {

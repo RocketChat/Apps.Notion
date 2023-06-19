@@ -6,4 +6,5 @@ export enum Modals {
     ADDITIONAL_CONFIG = "additionalConfig",
     DROPDOWN = "dropDown",
     INPUTFIELD = "inputField",
+    OPTIONS = "options",
 }

@@ -82,3 +82,15 @@ export enum Number {
     SINGAPORE_DOLLAR = "singapore_dollar",
 }
 
+export enum Color {
+    DEFAULT = "default",
+    GRAY = "gray",
+    BROWN = "brown",
+    ORANGE = "orange",
+    YELLOW = "yellow",
+    GREEN = "green",
+    BLUE = "blue",
+    PURPLE = "purple",
+    PINK = "pink",
+    RED = "red",
+}
