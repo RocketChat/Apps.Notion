@@ -19,9 +19,18 @@ import { IUser } from "@rocket.chat/apps-engine/definition/users";
 import { ModalInteractionStorage } from "../storage/ModalInteraction";
 import { ITokenInfo } from "../../definition/authorization/IOAuth2Storage";
 import { DropDownComponent } from "./common/DropDownComponent";
-import { getPropertyTypes } from "../helper/getPropertyTypes";
+import {
+    getNumberPropertyFormat,
+    getPropertyTypes,
+} from "../helper/getPropertyTypes";
 import { getConnectPreview } from "../helper/getConnectLayout";
 import { IRoom } from "@rocket.chat/apps-engine/definition/rooms";
+import { Modals } from "../../enum/modals/common/Modals";
+import {
+    Number,
+    PropertyTypeValue,
+} from "../../enum/modals/common/NotionProperties";
+import { NotionObjectTypes } from "../../enum/Notion";
 
 export async function createDatabaseModal(
     app: NotionApp,
@@ -94,7 +103,7 @@ export async function createDatabaseModal(
     if (records) {
         records.data.forEach((record, index) => {
             let block: Block;
-            if(index === 0){
+            if (index === 0) {
                 blocks.push(divider);
             }
             const options = getPropertyTypes();
@@ -104,6 +113,7 @@ export async function createDatabaseModal(
                     placeholder: DatabaseModal.PROPERTY_TYPE_SELECT_PLACEHOLDER,
                     text: DatabaseModal.PROPERTY_TYPE_SELECT_LABEL,
                     options,
+                    dispatchActionConfigOnSelect: true,
                 },
                 {
                     blockId: DatabaseModal.PROPERTY_TYPE_SELECT_BLOCK,
@@ -126,6 +136,9 @@ export async function createDatabaseModal(
                 }
             );
             blocks.push(block);
+
+            const configBlocks = addConfigPropertyTypeInteraction(record, app);
+            blocks.push(...configBlocks);
 
             block = ButtonInSectionComponent(
                 {
@@ -173,4 +186,44 @@ export async function createDatabaseModal(
         close,
         submit,
     };
+}
+
+function addConfigPropertyTypeInteraction(
+    record: object,
+    app: NotionApp
+) {
+    const config: object | undefined = record?.[Modals.ADDITIONAL_CONFIG];
+    let blocks: Block[] = [];
+
+    if (config) {
+        const type: string = config?.[NotionObjectTypes.TYPE];
+        switch (type) {
+            case PropertyTypeValue.NUMBER: {
+                const options = getNumberPropertyFormat();
+                const initialValue = Number.NUMBER.toString();
+                const actionId: string = config?.[Modals.DROPDOWN];
+                const dropDown = DropDownComponent(
+                    {
+                        app,
+                        placeholder:
+                            DatabaseModal.NUMBER_PROPERTY_FORMAT_PLACEHOLDER,
+                        text: DatabaseModal.NUMBER_PROPERTY_FORMAT_LABEL,
+                        initialValue: initialValue,
+                        options,
+                    },
+                    {
+                        blockId: DatabaseModal.PROPERTY_TYPE_SELECT_BLOCK,
+                        actionId,
+                    }
+                );
+
+                blocks.push(dropDown);
+                break;
+            }
+            default: {
+            }
+        }
+    }
+
+    return blocks;
 }

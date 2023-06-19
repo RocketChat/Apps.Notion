@@ -20,6 +20,8 @@ import { createDatabaseModal } from "../modals/createDatabaseModal";
 import { OAuth2Storage } from "../authorization/OAuth2Storage";
 import { Error } from "../../errors/Error";
 import { sendNotificationWithConnectBlock } from "../helper/message";
+import { PropertyTypeValue } from "../../enum/modals/common/NotionProperties";
+import { Modals } from "../../enum/modals/common/Modals";
 
 export class ExecuteBlockActionHandler {
     private context: UIKitBlockInteractionContext;
@@ -78,6 +80,28 @@ export class ExecuteBlockActionHandler {
                 break;
             }
             default: {
+                // Property Type Select Action
+                const dispactchActionPropertyType = actionId.startsWith(
+                    DatabaseModal.PROPERTY_TYPE_SELECT_ACTION
+                );
+                const dispatchActionConfig = dispactchActionPropertyType
+                    ? DatabaseModal.PROPERTY_TYPE_SELECT_ACTION
+                    : null;
+
+                switch (dispatchActionConfig) {
+                    case DatabaseModal.PROPERTY_TYPE_SELECT_ACTION: {
+
+                        this.handlePropertyTypeSelectAction(
+                            actionId,
+                            modalInteraction,
+                            oAuth2Storage,
+                            roomInteractionStorage
+                        );
+                        break;
+                    }
+                    default: {
+                    }
+                }
             }
         }
 
@@ -185,5 +209,53 @@ export class ExecuteBlockActionHandler {
             },
             user
         );
+    }
+
+    private async handlePropertyTypeSelectAction(
+        actionId: string,
+        modalInteraction: ModalInteractionStorage,
+        oAuth2Storage: OAuth2Storage,
+        roomInteractionStorage: RoomInteractionStorage
+    ): Promise<void> {
+        const { value } = this.context.getInteractionData();
+        const { data } = await modalInteraction.getAllInteractionActionId();
+        const index = data.findIndex((record) => {
+            return record?.[DatabaseModal.PROPERTY_TYPE] === actionId;
+        });
+
+        const PropertyType: string = data[index]?.[DatabaseModal.PROPERTY_TYPE];
+        const PropertyName: string = data[index]?.[DatabaseModal.PROPERTY_NAME];
+
+        const commonProperties = {
+            PropertyType,
+            PropertyName,
+        };
+
+        if (value) {
+            switch (value) {
+                case PropertyTypeValue.NUMBER: {
+                    data[index] = {
+                        ...commonProperties,
+                        [Modals.ADDITIONAL_CONFIG]: {
+                            type: value,
+                            [Modals.DROPDOWN]: uuid(),
+                        },
+                    };
+                    break;
+                }
+                default: {
+                    data[index] = {
+                        ...commonProperties,
+                    };
+                }
+            }
+
+            await modalInteraction.updateInteractionActionId(data);
+            await this.handleUpdateofDatabaseModal(
+                modalInteraction,
+                oAuth2Storage,
+                roomInteractionStorage
+            );
+        }
     }
 }

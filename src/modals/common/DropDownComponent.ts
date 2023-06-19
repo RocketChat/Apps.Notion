@@ -12,6 +12,7 @@ export function DropDownComponent(
         text,
         dispatchActionConfigOnSelect,
         dispatchActionConfigOnInput,
+        initialValue,
     }: {
         app: NotionApp;
         options: StaticSelectOptionsParam;
@@ -19,6 +20,7 @@ export function DropDownComponent(
         text: string;
         dispatchActionConfigOnSelect?: boolean;
         dispatchActionConfigOnInput?: boolean;
+        initialValue?: string;
     },
     { blockId, actionId }: ElementInteractionParam
 ) {
@@ -40,6 +42,7 @@ export function DropDownComponent(
             placeholder,
             options: dropDownOption,
             dispatchActionConfig,
+            initialValue
         },
         { blockId, actionId }
     );
