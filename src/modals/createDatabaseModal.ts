@@ -220,6 +220,23 @@ function addConfigPropertyTypeInteraction(
                 blocks.push(dropDown);
                 break;
             }
+            case PropertyTypeValue.FORMULA: {
+                const actionId = config?.[Modals.INPUTFIELD];
+                const inputField = inputElementComponent(
+                    {
+                        app,
+                        placeholder: DatabaseModal.FORMULA_PLACEHOLDER,
+                        label: DatabaseModal.FORMULA_LABEL,
+                        optional: false,
+                    },
+                    {
+                        blockId: DatabaseModal.PROPERTY_TYPE_SELECT_BLOCK,
+                        actionId,
+                    }
+                );
+                blocks.push(inputField);
+                break;
+            }
             default: {
             }
         }

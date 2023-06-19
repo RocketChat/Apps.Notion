@@ -243,6 +243,16 @@ export class ExecuteBlockActionHandler {
                     };
                     break;
                 }
+                case PropertyTypeValue.FORMULA: {
+                    data[index] = {
+                        ...commonProperties,
+                        [Modals.ADDITIONAL_CONFIG]: {
+                            type: value,
+                            [Modals.INPUTFIELD]: uuid(),
+                        },
+                    };
+                    break;
+                }
                 default: {
                     data[index] = {
                         ...commonProperties,

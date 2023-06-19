@@ -33,4 +33,6 @@ export enum DatabaseModal {
     REMOVE_PROPERTY_BUTTON_TEXT = "Remove Property",
     NUMBER_PROPERTY_FORMAT_LABEL = "Number Format",
     NUMBER_PROPERTY_FORMAT_PLACEHOLDER = "Select Number Format",
+    FORMULA_PLACEHOLDER = "Enter Formula Expression",
+    FORMULA_LABEL = "Expression *",
 }

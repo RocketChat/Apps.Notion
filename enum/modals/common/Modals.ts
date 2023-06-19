@@ -5,4 +5,5 @@ export enum Modals {
     dispatchActionConfigOnInput = "on_character_entered",
     ADDITIONAL_CONFIG = "additionalConfig",
     DROPDOWN = "dropDown",
+    INPUTFIELD = "inputField",
 }
