@@ -396,12 +396,12 @@ export class ExecuteBlockActionHandler {
 
         for (const [key] of Object.entries(newData)) {
             if (key !== actionId && newData[key] === value.trim()) {
-                errors[key] = `Property Name **${value.trim()}** already exists`;
+                errors[key] = `Property Name ${value.trim()} already exists`;
             }
         }
 
         if (Object.keys(errors).length) {
-            errors[actionId] = `Property Name **${value.trim()}** already exists`;
+            errors[actionId] = `Property Name ${value.trim()} already exists`;
         }
 
         return this.context.getInteractionResponder().viewErrorResponse({

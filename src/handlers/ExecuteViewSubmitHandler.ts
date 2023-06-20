@@ -124,7 +124,7 @@ export class ExecuteViewSubmitHandler {
         let message: string;
 
         if (response instanceof Error) {
-            message = `Error while Creating Database in **${workspace_name}**`;
+            message = `Something Went Wrong While Creating Database in **${workspace_name}**`;
         } else {
             const name: string = response.name;
             const link: string = response.link;
