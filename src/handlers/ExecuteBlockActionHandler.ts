@@ -351,7 +351,7 @@ export class ExecuteBlockActionHandler {
 
         const errors = {};
 
-        if (!value || value.trim().length === 0) {
+        if (!value) {
             return this.context.getInteractionResponder().successResponse();
         }
 
@@ -362,7 +362,7 @@ export class ExecuteBlockActionHandler {
         if (!inputElementState) {
             await modalInteraction.storeInputElementState(
                 DatabaseModal.PROPERTY_NAME,
-                { [actionId]: value.trim() }
+                { [actionId]: value }
             );
             return this.context.getInteractionResponder().successResponse();
         }
@@ -379,7 +379,7 @@ export class ExecuteBlockActionHandler {
             return action[DatabaseModal.PROPERTY_NAME] as string;
         });
 
-        inputElementState[actionId] = value.trim();
+        inputElementState[actionId] = value;
 
         let newData = {};
 
@@ -395,13 +395,13 @@ export class ExecuteBlockActionHandler {
         );
 
         for (const [key] of Object.entries(newData)) {
-            if (key !== actionId && newData[key] === value.trim()) {
-                errors[key] = `Property Name ${value.trim()} already exists`;
+            if (key !== actionId && newData[key] === value) {
+                errors[key] = `Property Name ${value} already exists`;
             }
         }
 
         if (Object.keys(errors).length) {
-            errors[actionId] = `Property Name ${value.trim()} already exists`;
+            errors[actionId] = `Property Name ${value} already exists`;
         }
 
         return this.context.getInteractionResponder().viewErrorResponse({
