@@ -78,6 +78,7 @@ export async function createDatabaseModal(
             placeholder: DatabaseModal.TITLE_PROPERTY_PLACEHOLDER,
             label: DatabaseModal.TITLE_PROPERTY_LABEL,
             optional: false,
+            dispatchActionConfigOnInput: true,
         },
         {
             blockId: DatabaseModal.TITLE_PROPERTY_BLOCK,
@@ -132,6 +133,7 @@ export async function createDatabaseModal(
                     placeholder: DatabaseModal.PROPERTY_NAME_PLACEHOLDER,
                     label: DatabaseModal.PROPERTY_NAME_LABEL,
                     optional: false,
+                    dispatchActionConfigOnInput: true
                 },
                 {
                     blockId: DatabaseModal.PROPERTY_NAME_BLOCK,
@@ -258,6 +260,7 @@ function addConfigPropertyTypeInteraction(record: object, app: NotionApp) {
                                 DatabaseModal.SELECT_PROPERTY_OPTION_PLACEHOLDER,
                             label: DatabaseModal.SELECT_PROPERTY_OPTION_LABEL,
                             optional: false,
+                            dispatchActionConfigOnInput: true
                         },
                         {
                             blockId: DatabaseModal.PROPERTY_TYPE_SELECT_BLOCK,

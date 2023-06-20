@@ -45,4 +45,5 @@ export enum DatabaseModal {
     REMOVE_OPTION_BUTTON_TEXT = "Remove Option",
     REMOVE_OPTION_ACTION = "remove-option-notion-database-action-id",
     REMOVE_OPTION_BLOCK = "remove-option-notion-database-block-id",
+    SELECT_PROPERTY_OPTION_NAME = "select-property-option-name-action",
 }

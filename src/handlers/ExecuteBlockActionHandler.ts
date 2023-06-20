@@ -90,12 +90,20 @@ export class ExecuteBlockActionHandler {
             }
             default: {
                 // Property Type Select Action
-                const dispactchActionPropertyType = actionId.startsWith(
+                const dispatchActionPropertyType = actionId.startsWith(
                     DatabaseModal.PROPERTY_TYPE_SELECT_ACTION
                 );
-                const dispatchActionConfig = dispactchActionPropertyType
+
+                // Property Name Character Entered Action
+                const dispatchActionPropertyName =
+                    actionId.startsWith(DatabaseModal.PROPERTY_NAME_ACTION) ||
+                    actionId.startsWith(DatabaseModal.TITLE_PROPERTY_ACTION);
+
+                const dispatchActionConfig = dispatchActionPropertyType
                     ? DatabaseModal.PROPERTY_TYPE_SELECT_ACTION
-                    : null;
+                    : dispatchActionPropertyName
+                    ? DatabaseModal.PROPERTY_NAME_ACTION
+                    : DatabaseModal.SELECT_PROPERTY_OPTION_NAME;
 
                 switch (dispatchActionConfig) {
                     case DatabaseModal.PROPERTY_TYPE_SELECT_ACTION: {
@@ -104,6 +112,15 @@ export class ExecuteBlockActionHandler {
                             oAuth2Storage,
                             roomInteractionStorage
                         );
+                        break;
+                    }
+                    case DatabaseModal.PROPERTY_NAME_ACTION: {
+                        return this.handleDuplicatePropertyNameAction(
+                            modalInteraction
+                        );
+                        break;
+                    }
+                    case DatabaseModal.SELECT_PROPERTY_OPTION_NAME: {
                         break;
                     }
                     default: {
@@ -324,5 +341,72 @@ export class ExecuteBlockActionHandler {
                 roomInteractionStorage
             );
         }
+    }
+
+    private async handleDuplicatePropertyNameAction(
+        modalInteraction: ModalInteractionStorage
+    ): Promise<IUIKitResponse> {
+        const { value, actionId, container } =
+            this.context.getInteractionData();
+
+        const errors = {};
+
+        if (!value || value.trim().length === 0) {
+            return this.context.getInteractionResponder().successResponse();
+        }
+
+        const inputElementState = await modalInteraction.getInputElementState(
+            DatabaseModal.PROPERTY_NAME
+        );
+
+        if (!inputElementState) {
+            await modalInteraction.storeInputElementState(
+                DatabaseModal.PROPERTY_NAME,
+                { [actionId]: value.trim() }
+            );
+            return this.context.getInteractionResponder().successResponse();
+        }
+
+        let { data } = await modalInteraction.getAllInteractionActionId();
+
+        const titlePropertyObject = {
+            [DatabaseModal.PROPERTY_NAME]: DatabaseModal.TITLE_PROPERTY_ACTION,
+        };
+
+        data.push(titlePropertyObject);
+
+        const actionIds = data.map((action) => {
+            return action[DatabaseModal.PROPERTY_NAME] as string;
+        });
+
+        inputElementState[actionId] = value.trim();
+
+        let newData = {};
+
+        for (const [key] of Object.entries(inputElementState)) {
+            if (actionIds.includes(key)) {
+                newData[key] = inputElementState[key];
+            }
+        }
+
+        await modalInteraction.storeInputElementState(
+            DatabaseModal.PROPERTY_NAME,
+            newData
+        );
+
+        for (const [key] of Object.entries(newData)) {
+            if (key !== actionId && newData[key] === value.trim()) {
+                errors[key] = `Property Name **${value.trim()}** already exists`;
+            }
+        }
+
+        if (Object.keys(errors).length) {
+            errors[actionId] = `Property Name **${value.trim()}** already exists`;
+        }
+
+        return this.context.getInteractionResponder().viewErrorResponse({
+            viewId: container.id,
+            errors,
+        });
     }
 }

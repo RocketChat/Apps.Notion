@@ -155,4 +155,40 @@ export class ModalInteractionStorage implements IModalInteractionStorage {
             pageOrDatabaseAssociation,
         ]);
     }
+
+    public async storeInputElementState(
+        associate: string,
+        state: object
+    ): Promise<void> {
+        const association = new RocketChatAssociationRecord(
+            RocketChatAssociationModel.USER,
+            `${this.userId}#${this.viewId}#${associate}`
+        );
+
+        await this.persistence.updateByAssociations([association], state, true);
+    }
+
+    public async getInputElementState(
+        associate: string
+    ): Promise<object | undefined> {
+        const association = new RocketChatAssociationRecord(
+            RocketChatAssociationModel.USER,
+            `${this.userId}#${this.viewId}#${associate}`
+        );
+
+        const [result] = (await this.persistenceRead.readByAssociation(
+            association
+        )) as Array<object>;
+
+        return result;
+    }
+
+    public async clearInputElementState(associate: string): Promise<void> {
+        const association = new RocketChatAssociationRecord(
+            RocketChatAssociationModel.USER,
+            `${this.userId}#${this.viewId}#${associate}`
+        );
+
+        await this.persistence.removeByAssociation(association);
+    }
 }

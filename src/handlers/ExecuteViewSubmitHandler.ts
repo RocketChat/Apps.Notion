@@ -142,6 +142,7 @@ export class ExecuteViewSubmitHandler {
             view.id
         );
         await modalInteraction.clearPagesOrDatabase(workspace_id);
+        await modalInteraction.clearInputElementState(DatabaseModal.PROPERTY_NAME);
 
         return this.context.getInteractionResponder().successResponse();
     }
