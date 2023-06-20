@@ -94,3 +94,12 @@ export enum Color {
     PINK = "pink",
     RED = "red",
 }
+
+export enum MissingPropertyMessage {
+    SELECT_PAGE = "Please Select the Notion Page",
+    TITLE_PROPERTY_NAME = "Please Provide Title Property Name",
+    PROPERTY_NAME = "Property Name is required",
+    PROPERTY_TYPE = "Property Type is required",
+    EXPRESSION = "Expression is required",
+    OPTION_NAME = "Option Name is required",
+}
