@@ -29,4 +29,6 @@ export enum NotionObjectTypes {
     WORKSPACE = "workspace",
     PROPERTY = "object",
     TEXT = "text",
+    FORMAT = "format",
+    EXPRESSION = "expression",
 }

@@ -1,21 +1,24 @@
 import { NotionObjectTypes } from "../../enum/Notion";
 import { DatabaseModal } from "../../enum/modals/NotionDatabase";
+import { Modals } from "../../enum/modals/common/Modals";
+import { PropertyTypeValue } from "../../enum/modals/common/NotionProperties";
 import { SearchPage } from "../../enum/modals/common/SearchPageComponent";
 
 export function getNotionDatabaseObject(
     state?: object,
     records?: Array<object>
 ): object {
+    const pageId: string = state?.[SearchPage.BLOCK_ID]?.[SearchPage.ACTION_ID];
+    const titleOfDatabase: string | undefined =
+        state?.[DatabaseModal.TITLE_BLOCK]?.[DatabaseModal.TITLE_ACTION];
 
-    // handling of required params will be done in next PR
-    // handling property with Configuration which is "Number | formula | MultiSelect | Select" will be done in next PR
-    
-    const properties = {
-        [state?.[DatabaseModal.TITLE_PROPERTY_BLOCK]?.[
+    const properties = {};
+    const titlePropertyName: string =
+        state?.[DatabaseModal.TITLE_PROPERTY_BLOCK]?.[
             DatabaseModal.TITLE_PROPERTY_ACTION
-        ]]: {
-            title: {},
-        },
+        ];
+    properties[titlePropertyName] = {
+        title: {},
     };
 
     if (records) {
@@ -24,6 +27,7 @@ export function getNotionDatabaseObject(
                 record?.[DatabaseModal.PROPERTY_TYPE];
             const PropertyNameActionId: string =
                 record?.[DatabaseModal.PROPERTY_NAME];
+
             const PropertyType: string =
                 state?.[DatabaseModal.PROPERTY_TYPE_SELECT_BLOCK]?.[
                     PropertyTypeActionId
@@ -33,17 +37,86 @@ export function getNotionDatabaseObject(
                     PropertyNameActionId
                 ];
 
-            properties[PropertyName] = {
-                [PropertyType]: {},
-            };
+            const config: object | undefined =
+                record?.[Modals.ADDITIONAL_CONFIG];
+            if (config) {
+                switch (PropertyType) {
+                    case PropertyTypeValue.NUMBER: {
+                        const numberFormatActionId: string =
+                            config?.[Modals.DROPDOWN];
+                        const numberFormat: string =
+                            state?.[DatabaseModal.PROPERTY_TYPE_SELECT_BLOCK]?.[
+                                numberFormatActionId
+                            ];
+
+                        properties[PropertyName] = {
+                            [PropertyType]: {
+                                [NotionObjectTypes.FORMAT]: numberFormat,
+                            },
+                        };
+
+                        break;
+                    }
+                    case PropertyTypeValue.FORMULA: {
+                        const expressionActionId: string =
+                            config?.[Modals.INPUTFIELD];
+                        const expression: string =
+                            state?.[DatabaseModal.PROPERTY_TYPE_SELECT_BLOCK]?.[
+                                expressionActionId
+                            ];
+
+                        properties[PropertyName] = {
+                            [PropertyType]: {
+                                [NotionObjectTypes.EXPRESSION]: expression,
+                            },
+                        };
+
+                        break;
+                    }
+                    case PropertyTypeValue.MULTI_SELECT:
+                    case PropertyTypeValue.SELECT: {
+                        const options: Array<{ name: string; color: string }> =
+                            [];
+                        const optionsActionIds: Array<{
+                            [Modals.INPUTFIELD]: string;
+                            [Modals.DROPDOWN]: string;
+                        }> = config?.[Modals.OPTIONS];
+
+                        optionsActionIds.forEach((option) => {
+                            const actionIdInputField: string =
+                                option?.[Modals.INPUTFIELD];
+                            const optionName: string =
+                                state?.[
+                                    DatabaseModal.PROPERTY_TYPE_SELECT_BLOCK
+                                ]?.[actionIdInputField];
+
+                            const actionIdDropdown: string =
+                                option?.[Modals.DROPDOWN];
+                            const optionColor: string =
+                                state?.[
+                                    DatabaseModal.PROPERTY_TYPE_SELECT_BLOCK
+                                ]?.[actionIdDropdown];
+                            options.push({
+                                name: optionName,
+                                color: optionColor,
+                            });
+                        });
+
+                        properties[PropertyName] = {
+                            [PropertyType]: {
+                                [Modals.OPTIONS]: options,
+                            },
+                        };
+                        break;
+                    }
+                }
+            } else {
+                properties[PropertyName] = {
+                    [PropertyType]: {},
+                };
+            }
         });
     }
-
-    const pageId: string | undefined =
-        state?.[SearchPage.BLOCK_ID]?.[SearchPage.ACTION_ID];
-
-    const titleOfDatabase: string | undefined =
-        state?.[DatabaseModal.TITLE_BLOCK]?.[DatabaseModal.TITLE_ACTION];
 
     const data = {
         parent: {

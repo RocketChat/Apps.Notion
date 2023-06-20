@@ -21,6 +21,8 @@ import { RoomInteractionStorage } from "../storage/RoomInteraction";
 import { IRoom } from "@rocket.chat/apps-engine/definition/rooms";
 import { getNotionDatabaseObject } from "../helper/getNotionDatabaseObject";
 import { Error } from "../../errors/Error";
+import { Modals } from "../../enum/modals/common/Modals";
+import { handleMissingProperties } from "../helper/handleMissingProperties";
 
 export class ExecuteViewSubmitHandler {
     private context: UIKitViewSubmitInteractionContext;
@@ -60,7 +62,7 @@ export class ExecuteViewSubmitHandler {
 
         switch (view.id) {
             case DatabaseModal.VIEW_ID: {
-                this.handleCreationOfDatabase(
+                return this.handleCreationOfDatabase(
                     room,
                     oAuth2Storage,
                     modalInteraction
@@ -78,7 +80,7 @@ export class ExecuteViewSubmitHandler {
         room: IRoom,
         oAuth2Storage: OAuth2Storage,
         modalInteraction: ModalInteractionStorage
-    ): Promise<void> {
+    ): Promise<IUIKitResponse> {
         const { NotionSdk } = this.app.getUtils();
         const { user, view } = this.context.getInteractionData();
         const { state } = view;
@@ -93,13 +95,22 @@ export class ExecuteViewSubmitHandler {
                 this.modify,
                 room
             );
-            return;
+            return this.context.getInteractionResponder().errorResponse();
         }
 
         const { access_token, workspace_id, workspace_name } = tokenInfo;
 
         const records: { data: Array<object> } | undefined =
             await modalInteraction.getAllInteractionActionId();
+
+        const missingObject = handleMissingProperties(state, records?.data);
+        const missingProperties = missingObject?.[Modals.MISSING];
+        if (Object.keys(missingProperties).length) {
+            return this.context.getInteractionResponder().viewErrorResponse({
+                viewId: view.id,
+                errors: missingProperties,
+            });
+        }
 
         const data = getNotionDatabaseObject(state, records?.data);
 
@@ -108,7 +119,7 @@ export class ExecuteViewSubmitHandler {
             data
         );
 
-        // code need to change in next PR to configure the notification nicely
+        // code need to change to configure the notification nicely
 
         let message: string;
 
@@ -131,5 +142,7 @@ export class ExecuteViewSubmitHandler {
             view.id
         );
         await modalInteraction.clearPagesOrDatabase(workspace_id);
+
+        return this.context.getInteractionResponder().successResponse();
     }
 }
