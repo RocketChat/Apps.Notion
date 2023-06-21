@@ -8,4 +8,5 @@ export enum Modals {
     INPUTFIELD = "inputField",
     OPTIONS = "options",
     MISSING = "missing",
+    VIEWERROR = "viewError",
 }

@@ -362,7 +362,7 @@ export class ExecuteBlockActionHandler {
         if (!inputElementState) {
             await modalInteraction.storeInputElementState(
                 DatabaseModal.PROPERTY_NAME,
-                { [actionId]: value }
+                { [actionId]: value, [Modals.VIEWERROR]: false }
             );
             return this.context.getInteractionResponder().successResponse();
         }
@@ -389,24 +389,34 @@ export class ExecuteBlockActionHandler {
             }
         }
 
+        const isViewErrorPreviously: boolean =
+            inputElementState[Modals.VIEWERROR];
+
+        for (const [key] of Object.entries(newData)) {
+            if (key !== actionId && newData[key] === value) {
+                errors[key] = `Property ${value} already exists`;
+            }
+        }
+
+        if (Object.keys(errors).length) {
+            newData[Modals.VIEWERROR] = true;
+            errors[actionId] = `Property ${value} already exists`;
+        } else {
+            newData[Modals.VIEWERROR] = false;
+        }
+
         await modalInteraction.storeInputElementState(
             DatabaseModal.PROPERTY_NAME,
             newData
         );
 
-        for (const [key] of Object.entries(newData)) {
-            if (key !== actionId && newData[key] === value) {
-                errors[key] = `Property Name ${value} already exists`;
-            }
+        if (isViewErrorPreviously || newData[Modals.VIEWERROR]) {
+            return this.context.getInteractionResponder().viewErrorResponse({
+                viewId: container.id,
+                errors,
+            });
         }
 
-        if (Object.keys(errors).length) {
-            errors[actionId] = `Property Name ${value} already exists`;
-        }
-
-        return this.context.getInteractionResponder().viewErrorResponse({
-            viewId: container.id,
-            errors,
-        });
+        return this.context.getInteractionResponder().successResponse();
     }
 }
