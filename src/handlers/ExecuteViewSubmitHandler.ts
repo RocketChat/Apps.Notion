@@ -141,16 +141,14 @@ export class ExecuteViewSubmitHandler {
             data
         );
 
-        // code need to change to configure the notification nicely
-
         let message: string;
 
         if (response instanceof Error) {
-            message = `Something Went Wrong While Creating Database in **${workspace_name}**`;
+            message = `🚫 Something went wrong while creating Database in **${workspace_name}**.`;
         } else {
             const name: string = response.name;
             const link: string = response.link;
-            message = `Your Database [**${name}**](${link}) is created successfully in **${workspace_name}**`;
+            message = `✨ Your Database [**${name}**](${link}) is created successfully in **${workspace_name}**.`;
         }
 
         await sendNotification(this.read, this.modify, user, room, {

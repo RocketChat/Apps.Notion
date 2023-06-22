@@ -18,7 +18,10 @@ export interface INotionSDK extends INotion {
     ): Promise<ITokenInfo | ClientError>;
 
     searchPages(token: string): Promise<Array<IPage> | Error>;
-    createNotionDatabase(token: string, data: object); // return type we will create in next PR
+    createNotionDatabase(
+        token: string,
+        data: object
+    ): Promise<INotionDatabase | Error>;
 }
 
 export interface IParentPage {
@@ -28,4 +31,9 @@ export interface IParentPage {
 export interface IPage {
     name: string;
     parent: IParentPage;
+}
+
+export interface INotionDatabase {
+    name: string;
+    link: string;
 }
