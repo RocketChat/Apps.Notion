@@ -23,6 +23,7 @@ import { getNotionDatabaseObject } from "../helper/getNotionDatabaseObject";
 import { Error } from "../../errors/Error";
 import { Modals } from "../../enum/modals/common/Modals";
 import { handleMissingProperties } from "../helper/handleMissingProperties";
+import { getDuplicatePropertyNameViewErrors } from "../helper/getDuplicatePropNameViewError";
 
 export class ExecuteViewSubmitHandler {
     private context: UIKitViewSubmitInteractionContext;
@@ -103,12 +104,33 @@ export class ExecuteViewSubmitHandler {
         const records: { data: Array<object> } | undefined =
             await modalInteraction.getAllInteractionActionId();
 
+        let allViewErrors = {};
+        const PropertyNameState = await modalInteraction.getInputElementState(
+            DatabaseModal.PROPERTY_NAME
+        );
+        if (PropertyNameState) {
+            const duplicatePropertyNameErrors =
+                await getDuplicatePropertyNameViewErrors(PropertyNameState);
+            allViewErrors = {
+                ...duplicatePropertyNameErrors,
+            };
+        }
+
         const missingObject = handleMissingProperties(state, records?.data);
         const missingProperties = missingObject?.[Modals.MISSING];
-        if (Object.keys(missingProperties).length) {
+        const missingPropertyExist = Object.keys(missingProperties).length;
+
+        if (missingPropertyExist) {
+            allViewErrors = {
+                ...allViewErrors,
+                ...missingProperties,
+            };
+        }
+
+        if (Object.keys(allViewErrors).length) {
             return this.context.getInteractionResponder().viewErrorResponse({
                 viewId: view.id,
-                errors: missingProperties,
+                errors: allViewErrors,
             });
         }
 
@@ -142,7 +164,9 @@ export class ExecuteViewSubmitHandler {
             view.id
         );
         await modalInteraction.clearPagesOrDatabase(workspace_id);
-        await modalInteraction.clearInputElementState(DatabaseModal.PROPERTY_NAME);
+        await modalInteraction.clearInputElementState(
+            DatabaseModal.PROPERTY_NAME
+        );
 
         return this.context.getInteractionResponder().successResponse();
     }

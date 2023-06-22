@@ -22,6 +22,7 @@ import { Error } from "../../errors/Error";
 import { sendNotificationWithConnectBlock } from "../helper/message";
 import { PropertyTypeValue } from "../../enum/modals/common/NotionProperties";
 import { Modals } from "../../enum/modals/common/Modals";
+import { getDuplicatePropertyNameViewErrors } from "../helper/getDuplicatePropNameViewError";
 
 export class ExecuteBlockActionHandler {
     private context: UIKitBlockInteractionContext;
@@ -37,7 +38,7 @@ export class ExecuteBlockActionHandler {
     }
 
     public async handleActions(): Promise<IUIKitResponse> {
-        const { actionId, user, room, container } =
+        const { actionId, user, room, container, blockId } =
             this.context.getInteractionData();
         const persistenceRead = this.read.getPersistenceReader();
         const modalInteraction = new ModalInteractionStorage(
@@ -99,11 +100,18 @@ export class ExecuteBlockActionHandler {
                     actionId.startsWith(DatabaseModal.PROPERTY_NAME_ACTION) ||
                     actionId.startsWith(DatabaseModal.TITLE_PROPERTY_ACTION);
 
+                // Property Type Select Option Name Action
+                const dispatchActionSelectOptionName = blockId.startsWith(
+                    DatabaseModal.PROPERTY_TYPE_SELECT_BLOCK
+                );
+
                 const dispatchActionConfig = dispatchActionPropertyType
                     ? DatabaseModal.PROPERTY_TYPE_SELECT_ACTION
                     : dispatchActionPropertyName
                     ? DatabaseModal.PROPERTY_NAME_ACTION
-                    : DatabaseModal.SELECT_PROPERTY_OPTION_NAME;
+                    : dispatchActionSelectOptionName
+                    ? DatabaseModal.SELECT_PROPERTY_OPTION_NAME
+                    : null;
 
                 switch (dispatchActionConfig) {
                     case DatabaseModal.PROPERTY_TYPE_SELECT_ACTION: {
@@ -178,6 +186,22 @@ export class ExecuteBlockActionHandler {
 
         const record: object = JSON.parse(value as string);
         await modalInteraction.clearInteractionActionId(record);
+
+        const RemovedFieldPropertyName: string =
+            record?.[DatabaseModal.PROPERTY_NAME];
+            
+        const PropertyNameState = await modalInteraction.getInputElementState(
+            DatabaseModal.PROPERTY_NAME
+        );
+
+        // removed field from property name state (which may have the state) if exists
+        if (PropertyNameState) {
+            delete PropertyNameState[RemovedFieldPropertyName];
+            await modalInteraction.storeInputElementState(
+                DatabaseModal.PROPERTY_NAME,
+                PropertyNameState
+            );
+        }
 
         this.handleUpdateofDatabaseModal(
             modalInteraction,
@@ -346,77 +370,86 @@ export class ExecuteBlockActionHandler {
     private async handleDuplicatePropertyNameAction(
         modalInteraction: ModalInteractionStorage
     ): Promise<IUIKitResponse> {
+        const { container } = this.context.getInteractionData();
+
+        const PropertyNameState = await this.handlePropertyNameState(
+            modalInteraction
+        );
+
+        if (PropertyNameState) {
+            const errors = await getDuplicatePropertyNameViewErrors(
+                PropertyNameState
+            );
+
+            if (
+                Object.keys(errors).length ||
+                PropertyNameState[Modals.VIEWERROR]
+            ) {
+                return this.context
+                    .getInteractionResponder()
+                    .viewErrorResponse({
+                        viewId: container.id,
+                        errors,
+                    });
+            }
+        }
+
+        return this.context.getInteractionResponder().successResponse();
+    }
+
+    private async handlePropertyNameState(
+        modalInteraction: ModalInteractionStorage
+    ): Promise<object | undefined> {
         const { value, actionId, container } =
             this.context.getInteractionData();
-
-        const errors = {};
-
-        if (!value) {
-            return this.context.getInteractionResponder().successResponse();
-        }
 
         const inputElementState = await modalInteraction.getInputElementState(
             DatabaseModal.PROPERTY_NAME
         );
 
+        // when there is no other state and the value is empty
+        if (!value && inputElementState) {
+            if (Object.keys(inputElementState).length === 1) {
+                delete inputElementState[actionId];
+
+                await modalInteraction.clearInputElementState(
+                    DatabaseModal.PROPERTY_NAME
+                );
+                return undefined;
+            }
+        }
+        // when there is no state and character is entered
         if (!inputElementState) {
+            const state = { [actionId]: value, [Modals.VIEWERROR]: false };
             await modalInteraction.storeInputElementState(
                 DatabaseModal.PROPERTY_NAME,
-                { [actionId]: value, [Modals.VIEWERROR]: false }
+                state
             );
-            return this.context.getInteractionResponder().successResponse();
+            return state;
         }
 
-        let { data } = await modalInteraction.getAllInteractionActionId();
+        const isViewErrorPreviously = await getDuplicatePropertyNameViewErrors(
+            inputElementState
+        );
 
-        const titlePropertyObject = {
-            [DatabaseModal.PROPERTY_NAME]: DatabaseModal.TITLE_PROPERTY_ACTION,
-        };
-
-        data.push(titlePropertyObject);
-
-        const actionIds = data.map((action) => {
-            return action[DatabaseModal.PROPERTY_NAME] as string;
-        });
-
-        inputElementState[actionId] = value;
-
-        let newData = {};
-
-        for (const [key] of Object.entries(inputElementState)) {
-            if (actionIds.includes(key)) {
-                newData[key] = inputElementState[key];
-            }
-        }
-
-        const isViewErrorPreviously: boolean =
-            inputElementState[Modals.VIEWERROR];
-
-        for (const [key] of Object.entries(newData)) {
-            if (key !== actionId && newData[key] === value) {
-                errors[key] = `Property ${value} already exists`;
-            }
-        }
-
-        if (Object.keys(errors).length) {
-            newData[Modals.VIEWERROR] = true;
-            errors[actionId] = `Property ${value} already exists`;
+        if (Object.keys(isViewErrorPreviously).length) {
+            inputElementState[Modals.VIEWERROR] = true;
         } else {
-            newData[Modals.VIEWERROR] = false;
+            inputElementState[Modals.VIEWERROR] = false;
+        }
+        // when there is other state and value is not empty
+        if (value && value.length) {
+            inputElementState[actionId] = value;
+        } else {
+            // when there is other state and value is empty
+            delete inputElementState[actionId];
         }
 
         await modalInteraction.storeInputElementState(
             DatabaseModal.PROPERTY_NAME,
-            newData
+            inputElementState
         );
 
-        if (isViewErrorPreviously || newData[Modals.VIEWERROR]) {
-            return this.context.getInteractionResponder().viewErrorResponse({
-                viewId: container.id,
-                errors,
-            });
-        }
-
-        return this.context.getInteractionResponder().successResponse();
+        return inputElementState;
     }
 }
