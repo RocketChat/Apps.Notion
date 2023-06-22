@@ -10,7 +10,7 @@ import { IUser } from "@rocket.chat/apps-engine/definition/users";
 import { OAuth2Storage } from "./OAuth2Storage";
 import { sendNotification } from "../helper/message";
 import { getCredentials } from "../helper/getCredential";
-import { OAuth2Credential, OAuth2Locator } from "../../enum/OAuth2";
+import { OAuth2Content, OAuth2Credential, OAuth2Locator } from "../../enum/OAuth2";
 import { URL } from "url";
 import { getConnectBlock } from "../helper/getConnectBlock";
 import { IRoom } from "@rocket.chat/apps-engine/definition/rooms";
@@ -82,7 +82,7 @@ export class OAuth2Client implements IOAuth2Client {
             return;
         }
 
-        const message = `👋 You are not Connected to **Workspace**!`;
+        const message = OAuth2Content.NOT_CONNECTED_MESSAGE;
         const blocks = await getConnectBlock(
             this.app,
             message,
