@@ -1,4 +1,9 @@
-import { IModify, IRead } from "@rocket.chat/apps-engine/definition/accessors";
+import {
+    IHttp,
+    IModify,
+    IPersistence,
+    IRead,
+} from "@rocket.chat/apps-engine/definition/accessors";
 import { IRoom } from "@rocket.chat/apps-engine/definition/rooms";
 import { IUser } from "@rocket.chat/apps-engine/definition/users";
 import { Block } from "@rocket.chat/ui-kit";
@@ -6,8 +11,10 @@ import { NotionApp } from "../../NotionApp";
 import { OAuth2Content } from "../../enum/OAuth2";
 import { getConnectBlock } from "./getConnectBlock";
 import { IMessageAttachmentField } from "@rocket.chat/apps-engine/definition/messages";
-import { Messages } from "../../enum/messages";
+import { Messages, OnInstallContent } from "../../enum/messages";
 import { IMessageAttachment } from "@rocket.chat/apps-engine/definition/messages";
+import { getOrCreateDirectRoom } from "./getOrCreateDirectRoom";
+import { BlockBuilder } from "../lib/BlockBuilder";
 
 export async function sendNotification(
     read: IRead,
@@ -114,4 +121,60 @@ export async function sendHelperNotification(
         .setGroupable(false);
 
     return read.getNotifier().notifyUser(user, helperMessage.getMessage());
+}
+
+export async function sendHelperMessageOnInstall(
+    appId: string,
+    user: IUser,
+    read: IRead,
+    modify: IModify,
+    http?: IHttp,
+    persistence?: IPersistence
+): Promise<void> {
+    const appUser = (await read.getUserReader().getAppUser()) as IUser;
+    const members = [user.username, appUser.username];
+
+    const room = await getOrCreateDirectRoom(read, modify, members);
+    const blockBuilder = new BlockBuilder(appId);
+    const title = [OnInstallContent.PREVIEW_TITLE.toString()];
+    const description = [OnInstallContent.PREVIEW_DESCRIPTION.toString()];
+    const contextElements = [OnInstallContent.PREVIEW_CONTEXT.toString()];
+    const footer = blockBuilder.createContextBlock({
+        contextElements: contextElements,
+    });
+    const thumb = {
+        url: OnInstallContent.PREVIEW_IMAGE.toString(),
+    };
+
+    const installationPreview = blockBuilder.createPreviewBlock({
+        title,
+        description,
+        footer,
+        thumb,
+    });
+
+    const welcomeTextSection = blockBuilder.createSectionBlock({
+        text: OnInstallContent.WELCOME_TEXT.toString(),
+    });
+
+    const previewBuilder = modify
+        .getCreator()
+        .startMessage()
+        .setRoom(room)
+        .setSender(appUser)
+        .setGroupable(false)
+        .setBlocks([welcomeTextSection, installationPreview])
+        .setParseUrls(true);
+
+    const textMessageBuilder = modify
+        .getCreator()
+        .startMessage()
+        .setRoom(room)
+        .setSender(appUser)
+        .setGroupable(true)
+        .setParseUrls(false)
+        .setText(OnInstallContent.WELCOMING_MESSAGE.toString());
+
+    await modify.getCreator().finish(previewBuilder);
+    await modify.getCreator().finish(textMessageBuilder);
 }
