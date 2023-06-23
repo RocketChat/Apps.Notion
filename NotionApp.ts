@@ -1,12 +1,11 @@
 import {
     IAppAccessors,
-    IConfigurationExtend,
-    IEnvironmentRead,
+    IAppInstallationContext, IConfigurationExtend, IEnvironmentRead,
     IHttp,
     ILogger,
     IModify,
     IPersistence,
-    IRead,
+    IRead
 } from "@rocket.chat/apps-engine/definition/accessors";
 import { App } from "@rocket.chat/apps-engine/definition/App";
 import { IAppInfo } from "@rocket.chat/apps-engine/definition/metadata";
@@ -24,10 +23,14 @@ import { BlockBuilder } from "./src/lib/BlockBuilder";
 import {
     IUIKitResponse,
     UIKitBlockInteractionContext,
+    UIKitViewCloseInteractionContext,
+    UIKitViewSubmitInteractionContext,
 } from "@rocket.chat/apps-engine/definition/uikit";
-import { RoomInteractionStorage } from "./src/storage/RoomInteraction";
-import { OAuth2Action } from "./enum/OAuth2";
 import { IAppUtils } from "./definition/lib/IAppUtils";
+import { ExecuteViewClosedHandler } from "./src/handlers/ExecuteViewClosedHandler";
+import { ExecuteViewSubmitHandler } from "./src/handlers/ExecuteViewSubmitHandler";
+import { ExecuteBlockActionHandler } from "./src/handlers/ExecuteBlockActionHandler";
+import { sendHelperMessageOnInstall } from "./src/helper/message";
 
 export class NotionApp extends App {
     private oAuth2Client: OAuth2Client;
@@ -81,19 +84,66 @@ export class NotionApp extends App {
         persistence: IPersistence,
         modify: IModify
     ): Promise<IUIKitResponse> {
-        // Todo[Week 2]: Make a Interface and Class
-        const { actionId, user, room } = context.getInteractionData();
+        const handler = new ExecuteBlockActionHandler(
+            this,
+            read,
+            http,
+            persistence,
+            modify,
+            context
+        );
 
-        if (actionId == OAuth2Action.CONNECT_TO_WORKSPACE) {
-            const persistenceRead = read.getPersistenceReader();
-            const roomId = room?.id as string;
-            const roomInteraction = new RoomInteractionStorage(
-                persistence,
-                persistenceRead
-            );
-            await roomInteraction.storeInteractionRoomId(user.id, roomId);
-        }
-
-        return context.getInteractionResponder().successResponse();
+        return await handler.handleActions();
     }
+
+    public async executeViewSubmitHandler(
+        context: UIKitViewSubmitInteractionContext,
+        read: IRead,
+        http: IHttp,
+        persistence: IPersistence,
+        modify: IModify
+    ): Promise<IUIKitResponse> {
+        const handler = new ExecuteViewSubmitHandler(
+            this,
+            read,
+            http,
+            persistence,
+            modify,
+            context
+        );
+
+        return await handler.handleActions();
+    }
+
+    public async executeViewClosedHandler(
+        context: UIKitViewCloseInteractionContext,
+        read: IRead,
+        http: IHttp,
+        persistence: IPersistence,
+        modify: IModify
+    ): Promise<IUIKitResponse> {
+        const handler = new ExecuteViewClosedHandler(
+            this,
+            read,
+            http,
+            persistence,
+            modify,
+            context
+        );
+
+        return await handler.handleActions();
+    }
+
+    public async onInstall(
+        context: IAppInstallationContext,
+        read: IRead,
+        http: IHttp,
+        persistence: IPersistence,
+        modify: IModify
+    ): Promise<void> {
+        const { user } = context;
+        await sendHelperMessageOnInstall(this.getID(), user, read, modify);
+        return;
+    }
+
 }

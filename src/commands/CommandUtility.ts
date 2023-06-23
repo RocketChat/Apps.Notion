@@ -11,7 +11,9 @@ import {
     ICommandUtility,
     ICommandUtilityParams,
 } from "../../definition/command/ICommandUtility";
-import { CommandParam } from "../../enum/CommandParam";
+import { CommandParam, SubCommandParam } from "../../enum/CommandParam";
+import { Handler } from "../handlers/Handler";
+import { sendHelperNotification } from "../helper/message";
 
 export class CommandUtility implements ICommandUtility {
     public app: NotionApp;
@@ -39,15 +41,42 @@ export class CommandUtility implements ICommandUtility {
     }
 
     public async resolveCommand(): Promise<void> {
+        const handler = new Handler({
+            app: this.app,
+            sender: this.sender,
+            room: this.room,
+            read: this.read,
+            modify: this.modify,
+            http: this.http,
+            persis: this.persis,
+            triggerId: this.triggerId,
+            threadId: this.threadId,
+        });
         switch (this.params.length) {
             case 0: {
+                await sendHelperNotification(
+                    this.read,
+                    this.modify,
+                    this.sender,
+                    this.room
+                );
                 break;
             }
             case 1: {
                 await this.handleSingleParam();
                 break;
             }
+            case 2: {
+                await this.handleDualParam(handler);
+                break;
+            }
             default: {
+                await sendHelperNotification(
+                    this.read,
+                    this.modify,
+                    this.sender,
+                    this.room
+                );
             }
         }
     }
@@ -77,7 +106,43 @@ export class CommandUtility implements ICommandUtility {
                 );
                 break;
             }
+            case CommandParam.HELP:
             default: {
+                await sendHelperNotification(
+                    this.read,
+                    this.modify,
+                    this.sender,
+                    this.room
+                );
+                break;
+            }
+        }
+    }
+
+    private async handleDualParam(handler: Handler): Promise<void> {
+        const [param, subparam] = this.params;
+        switch (param.toLowerCase()) {
+            case CommandParam.CREATE: {
+                if (subparam.toLowerCase() === SubCommandParam.DATABASE) {
+                    await handler.createNotionDatabase();
+                    return;
+                }
+                await sendHelperNotification(
+                    this.read,
+                    this.modify,
+                    this.sender,
+                    this.room
+                );
+                break;
+            }
+            default: {
+                await sendHelperNotification(
+                    this.read,
+                    this.modify,
+                    this.sender,
+                    this.room
+                );
+                break;
             }
         }
     }
