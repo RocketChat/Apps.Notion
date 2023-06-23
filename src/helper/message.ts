@@ -152,9 +152,11 @@ export async function sendHelperMessageOnInstall(
         footer,
         thumb,
     });
-
+    const text = `Hey **${
+        user.username
+    }** ! ${OnInstallContent.WELCOME_TEXT.toString()}`;
     const welcomeTextSection = blockBuilder.createSectionBlock({
-        text: OnInstallContent.WELCOME_TEXT.toString(),
+        text,
     });
 
     const previewBuilder = modify
