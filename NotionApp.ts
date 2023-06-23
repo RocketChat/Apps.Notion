@@ -1,12 +1,11 @@
 import {
     IAppAccessors,
-    IConfigurationExtend,
-    IEnvironmentRead,
+    IAppInstallationContext, IConfigurationExtend, IEnvironmentRead,
     IHttp,
     ILogger,
     IModify,
     IPersistence,
-    IRead,
+    IRead
 } from "@rocket.chat/apps-engine/definition/accessors";
 import { App } from "@rocket.chat/apps-engine/definition/App";
 import { IAppInfo } from "@rocket.chat/apps-engine/definition/metadata";
@@ -31,6 +30,7 @@ import { IAppUtils } from "./definition/lib/IAppUtils";
 import { ExecuteViewClosedHandler } from "./src/handlers/ExecuteViewClosedHandler";
 import { ExecuteViewSubmitHandler } from "./src/handlers/ExecuteViewSubmitHandler";
 import { ExecuteBlockActionHandler } from "./src/handlers/ExecuteBlockActionHandler";
+import { sendHelperMessageOnInstall } from "./src/helper/message";
 
 export class NotionApp extends App {
     private oAuth2Client: OAuth2Client;
@@ -133,4 +133,17 @@ export class NotionApp extends App {
 
         return await handler.handleActions();
     }
+
+    public async onInstall(
+        context: IAppInstallationContext,
+        read: IRead,
+        http: IHttp,
+        persistence: IPersistence,
+        modify: IModify
+    ): Promise<void> {
+        const { user } = context;
+        await sendHelperMessageOnInstall(this.getID(), user, read, modify);
+        return;
+    }
+
 }
