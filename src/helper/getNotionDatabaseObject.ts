@@ -1,3 +1,4 @@
+import { IMessageAttachmentField } from "@rocket.chat/apps-engine/definition/messages";
 import { NotionObjectTypes } from "../../enum/Notion";
 import { DatabaseModal } from "../../enum/modals/NotionDatabase";
 import { Modals } from "../../enum/modals/common/Modals";
@@ -7,7 +8,7 @@ import { SearchPage } from "../../enum/modals/common/SearchPageComponent";
 export function getNotionDatabaseObject(
     state?: object,
     records?: Array<object>
-): object {
+) {
     const pageId: string = state?.[SearchPage.BLOCK_ID]?.[SearchPage.ACTION_ID];
     const titleOfDatabase: string | undefined =
         state?.[DatabaseModal.TITLE_BLOCK]?.[DatabaseModal.TITLE_ACTION];
@@ -20,6 +21,20 @@ export function getNotionDatabaseObject(
     properties[titlePropertyName] = {
         title: {},
     };
+
+    // table attachments
+    const tableAttachments: Array<IMessageAttachmentField> = [
+        {
+            short: true,
+            title: DatabaseModal.PROPERTY_NAME,
+            value: titlePropertyName,
+        },
+        {
+            short: true,
+            title: DatabaseModal.PROPERTY_TYPE,
+            value: DatabaseModal.PROPERTY_TYPE_TITLE,
+        },
+    ];
 
     if (records) {
         records.forEach((record) => {
@@ -36,6 +51,22 @@ export function getNotionDatabaseObject(
                 state?.[DatabaseModal.PROPERTY_NAME_BLOCK]?.[
                     PropertyNameActionId
                 ];
+
+            // table attachments
+            const tableAttachment: Array<IMessageAttachmentField> = [
+                {
+                    short: true,
+                    title: "",
+                    value: PropertyName,
+                },
+                {
+                    short: true,
+                    title: "",
+                    value: PropertyType,
+                },
+            ];
+
+            tableAttachments.push(...tableAttachment);
 
             const config: object | undefined =
                 record?.[Modals.ADDITIONAL_CONFIG];
@@ -139,5 +170,8 @@ export function getNotionDatabaseObject(
         properties,
     };
 
-    return data;
+    return {
+        data,
+        tableAttachments,
+    };
 }
