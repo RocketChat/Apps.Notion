@@ -15,6 +15,7 @@ import { clearAllInteraction } from "../helper/clearInteractions";
 import { OAuth2Storage } from "../authorization/OAuth2Storage";
 import {
     sendNotification,
+    sendNotificationWithAttachments,
     sendNotificationWithConnectBlock,
 } from "../helper/message";
 import { RoomInteractionStorage } from "../storage/RoomInteraction";
@@ -24,6 +25,7 @@ import { Error } from "../../errors/Error";
 import { Modals } from "../../enum/modals/common/Modals";
 import { handleMissingProperties } from "../helper/handleMissingProperties";
 import { getDuplicatePropertyNameViewErrors } from "../helper/getDuplicatePropNameViewError";
+import { IMessageAttachmentField } from "@rocket.chat/apps-engine/definition/messages";
 
 export class ExecuteViewSubmitHandler {
     private context: UIKitViewSubmitInteractionContext;
@@ -134,7 +136,11 @@ export class ExecuteViewSubmitHandler {
             });
         }
 
-        const data = getNotionDatabaseObject(state, records?.data);
+        const {
+            data,
+            tableAttachments,
+        }: { data: object; tableAttachments: IMessageAttachmentField[] } =
+            getNotionDatabaseObject(state, records?.data);
 
         const response = await NotionSdk.createNotionDatabase(
             access_token,
@@ -144,16 +150,28 @@ export class ExecuteViewSubmitHandler {
         let message: string;
 
         if (response instanceof Error) {
+            this.app.getLogger().error(response);
             message = `🚫 Something went wrong while creating Database in **${workspace_name}**.`;
+
+            await sendNotification(this.read, this.modify, user, room, {
+                message: message,
+            });
         } else {
             const name: string = response.name;
             const link: string = response.link;
             message = `✨ Your Database [**${name}**](${link}) is created successfully in **${workspace_name}**.`;
-        }
 
-        await sendNotification(this.read, this.modify, user, room, {
-            message: message,
-        });
+            await sendNotificationWithAttachments(
+                this.read,
+                this.modify,
+                user,
+                room,
+                {
+                    message: message,
+                    fields: tableAttachments,
+                }
+            );
+        }
 
         await clearAllInteraction(
             this.persistence,
@@ -165,6 +183,10 @@ export class ExecuteViewSubmitHandler {
         await modalInteraction.clearInputElementState(
             DatabaseModal.PROPERTY_NAME
         );
+
+        if (response instanceof Error) {
+            return this.context.getInteractionResponder().errorResponse();
+        }
 
         return this.context.getInteractionResponder().successResponse();
     }
