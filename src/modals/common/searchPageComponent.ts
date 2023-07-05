@@ -6,10 +6,12 @@ import { StaticSelectOptionsParam } from "../../../definition/ui-kit/Element/ISt
 import { ModalInteractionStorage } from "../../storage/ModalInteraction";
 import { IPage } from "../../../definition/lib/INotion";
 import { ITokenInfo } from "../../../definition/authorization/IOAuth2Storage";
+import { Modals } from "../../../enum/modals/common/Modals";
 export async function searchPageComponent(
     app: NotionApp,
     modalInteraction: ModalInteractionStorage,
-    tokenInfo: ITokenInfo
+    tokenInfo: ITokenInfo,
+    actionId: string
 ): Promise<InputBlock | Error> {
     const { NotionSdk, elementBuilder, blockBuilder } = app.getUtils();
     const { access_token, workspace_id } = tokenInfo;
@@ -21,7 +23,10 @@ export async function searchPageComponent(
             return pagesOrDatabases;
         }
 
-        await modalInteraction.storePagesOrDatabase(pagesOrDatabases, workspace_id);
+        await modalInteraction.storePagesOrDatabase(
+            pagesOrDatabases,
+            workspace_id
+        );
     }
 
     const accesiblePages: Array<IPage> = pagesOrDatabases;
@@ -35,8 +40,12 @@ export async function searchPageComponent(
     });
     const dropDownOption = elementBuilder.createDropDownOptions(options);
     const dropDown = elementBuilder.addDropDown(
-        { placeholder: SearchPage.PLACEHOLDER, options: dropDownOption },
-        { blockId: SearchPage.BLOCK_ID, actionId: SearchPage.ACTION_ID }
+        {
+            placeholder: SearchPage.PLACEHOLDER,
+            options: dropDownOption,
+            dispatchActionConfig: [Modals.dispatchActionConfigOnSelect],
+        },
+        { blockId: SearchPage.BLOCK_ID, actionId }
     );
     const inputBlock = blockBuilder.createInputBlock({
         text: SearchPage.LABEL,

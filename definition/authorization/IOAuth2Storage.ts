@@ -25,7 +25,7 @@ interface INotionOwner {
     user: INotionUser;
 }
 
-interface INotionUser {
+export interface INotionUser {
     object: NotionOwnerType.USER;
     id: string;
     name: string | null;
