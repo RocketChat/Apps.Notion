@@ -106,6 +106,10 @@ export class CommandUtility implements ICommandUtility {
                 );
                 break;
             }
+            case CommandParam.COMMENT: {
+                await handler.commentOnPages();
+                break;
+            }
             case CommandParam.HELP:
             default: {
                 await sendHelperNotification(
