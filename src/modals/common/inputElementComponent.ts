@@ -11,6 +11,7 @@ export function inputElementComponent(
         multiline,
         minLength,
         maxLength,
+        initialValue,
         dispatchActionConfigOnInput,
     }: {
         app: NotionApp;
@@ -20,6 +21,7 @@ export function inputElementComponent(
         multiline?: boolean;
         minLength?: number;
         maxLength?: number;
+        initialValue?: string;
         dispatchActionConfigOnInput?: boolean;
     },
     { blockId, actionId }: ElementInteractionParam
@@ -36,6 +38,7 @@ export function inputElementComponent(
             minLength,
             maxLength,
             dispatchActionConfig,
+            initialValue,
         },
         {
             blockId,
