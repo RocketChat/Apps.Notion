@@ -105,4 +105,7 @@ export class Handler implements IHandler {
                 );
         }
     }
+
+    public async commentOnPages(): Promise<void> {
+    }
 }

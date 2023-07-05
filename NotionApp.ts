@@ -1,6 +1,8 @@
 import {
     IAppAccessors,
-    IAppInstallationContext, IConfigurationExtend, IEnvironmentRead,
+    IAppInstallationContext,
+    IConfigurationExtend,
+    IEnvironmentRead,
     IHttp,
     ILogger,
     IModify,
@@ -22,6 +24,7 @@ import { ElementBuilder } from "./src/lib/ElementBuilder";
 import { BlockBuilder } from "./src/lib/BlockBuilder";
 import {
     IUIKitResponse,
+    UIKitActionButtonInteractionContext,
     UIKitBlockInteractionContext,
     UIKitViewCloseInteractionContext,
     UIKitViewSubmitInteractionContext,
@@ -31,6 +34,12 @@ import { ExecuteViewClosedHandler } from "./src/handlers/ExecuteViewClosedHandle
 import { ExecuteViewSubmitHandler } from "./src/handlers/ExecuteViewSubmitHandler";
 import { ExecuteBlockActionHandler } from "./src/handlers/ExecuteBlockActionHandler";
 import { sendHelperMessageOnInstall } from "./src/helper/message";
+import {
+    IUIActionButtonDescriptor,
+    UIActionButtonContext,
+} from "@rocket.chat/apps-engine/definition/ui";
+import { ActionButton } from "./enum/modals/common/ActionButtons";
+import { ExecuteActionButtonHandler } from "./src/handlers/ExecuteActionButtonHandler";
 
 export class NotionApp extends App {
     private oAuth2Client: OAuth2Client;
@@ -64,6 +73,14 @@ export class NotionApp extends App {
         this.NotionSdk = new NotionSDK(this.getAccessors().http);
         this.elementBuilder = new ElementBuilder(this.getID());
         this.blockBuilder = new BlockBuilder(this.getID());
+
+        const commentOnPagesButton: IUIActionButtonDescriptor = {
+            actionId: ActionButton.COMMENT_ON_PAGES_MESSAGE_BOX_ACTION,
+            labelI18n: ActionButton.COMMENT_ON_PAGES_MESSAGE_BOX_ACTION_LABEL,
+            context: UIActionButtonContext.MESSAGE_BOX_ACTION,
+        };
+
+        configurationExtend.ui.registerButton(commentOnPagesButton);
     }
 
     public getOAuth2Client(): OAuth2Client {
@@ -146,4 +163,22 @@ export class NotionApp extends App {
         return;
     }
 
+    public async executeActionButtonHandler(
+        context: UIKitActionButtonInteractionContext,
+        read: IRead,
+        http: IHttp,
+        persistence: IPersistence,
+        modify: IModify
+    ): Promise<IUIKitResponse> {
+        const handler = new ExecuteActionButtonHandler(
+            this,
+            read,
+            http,
+            persistence,
+            modify,
+            context
+        );
+
+        return await handler.handleActions();
+    }
 }
