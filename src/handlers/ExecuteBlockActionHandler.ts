@@ -120,6 +120,12 @@ export class ExecuteBlockActionHandler {
 
                 break;
             }
+            case Modals.OVERFLOW_MENU_ACTION: {
+                return this.handleRefreshCommentAction(
+                    modalInteraction,
+                    oAuth2Storage,
+                    roomInteractionStorage
+                );
                 break;
             }
             default: {
@@ -667,6 +673,41 @@ export class ExecuteBlockActionHandler {
         }
 
         return missingObject;
+    }
+
+    private async handleRefreshCommentAction(
+        modalInteraction: ModalInteractionStorage,
+        oAuth2Storage: OAuth2Storage,
+        roomInteractionStorage: RoomInteractionStorage
+    ): Promise<IUIKitResponse> {
+        const { user, container, triggerId, value } =
+            this.context.getInteractionData();
+
+        const tokenInfo = await oAuth2Storage.getCurrentWorkspace(user.id);
+        const roomId = await roomInteractionStorage.getInteractionRoomId();
+        const room = (await this.read.getRoomReader().getById(roomId)) as IRoom;
+
+        if (!tokenInfo) {
+            await sendNotificationWithConnectBlock(
+                this.app,
+                user,
+                this.read,
+                this.modify,
+                room
+            );
+            return this.context.getInteractionResponder().errorResponse();
+        }
+
+        const pageId = value as string;
+
+        return this.handleUpdateOfCommentContextualBar(
+            user,
+            room,
+            tokenInfo,
+            modalInteraction,
+            pageId,
+            true
+        );
     }
 
     private async handleUpdateOfCommentContextualBar(
