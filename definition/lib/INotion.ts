@@ -23,6 +23,13 @@ export interface INotionSDK extends INotion {
         token: string,
         data: object
     ): Promise<INotionDatabase | Error>;
+    retrieveUser(
+        userId: string,
+        token: string
+    ): Promise<INotionUser | INotionUserBot | Error>;
+    retrieveAllUsers(
+        token: string
+    ): Promise<Array<INotionUser | INotionUserBot> | Error>;
     createCommentOnPage(
         tokenInfo: ITokenInfo,
         pageId: string,

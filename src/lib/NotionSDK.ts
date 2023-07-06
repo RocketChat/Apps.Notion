@@ -238,6 +238,66 @@ export class NotionSDK implements INotionSDK {
         }
     }
 
+    public async retrieveUser(
+        userId: string,
+        token: string
+    ): Promise<INotionUser | INotionUserBot | Error> {
+        try {
+            const response = await this.http.get(
+                NotionApi.USERS + `/${userId}`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": NotionApi.CONTENT_TYPE,
+                        "User-Agent": NotionApi.USER_AGENT,
+                        "Notion-Version": this.NotionVersion,
+                    },
+                }
+            );
+
+            if (!response.statusCode.toString().startsWith("2")) {
+                return this.handleErrorResponse(
+                    response.statusCode,
+                    `Error While retrieving User: `,
+                    response.content
+                );
+            }
+
+            const user: INotionUser = response.data;
+            return user;
+        } catch (err) {
+            throw new AppsEngineException(err as string);
+        }
+    }
+
+    public async retrieveAllUsers(
+        token: string
+    ): Promise<Array<INotionUser | INotionUserBot> | Error> {
+        try {
+            const response = await this.http.get(NotionApi.USERS, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": NotionApi.CONTENT_TYPE,
+                    "User-Agent": NotionApi.USER_AGENT,
+                    "Notion-Version": this.NotionVersion,
+                },
+            });
+
+            if (!response.statusCode.toString().startsWith("2")) {
+                return this.handleErrorResponse(
+                    response.statusCode,
+                    `Error While retrieving All Users: `,
+                    response.content
+                );
+            }
+            const users: Array<INotionUser | INotionUserBot> =
+                response.data?.results;
+            return users;
+        } catch (err) {
+            throw new AppsEngineException(err as string);
+        }
+    }
+
     public async createCommentOnPage(
         tokenInfo: ITokenInfo,
         pageId: string,
