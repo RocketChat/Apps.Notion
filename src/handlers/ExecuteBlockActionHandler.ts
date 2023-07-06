@@ -103,6 +103,14 @@ export class ExecuteBlockActionHandler {
                 );
                 break;
             }
+            case CommentPage.COMMENT_ON_PAGE_SUBMIT_ACTION: {
+                return this.handleCommentOnPage(
+                    modalInteraction,
+                    oAuth2Storage,
+                    roomInteractionStorage
+                );
+                break;
+            }
             case CommentPage.COMMENT_INPUT_ACTION: {
                 return this.handleCommentInputAction(
                     modalInteraction,
@@ -533,6 +541,90 @@ export class ExecuteBlockActionHandler {
         return this.context.getInteractionResponder().successResponse();
     }
 
+    private async handleCommentOnPage(
+        modalInteraction: ModalInteractionStorage,
+        oAuth2Storage: OAuth2Storage,
+        roomInteractionStorage: RoomInteractionStorage
+    ): Promise<IUIKitResponse> {
+        const { user, container, triggerId, value } =
+            this.context.getInteractionData();
+
+        const tokenInfo = await oAuth2Storage.getCurrentWorkspace(user.id);
+        const roomId = await roomInteractionStorage.getInteractionRoomId();
+        const room = (await this.read.getRoomReader().getById(roomId)) as IRoom;
+
+        if (!tokenInfo) {
+            await sendNotificationWithConnectBlock(
+                this.app,
+                user,
+                this.read,
+                this.modify,
+                room
+            );
+            return this.context.getInteractionResponder().errorResponse();
+        }
+
+        const commentText = await modalInteraction.getInputElementState(
+            CommentPage.COMMENT_INPUT_ACTION
+        );
+
+        const missingObject = await this.getMissingPropertiesForCommentBar(
+            commentText,
+            value
+        );
+
+        if (Object.keys(missingObject).length) {
+            return this.context.getInteractionResponder().viewErrorResponse({
+                viewId: container.id,
+                errors: missingObject,
+            });
+        }
+
+        const pageId = value as string;
+        const comment: string = commentText?.[NotionObjectTypes.COMMENT];
+        const { NotionSdk } = this.app.getUtils();
+
+        const addComment = await NotionSdk.createCommentOnPage(
+            tokenInfo,
+            pageId,
+            comment
+        );
+
+        if (addComment instanceof Error) {
+            this.app.getLogger().error(addComment);
+            return this.context.getInteractionResponder().errorResponse();
+        }
+
+        await modalInteraction.clearInputElementState(
+            CommentPage.COMMENT_INPUT_ACTION
+        );
+
+        const comments = [addComment];
+        const commentsInfo = await modalInteraction.getInputElementState(
+            CommentPage.REFRESH_OPTION_VALUE
+        );
+
+        if (commentsInfo) {
+            const oldComments = commentsInfo?.[Modals.DATA] as ICommentInfo[];
+            comments.push(...oldComments);
+        }
+
+        await modalInteraction.storeInputElementState(
+            CommentPage.REFRESH_OPTION_VALUE,
+            {
+                data: comments,
+            }
+        );
+
+        return this.handleUpdateOfCommentContextualBar(
+            user,
+            room,
+            tokenInfo,
+            modalInteraction,
+            pageId
+        );
+    }
+
     private async handleCommentInputAction(
         modalInteraction: ModalInteractionStorage,
         oAuth2Storage: OAuth2Storage,
@@ -557,6 +649,24 @@ export class ExecuteBlockActionHandler {
             viewId: container.id,
             errors: {},
         });
+    }
+
+    private async getMissingPropertiesForCommentBar(
+        commentText?: object,
+        page?: string
+    ) {
+        const missingObject = {};
+
+        if (!page) {
+            missingObject[SearchPage.SEARCH_COMMENT_ACTION_ID] =
+                "Select Notion Page to Comment";
+        }
+        if (!commentText) {
+            missingObject[CommentPage.COMMENT_INPUT_ACTION] =
+                "Comment is required";
+        }
+
+        return missingObject;
     }
 
     private async handleUpdateOfCommentContextualBar(
