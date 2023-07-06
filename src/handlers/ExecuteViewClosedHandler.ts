@@ -14,6 +14,8 @@ import { clearAllInteraction } from "../helper/clearInteractions";
 import { ModalInteractionStorage } from "../storage/ModalInteraction";
 import { OAuth2Storage } from "../authorization/OAuth2Storage";
 import { ITokenInfo } from "../../definition/authorization/IOAuth2Storage";
+import { CommentPage } from "../../enum/modals/CommentPage";
+import { SearchPage } from "../../enum/modals/common/SearchPageComponent";
 
 export class ExecuteViewClosedHandler {
     private context: UIKitViewCloseInteractionContext;
@@ -52,6 +54,18 @@ export class ExecuteViewClosedHandler {
                 await modalInteraction.clearInputElementState(
                     DatabaseModal.PROPERTY_NAME
                 );
+                break;
+            }
+            case CommentPage.VIEW_ID: {
+
+                await Promise.all([
+                    modalInteraction.clearInputElementState(
+                        CommentPage.COMMENT_INPUT_ACTION
+                    ),
+                    modalInteraction.clearInputElementState(
+                        CommentPage.REFRESH_OPTION_VALUE
+                    ),
+                ]);
                 break;
             }
             default: {
