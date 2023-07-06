@@ -103,6 +103,17 @@ export class ExecuteBlockActionHandler {
                 );
                 break;
             }
+            case CommentPage.COMMENT_INPUT_ACTION: {
+                return this.handleCommentInputAction(
+                    modalInteraction,
+                    oAuth2Storage,
+                    roomInteractionStorage
+                );
+
+                break;
+            }
+                break;
+            }
             default: {
                 // Property Type Select Action
                 const propertyTypeSelected =
@@ -520,6 +531,32 @@ export class ExecuteBlockActionHandler {
         }
 
         return this.context.getInteractionResponder().successResponse();
+    }
+
+    private async handleCommentInputAction(
+        modalInteraction: ModalInteractionStorage,
+        oAuth2Storage: OAuth2Storage,
+        roomInteractionStorage: RoomInteractionStorage
+    ): Promise<IUIKitResponse> {
+        const { value, container } = this.context.getInteractionData();
+
+        if (value) {
+            await modalInteraction.storeInputElementState(
+                CommentPage.COMMENT_INPUT_ACTION,
+                {
+                    comment: value,
+                }
+            );
+        } else {
+            await modalInteraction.clearInputElementState(
+                CommentPage.COMMENT_INPUT_ACTION
+            );
+        }
+
+        return this.context.getInteractionResponder().viewErrorResponse({
+            viewId: container.id,
+            errors: {},
+        });
     }
 
     private async handleUpdateOfCommentContextualBar(
