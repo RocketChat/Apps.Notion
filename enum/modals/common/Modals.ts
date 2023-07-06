@@ -9,4 +9,5 @@ export enum Modals {
     OPTIONS = "options",
     MISSING = "missing",
     VIEWERROR = "viewError",
+    DATA = "data",
 }
