@@ -2,6 +2,9 @@ import { IModify, IRead } from "@rocket.chat/apps-engine/definition/accessors";
 import { IRoom } from "@rocket.chat/apps-engine/definition/rooms";
 import { IUser } from "@rocket.chat/apps-engine/definition/users";
 import { Block } from "@rocket.chat/ui-kit";
+import { NotionApp } from "../../NotionApp";
+import { OAuth2Content } from "../../enum/OAuth2";
+import { getConnectBlock } from "./getConnectBlock";
 
 export async function sendNotification(
     read: IRead,
@@ -25,4 +28,27 @@ export async function sendNotification(
         messageBuilder.setBlocks(blocks);
     }
     return read.getNotifier().notifyUser(user, messageBuilder.getMessage());
+}
+
+export async function sendNotificationWithConnectBlock(
+    app: NotionApp,
+    user: IUser,
+    read: IRead,
+    modify: IModify,
+    room: IRoom
+) {
+    const url = await app
+        .getOAuth2Client()
+        .getAuthorizationUrl(user, read, modify, room);
+
+    if (url) {
+        const message = OAuth2Content.NOT_CONNECTED_MESSAGE_WITH_INFO;
+        const blocks = await getConnectBlock(app, message, url);
+
+        await sendNotification(read, modify, user, room, {
+            blocks: blocks,
+        });
+    }
+
+    return;
 }

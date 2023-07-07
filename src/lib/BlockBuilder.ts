@@ -1,6 +1,7 @@
 import { ActionBlockParam } from "../../definition/ui-kit/Block/IActionBlock";
 import { IBlockBuilder } from "../../definition/ui-kit/Block/IBlockBuilder";
 import { ContextBlockParam } from "../../definition/ui-kit/Block/IContextBlock";
+import { InputBlockParam } from "../../definition/ui-kit/Block/IInputBlock";
 import { PreviewBlockParam } from "../../definition/ui-kit/Block/IPreviewBlock";
 import { SectionBlockParam } from "../../definition/ui-kit/Block/ISectionBlock";
 import {
@@ -12,6 +13,8 @@ import {
     PreviewBlockBase,
     PreviewBlockWithThumb,
     ContextBlock,
+    InputBlock,
+    DividerBlock,
 } from "@rocket.chat/ui-kit";
 
 export class BlockBuilder implements IBlockBuilder {
@@ -85,5 +88,34 @@ export class BlockBuilder implements IBlockBuilder {
         };
 
         return contextBlock;
+    }
+
+    public createInputBlock(param: InputBlockParam): InputBlock {
+        const { text, element, blockId, hint, optional } = param;
+
+        const inputBlock: InputBlock = {
+            type: LayoutBlockType.INPUT,
+            label: {
+                type: TextObjectType.PLAIN_TEXT,
+                text,
+            },
+            appId: this.appId,
+            element,
+            hint,
+            optional,
+            blockId,
+        };
+
+        return inputBlock;
+    }
+
+    public createDividerBlock(blockId?: string | undefined): DividerBlock {
+        const dividerBlock: DividerBlock = {
+            type: LayoutBlockType.DIVIDER,
+            appId: this.appId,
+            blockId,
+        };
+
+        return dividerBlock;
     }
 }
