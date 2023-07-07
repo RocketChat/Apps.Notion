@@ -9,17 +9,19 @@ import {
 } from "@rocket.chat/apps-engine/definition/accessors";
 
 export class RoomInteractionStorage implements IRoomInteractionStorage {
+    private userId: string;
     constructor(
         private readonly persistence: IPersistence,
-        private readonly persistenceRead: IPersistenceRead
-    ) {}
-    public async storeInteractionRoomId(
-        userId: string,
-        roomId: string
-    ): Promise<void> {
+        private readonly persistenceRead: IPersistenceRead,
+        userId: string
+    ) {
+        this.userId = userId;
+    }
+
+    public async storeInteractionRoomId(roomId: string): Promise<void> {
         const association = new RocketChatAssociationRecord(
             RocketChatAssociationModel.USER,
-            `${userId}#RoomId`
+            `${this.userId}#RoomId`
         );
         await this.persistence.updateByAssociation(
             association,
@@ -28,10 +30,10 @@ export class RoomInteractionStorage implements IRoomInteractionStorage {
         );
     }
 
-    public async getInteractionRoomId(userId: string): Promise<string> {
+    public async getInteractionRoomId(): Promise<string> {
         const association = new RocketChatAssociationRecord(
             RocketChatAssociationModel.USER,
-            `${userId}#RoomId`
+            `${this.userId}#RoomId`
         );
         const [result] = (await this.persistenceRead.readByAssociation(
             association
@@ -39,10 +41,10 @@ export class RoomInteractionStorage implements IRoomInteractionStorage {
         return result.roomId;
     }
 
-    public async clearInteractionRoomId(userId: string): Promise<void> {
+    public async clearInteractionRoomId(): Promise<void> {
         const association = new RocketChatAssociationRecord(
             RocketChatAssociationModel.USER,
-            `${userId}#RoomId`
+            `${this.userId}#RoomId`
         );
         await this.persistence.removeByAssociation(association);
     }

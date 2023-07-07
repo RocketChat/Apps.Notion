@@ -1,0 +1,16 @@
+export enum CommentPage {
+    VIEW_ID = "comment-on-page-view-id",
+    TITLE = "Comment on Page",
+    SUBMIT_BUTTON_TEXT = "Comment On Page",
+    CLOSE_BUTTON_TEXT = "Close",
+    COMMENT_ON_PAGE_SUBMIT_ACTION = "comment-on-page-submit-action-id",
+    COMMENT_ON_PAGE_SUBMIT_BLOCK = "comment-on-page-submit-block-id",
+    COMMENT_ON_PAGE_CLOSE_ACTION = "comment-on-page-close-action-id",
+    COMMENT_ON_PAGE_CLOSE_BLOCK = "comment-on-page-close-block-id",
+    COMMENT_INPUT_PLACEHOLDER = "Add a comment...",
+    COMMENT_INPUT_LABEL = "Enter your Comment *",
+    COMMENT_INPUT_ACTION = "comment-on-page-input-action-id",
+    COMMENT_INPUT_BLOCK = "comment-on-page-input-block-id",
+    REFRESH_OPTION_TEXT = "Refresh For New Comments",
+    REFRESH_OPTION_VALUE = "refresh-option-value",
+}

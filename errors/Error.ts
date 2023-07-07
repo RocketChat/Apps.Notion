@@ -9,7 +9,7 @@ import { IError } from "../definition/errors/IError";
 import { HttpStatusCode } from "@rocket.chat/apps-engine/definition/accessors";
 import { ErrorName } from "../enum/Error";
 
-class Error implements IError {
+export class Error implements IError {
     name: string;
     message: string;
     statusCode: number;

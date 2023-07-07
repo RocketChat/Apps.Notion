@@ -7,6 +7,7 @@ export enum NotionOwnerType {
     USER = "user",
     PERSON = "person",
     BOT = "bot",
+    ME = "me",
 }
 
 export enum NotionApi {
@@ -14,8 +15,26 @@ export enum NotionApi {
     VERSION = "2022-06-28",
     USER_AGENT = "Rocket.Chat-Apps-Engine",
     CONTENT_TYPE = "application/json",
+    SEARCH = `https://api.notion.com/v1/search`,
+    CREATE_DATABASE = `https://api.notion.com/v1/databases`,
+    COMMENTS = `https://api.notion.com/v1/comments`,
+    USERS = `https://api.notion.com/v1/users`,
 }
 
 export enum Notion {
     WEBSITE_URL = "https://www.notion.so",
+}
+
+export enum NotionObjectTypes {
+    TYPE = "type",
+    PAGE = "page",
+    PAGE_ID = "page_id",
+    WORKSPACE = "workspace",
+    PROPERTY = "object",
+    TEXT = "text",
+    FORMAT = "format",
+    EXPRESSION = "expression",
+    COMMENT = "comment",
+    PARENT = "parent",
+    MENTION = "mention",
 }

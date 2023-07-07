@@ -1,12 +1,13 @@
 import {
     IAppAccessors,
+    IAppInstallationContext,
     IConfigurationExtend,
     IEnvironmentRead,
     IHttp,
     ILogger,
     IModify,
     IPersistence,
-    IRead,
+    IRead
 } from "@rocket.chat/apps-engine/definition/accessors";
 import { App } from "@rocket.chat/apps-engine/definition/App";
 import { IAppInfo } from "@rocket.chat/apps-engine/definition/metadata";
@@ -23,11 +24,22 @@ import { ElementBuilder } from "./src/lib/ElementBuilder";
 import { BlockBuilder } from "./src/lib/BlockBuilder";
 import {
     IUIKitResponse,
+    UIKitActionButtonInteractionContext,
     UIKitBlockInteractionContext,
+    UIKitViewCloseInteractionContext,
+    UIKitViewSubmitInteractionContext,
 } from "@rocket.chat/apps-engine/definition/uikit";
-import { RoomInteractionStorage } from "./src/storage/RoomInteraction";
-import { OAuth2Action } from "./enum/OAuth2";
 import { IAppUtils } from "./definition/lib/IAppUtils";
+import { ExecuteViewClosedHandler } from "./src/handlers/ExecuteViewClosedHandler";
+import { ExecuteViewSubmitHandler } from "./src/handlers/ExecuteViewSubmitHandler";
+import { ExecuteBlockActionHandler } from "./src/handlers/ExecuteBlockActionHandler";
+import { sendHelperMessageOnInstall } from "./src/helper/message";
+import {
+    IUIActionButtonDescriptor,
+    UIActionButtonContext,
+} from "@rocket.chat/apps-engine/definition/ui";
+import { ActionButton } from "./enum/modals/common/ActionButtons";
+import { ExecuteActionButtonHandler } from "./src/handlers/ExecuteActionButtonHandler";
 
 export class NotionApp extends App {
     private oAuth2Client: OAuth2Client;
@@ -61,6 +73,14 @@ export class NotionApp extends App {
         this.NotionSdk = new NotionSDK(this.getAccessors().http);
         this.elementBuilder = new ElementBuilder(this.getID());
         this.blockBuilder = new BlockBuilder(this.getID());
+
+        const commentOnPagesButton: IUIActionButtonDescriptor = {
+            actionId: ActionButton.COMMENT_ON_PAGES_MESSAGE_BOX_ACTION,
+            labelI18n: ActionButton.COMMENT_ON_PAGES_MESSAGE_BOX_ACTION_LABEL,
+            context: UIActionButtonContext.MESSAGE_BOX_ACTION,
+        };
+
+        configurationExtend.ui.registerButton(commentOnPagesButton);
     }
 
     public getOAuth2Client(): OAuth2Client {
@@ -81,19 +101,84 @@ export class NotionApp extends App {
         persistence: IPersistence,
         modify: IModify
     ): Promise<IUIKitResponse> {
-        // Todo[Week 2]: Make a Interface and Class
-        const { actionId, user, room } = context.getInteractionData();
+        const handler = new ExecuteBlockActionHandler(
+            this,
+            read,
+            http,
+            persistence,
+            modify,
+            context
+        );
 
-        if (actionId == OAuth2Action.CONNECT_TO_WORKSPACE) {
-            const persistenceRead = read.getPersistenceReader();
-            const roomId = room?.id as string;
-            const roomInteraction = new RoomInteractionStorage(
-                persistence,
-                persistenceRead
-            );
-            await roomInteraction.storeInteractionRoomId(user.id, roomId);
-        }
+        return await handler.handleActions();
+    }
 
-        return context.getInteractionResponder().successResponse();
+    public async executeViewSubmitHandler(
+        context: UIKitViewSubmitInteractionContext,
+        read: IRead,
+        http: IHttp,
+        persistence: IPersistence,
+        modify: IModify
+    ): Promise<IUIKitResponse> {
+        const handler = new ExecuteViewSubmitHandler(
+            this,
+            read,
+            http,
+            persistence,
+            modify,
+            context
+        );
+
+        return await handler.handleActions();
+    }
+
+    public async executeViewClosedHandler(
+        context: UIKitViewCloseInteractionContext,
+        read: IRead,
+        http: IHttp,
+        persistence: IPersistence,
+        modify: IModify
+    ): Promise<IUIKitResponse> {
+        const handler = new ExecuteViewClosedHandler(
+            this,
+            read,
+            http,
+            persistence,
+            modify,
+            context
+        );
+
+        return await handler.handleActions();
+    }
+
+    public async onInstall(
+        context: IAppInstallationContext,
+        read: IRead,
+        http: IHttp,
+        persistence: IPersistence,
+        modify: IModify
+    ): Promise<void> {
+        const { user } = context;
+        await sendHelperMessageOnInstall(this.getID(), user, read, modify);
+        return;
+    }
+
+    public async executeActionButtonHandler(
+        context: UIKitActionButtonInteractionContext,
+        read: IRead,
+        http: IHttp,
+        persistence: IPersistence,
+        modify: IModify
+    ): Promise<IUIKitResponse> {
+        const handler = new ExecuteActionButtonHandler(
+            this,
+            read,
+            http,
+            persistence,
+            modify,
+            context
+        );
+
+        return await handler.handleActions();
     }
 }
