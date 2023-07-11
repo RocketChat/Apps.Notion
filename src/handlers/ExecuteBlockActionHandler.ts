@@ -91,29 +91,43 @@ export class ExecuteBlockActionHandler {
             }
             default: {
                 // Property Type Select Action
-                const dispatchActionPropertyType = actionId.startsWith(
-                    DatabaseModal.PROPERTY_TYPE_SELECT_ACTION
-                );
+                const propertyTypeSelected =
+                    DatabaseModal.PROPERTY_TYPE_SELECT_ACTION.toString();
+                const isPropertyTypeDispatchAction =
+                    actionId.startsWith(propertyTypeSelected);
 
                 // Property Name Character Entered Action
-                const dispatchActionPropertyName =
-                    actionId.startsWith(DatabaseModal.PROPERTY_NAME_ACTION) ||
-                    actionId.startsWith(DatabaseModal.TITLE_PROPERTY_ACTION);
+                const propertyNameEntered =
+                    DatabaseModal.PROPERTY_NAME_ACTION.toString();
+
+                const titlePropertyNameEntered =
+                    DatabaseModal.TITLE_PROPERTY_ACTION.toString();
+
+                const isPropertyNameDispatchAction =
+                    actionId.startsWith(propertyNameEntered) ||
+                    actionId.startsWith(titlePropertyNameEntered);
 
                 // Property Type Select Option Name Action
-                const dispatchActionSelectOptionName = blockId.startsWith(
-                    DatabaseModal.PROPERTY_TYPE_SELECT_BLOCK
+
+                const SelectPropertyOptionNameAction =
+                    DatabaseModal.PROPERTY_TYPE_SELECT_BLOCK.toString();
+
+                const SelectPropertyOptionNameEntered =
+                    DatabaseModal.SELECT_PROPERTY_OPTION_NAME.toString();
+
+                const isSelectOptionNameDispatchAction = blockId.startsWith(
+                    SelectPropertyOptionNameAction
                 );
 
-                const dispatchActionConfig = dispatchActionPropertyType
-                    ? DatabaseModal.PROPERTY_TYPE_SELECT_ACTION
-                    : dispatchActionPropertyName
-                    ? DatabaseModal.PROPERTY_NAME_ACTION
-                    : dispatchActionSelectOptionName
-                    ? DatabaseModal.SELECT_PROPERTY_OPTION_NAME
+                const typeOfActionOccurred = isPropertyTypeDispatchAction
+                    ? propertyTypeSelected
+                    : isPropertyNameDispatchAction
+                    ? propertyNameEntered
+                    : isSelectOptionNameDispatchAction
+                    ? SelectPropertyOptionNameEntered
                     : null;
 
-                switch (dispatchActionConfig) {
+                switch (typeOfActionOccurred) {
                     case DatabaseModal.PROPERTY_TYPE_SELECT_ACTION: {
                         this.handlePropertyTypeSelectAction(
                             modalInteraction,
@@ -189,7 +203,7 @@ export class ExecuteBlockActionHandler {
 
         const RemovedFieldPropertyName: string =
             record?.[DatabaseModal.PROPERTY_NAME];
-            
+
         const PropertyNameState = await modalInteraction.getInputElementState(
             DatabaseModal.PROPERTY_NAME
         );
@@ -215,7 +229,7 @@ export class ExecuteBlockActionHandler {
         oAuth2Storage: OAuth2Storage,
         roomInteractionStorage: RoomInteractionStorage
     ) {
-        const { user } = this.context.getInteractionData();
+        const { user, triggerId } = this.context.getInteractionData();
         const tokenInfo = await oAuth2Storage.getCurrentWorkspace(user.id);
         const roomId = await roomInteractionStorage.getInteractionRoomId();
         const room = (await this.read.getRoomReader().getById(roomId)) as IRoom;
@@ -247,8 +261,6 @@ export class ExecuteBlockActionHandler {
             this.app.getLogger().error(modal.message);
             return;
         }
-
-        const triggerId = this.context.getInteractionData().triggerId;
 
         await this.modify.getUiController().updateSurfaceView(
             modal,
