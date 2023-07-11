@@ -31,4 +31,5 @@ export enum NotionObjectTypes {
     TEXT = "text",
     FORMAT = "format",
     EXPRESSION = "expression",
+    UNTITLED = "Untitled",
 }

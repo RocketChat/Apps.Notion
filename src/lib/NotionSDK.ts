@@ -116,7 +116,9 @@ export class NotionSDK implements INotionSDK {
         const pageId: string = item.id;
 
         if (typesWithTitleProperty.includes(parentType)) {
-            const pageName: string = properties.title.title[0].text.content;
+            const pageName: string =
+                properties.title.title[0]?.text?.content ||
+                NotionObjectTypes.UNTITLED;
             return this.returnPage(pageName, pageId);
         }
 
@@ -130,7 +132,9 @@ export class NotionSDK implements INotionSDK {
             properties[firstColumn].title &&
             properties[firstColumn].title.length
         ) {
-            const name: string = properties[firstColumn].title[0].text.content;
+            const name: string =
+                properties[firstColumn].title[0]?.text?.content ||
+                NotionObjectTypes.UNTITLED;
             return this.returnPage(name, pageId);
         }
 
@@ -139,7 +143,9 @@ export class NotionSDK implements INotionSDK {
             properties[lastColumn].title &&
             properties[lastColumn].title.length
         ) {
-            const name: string = properties[lastColumn].title[0].text.content;
+            const name: string =
+                properties[lastColumn].title[0]?.text?.content ||
+                NotionObjectTypes.UNTITLED;
             return this.returnPage(name, pageId);
         }
 
@@ -204,7 +210,9 @@ export class NotionSDK implements INotionSDK {
             }
 
             const result: INotionDatabase = {
-                name: response.data.title[0]?.text?.content || "Untitled",
+                name:
+                    response.data.title[0]?.text?.content ||
+                    NotionObjectTypes.UNTITLED,
                 link: response.data.url,
             };
 
