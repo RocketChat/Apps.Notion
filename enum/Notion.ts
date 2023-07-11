@@ -23,9 +23,13 @@ export enum Notion {
 }
 
 export enum NotionObjectTypes {
+    TYPE = "type",
     PAGE = "page",
     PAGE_ID = "page_id",
     WORKSPACE = "workspace",
     PROPERTY = "object",
-    TEXT = "text"
+    TEXT = "text",
+    FORMAT = "format",
+    EXPRESSION = "expression",
+    UNTITLED = "Untitled",
 }

@@ -6,4 +6,7 @@ export interface IModalInteractionStorage {
     storePagesOrDatabase(records: object, workspaceId: string): Promise<void>;
     getPagesOrDatabase(workspaceId: string): Promise<object | undefined>;
     clearPagesOrDatabase(workspaceId: string): Promise<void>;
+    storeInputElementState(associate: string, state: object): Promise<void>;
+    getInputElementState(associate: string): Promise<object | undefined>;
+    clearInputElementState(associate: string): Promise<void>;
 }

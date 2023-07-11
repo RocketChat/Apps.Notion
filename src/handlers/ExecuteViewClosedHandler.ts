@@ -49,6 +49,9 @@ export class ExecuteViewClosedHandler {
                     )) as ITokenInfo;
 
                 await modalInteraction.clearPagesOrDatabase(workspace_id);
+                await modalInteraction.clearInputElementState(
+                    DatabaseModal.PROPERTY_NAME
+                );
                 break;
             }
             default: {

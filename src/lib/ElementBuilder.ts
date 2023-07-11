@@ -65,7 +65,7 @@ export class ElementBuilder implements IElementBuilder {
             optionGroups,
             initialOption,
             initialValue,
-            dispatchActionConfig
+            dispatchActionConfig,
         } = param;
         const { blockId, actionId } = interaction;
         const dropDown: StaticSelectElement = {
@@ -81,7 +81,7 @@ export class ElementBuilder implements IElementBuilder {
             appId: this.appId,
             blockId,
             actionId,
-            dispatchActionConfig
+            dispatchActionConfig,
         };
         return dropDown;
     }
@@ -116,7 +116,14 @@ export class ElementBuilder implements IElementBuilder {
         param: PlainTextInputParam,
         interaction: ElementInteractionParam
     ): PlainTextInputElement {
-        const { text, initialValue, multiline, minLength, maxLength } = param;
+        const {
+            text,
+            initialValue,
+            multiline,
+            minLength,
+            maxLength,
+            dispatchActionConfig,
+        } = param;
         const { blockId, actionId } = interaction;
         const plainTextInput: PlainTextInputElement = {
             type: BlockElementType.PLAIN_TEXT_INPUT,
@@ -131,6 +138,7 @@ export class ElementBuilder implements IElementBuilder {
             multiline,
             minLength,
             maxLength,
+            dispatchActionConfig,
         };
 
         return plainTextInput;

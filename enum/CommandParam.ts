@@ -5,5 +5,5 @@ export enum CommandParam {
 }
 
 export enum SubCommandParam {
-    DATABASE = "database",
+    DATABASE = "db",
 }
