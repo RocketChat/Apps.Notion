@@ -408,7 +408,9 @@ export class ExecuteBlockActionHandler {
         );
 
         // when there is no other state and the value is empty
-        if (!value && inputElementState) {
+        const noOtherStateAndEmptyValue = !value && inputElementState;
+
+        if (noOtherStateAndEmptyValue) {
             if (Object.keys(inputElementState).length === 1) {
                 delete inputElementState[actionId];
 
@@ -418,8 +420,11 @@ export class ExecuteBlockActionHandler {
                 return undefined;
             }
         }
+
         // when there is no state and character is entered
-        if (!inputElementState) {
+        const nullStateAndCharEntered = !inputElementState;
+
+        if (nullStateAndCharEntered) {
             const state = { [actionId]: value, [Modals.VIEWERROR]: false };
             await modalInteraction.storeInputElementState(
                 DatabaseModal.PROPERTY_NAME,
@@ -438,7 +443,9 @@ export class ExecuteBlockActionHandler {
             inputElementState[Modals.VIEWERROR] = false;
         }
         // when there is other state and value is not empty
-        if (value && value.length) {
+        const StateExistAndValueNotEmpty = value && value.length;
+
+        if (StateExistAndValueNotEmpty) {
             inputElementState[actionId] = value;
         } else {
             // when there is other state and value is empty
