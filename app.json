@@ -43,6 +43,9 @@
         },
         {
             "name": "user.read"
+        },
+        {
+            "name": "room.write"
         }
     ]
 }
