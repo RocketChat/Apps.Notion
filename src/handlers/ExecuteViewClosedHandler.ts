@@ -15,7 +15,7 @@ import { ModalInteractionStorage } from "../storage/ModalInteraction";
 import { OAuth2Storage } from "../authorization/OAuth2Storage";
 import { ITokenInfo } from "../../definition/authorization/IOAuth2Storage";
 import { CommentPage } from "../../enum/modals/CommentPage";
-import { SearchPage } from "../../enum/modals/common/SearchPageComponent";
+import { NotionPageOrRecord } from "../../enum/modals/NotionPageOrRecord";
 
 export class ExecuteViewClosedHandler {
     private context: UIKitViewCloseInteractionContext;
@@ -57,7 +57,6 @@ export class ExecuteViewClosedHandler {
                 break;
             }
             case CommentPage.VIEW_ID: {
-
                 await Promise.all([
                     modalInteraction.clearInputElementState(
                         CommentPage.COMMENT_INPUT_ACTION
@@ -66,6 +65,18 @@ export class ExecuteViewClosedHandler {
                         CommentPage.REFRESH_OPTION_VALUE
                     ),
                 ]);
+                break;
+            }
+            case NotionPageOrRecord.VIEW_ID: {
+                const { workspace_id } =
+                    (await oAuth2Storage.getCurrentWorkspace(
+                        user.id
+                    )) as ITokenInfo;
+
+                await Promise.all([
+                    modalInteraction.clearPagesOrDatabase(workspace_id),
+                ]);
+
                 break;
             }
             default: {
