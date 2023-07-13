@@ -121,7 +121,7 @@ export class ExecuteBlockActionHandler {
                 break;
             }
             case Modals.OVERFLOW_MENU_ACTION: {
-                return this.handleRefreshCommentAction(
+                return this.handleOverFlowMenuAction(
                     modalInteraction,
                     oAuth2Storage,
                     roomInteractionStorage
@@ -741,4 +741,31 @@ export class ExecuteBlockActionHandler {
             .getInteractionResponder()
             .updateContextualBarViewResponse(contextualBar);
     }
-}
+
+    private async handleOverFlowMenuAction(
+        modalInteraction: ModalInteractionStorage,
+        oAuth2Storage: OAuth2Storage,
+        roomInteractionStorage: RoomInteractionStorage
+    ): Promise<IUIKitResponse> {
+        const { value, user, triggerId } = this.context.getInteractionData();
+
+        if (!value) {
+            return this.context.getInteractionResponder().errorResponse();
+        }
+
+        // Check if the value is pageId. if not then it is not a refresh comment action
+        const OverFlowActions = [
+            DatabaseModal.OVERFLOW_MENU_ACTION.toString(),
+            NotionPageOrRecord.CHANGE_DATABASE_ACTION.toString(),
+        ];
+
+        if (!OverFlowActions.includes(value)) {
+            return this.handleRefreshCommentAction(
+                modalInteraction,
+                oAuth2Storage,
+                roomInteractionStorage
+            );
+        }
+
+        return this.context.getInteractionResponder().successResponse();
+    }
