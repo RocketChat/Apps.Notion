@@ -42,6 +42,11 @@ export interface INotionSDK extends INotion {
     searchPagesAndDatabases(
         token: string
     ): Promise<Array<IPage | IDatabase> | Error>;
+    createPage(
+        token: string,
+        page: IPage,
+        prop: IPageProperties
+    ): Promise<INotionPage | Error>;
 }
 
 export interface IParentPage {
@@ -100,4 +105,12 @@ interface INotionBot {
         workspace: boolean;
     };
     workspace_name: string;
+}
+
+export interface IPageProperties {
+    title: string;
+}
+
+export interface INotionPage extends INotionDatabase {
+    title: string;
 }

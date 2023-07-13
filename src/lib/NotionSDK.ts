@@ -3,9 +3,11 @@ import {
     ICommentObject,
     IDatabase,
     INotionDatabase,
+    INotionPage,
     INotionSDK,
     INotionUserBot,
     IPage,
+    IPageProperties,
 } from "../../definition/lib/INotion";
 import {
     HttpStatusCode,
@@ -550,4 +552,51 @@ export class NotionSDK implements INotionSDK {
         };
     }
 
+    public async createPage(
+        token: string,
+        page: IPage,
+        prop: IPageProperties
+    ): Promise<INotionPage | Error> {
+        try {
+            const { name, parent } = page;
+            const { title } = prop;
+
+            const data = {
+                parent,
+                properties: {
+                    [NotionObjectTypes.TITLE]: {
+                        [NotionObjectTypes.TITLE]: markdownToRichText(title),
+                    },
+                },
+            };
+
+            const response = await this.http.post(NotionApi.PAGES, {
+                data,
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": NotionApi.CONTENT_TYPE,
+                    "User-Agent": NotionApi.USER_AGENT,
+                    "Notion-Version": this.NotionVersion,
+                },
+            });
+
+            if (!response.statusCode.toString().startsWith("2")) {
+                return this.handleErrorResponse(
+                    response.statusCode,
+                    `Error While Creating Page: `,
+                    response.content
+                );
+            }
+
+            let result: INotionPage = {
+                link: response?.data?.url,
+                name,
+                title,
+            };
+
+            return result;
+        } catch (err) {
+            throw new AppsEngineException(err as string);
+        }
+    }
 }
