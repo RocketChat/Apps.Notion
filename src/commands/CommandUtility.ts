@@ -13,6 +13,7 @@ import {
 } from "../../definition/command/ICommandUtility";
 import { CommandParam, SubCommandParam } from "../../enum/CommandParam";
 import { Handler } from "../handlers/Handler";
+import { sendHelperNotification } from "../helper/message";
 
 export class CommandUtility implements ICommandUtility {
     public app: NotionApp;
@@ -53,21 +54,34 @@ export class CommandUtility implements ICommandUtility {
         });
         switch (this.params.length) {
             case 0: {
+                await sendHelperNotification(
+                    this.read,
+                    this.modify,
+                    this.sender,
+                    this.room
+                );
                 break;
             }
             case 1: {
-                await this.handleSingleParam();
+                await this.handleSingleParam(handler);
                 break;
             }
             case 2: {
                 await this.handleDualParam(handler);
+                break;
             }
             default: {
+                await sendHelperNotification(
+                    this.read,
+                    this.modify,
+                    this.sender,
+                    this.room
+                );
             }
         }
     }
 
-    private async handleSingleParam(): Promise<void> {
+    private async handleSingleParam(handler: Handler): Promise<void> {
         const oAuth2ClientInstance = await this.app.getOAuth2Client();
         switch (this.params[0].toLowerCase()) {
             case CommandParam.CONNECT: {
@@ -92,7 +106,23 @@ export class CommandUtility implements ICommandUtility {
                 );
                 break;
             }
+            case CommandParam.COMMENT: {
+                await handler.commentOnPages();
+                break;
+            }
+            case CommandParam.CREATE: {
+                await handler.createNotionPageOrRecord();
+                break;
+            }
+            case CommandParam.HELP:
             default: {
+                await sendHelperNotification(
+                    this.read,
+                    this.modify,
+                    this.sender,
+                    this.room
+                );
+                break;
             }
         }
     }
@@ -105,9 +135,21 @@ export class CommandUtility implements ICommandUtility {
                     await handler.createNotionDatabase();
                     return;
                 }
+                await sendHelperNotification(
+                    this.read,
+                    this.modify,
+                    this.sender,
+                    this.room
+                );
                 break;
             }
             default: {
+                await sendHelperNotification(
+                    this.read,
+                    this.modify,
+                    this.sender,
+                    this.room
+                );
                 break;
             }
         }

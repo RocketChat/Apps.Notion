@@ -15,6 +15,10 @@ import { Error } from "../../errors/Error";
 import { ModalInteractionStorage } from "../storage/ModalInteraction";
 import { DatabaseModal } from "../../enum/modals/NotionDatabase";
 import { sendNotificationWithConnectBlock } from "../helper/message";
+import { CommentPage } from "../../enum/modals/CommentPage";
+import { createCommentContextualBar } from "../modals/createCommentContextualBar";
+import { NotionPageOrRecord } from "../../enum/modals/NotionPageOrRecord";
+import { createPageOrRecordModal } from "../modals/createPageOrRecordModal";
 
 export class Handler implements IHandler {
     public app: NotionApp;
@@ -76,6 +80,9 @@ export class Handler implements IHandler {
         const { workspace_id } = tokenInfo;
         await modalInteraction.clearAllInteractionActionId();
         await modalInteraction.clearPagesOrDatabase(workspace_id);
+        await modalInteraction.clearInputElementState(
+            DatabaseModal.PROPERTY_NAME
+        );
         const modal = await createDatabaseModal(
             this.app,
             this.sender,
@@ -101,5 +108,142 @@ export class Handler implements IHandler {
                     this.sender
                 );
         }
+    }
+
+    public async commentOnPages(): Promise<void> {
+        const userId = this.sender.id;
+        const roomId = this.room.id;
+        const tokenInfo = await this.oAuth2Storage.getCurrentWorkspace(userId);
+
+        if (!tokenInfo) {
+            await sendNotificationWithConnectBlock(
+                this.app,
+                this.sender,
+                this.read,
+                this.modify,
+                this.room
+            );
+            return;
+        }
+
+        const persistenceRead = this.read.getPersistenceReader();
+        const modalInteraction = new ModalInteractionStorage(
+            this.persis,
+            persistenceRead,
+            userId,
+            CommentPage.VIEW_ID
+        );
+        const { workspace_id } = tokenInfo;
+
+        await Promise.all([
+            this.roomInteractionStorage.storeInteractionRoomId(roomId),
+            modalInteraction.clearPagesOrDatabase(workspace_id),
+            modalInteraction.clearInputElementState(
+                CommentPage.COMMENT_INPUT_ACTION
+            ),
+            modalInteraction.clearInputElementState(
+                CommentPage.REFRESH_OPTION_VALUE
+            ),
+        ]);
+
+        const contextualBar = await createCommentContextualBar(
+            this.app,
+            this.sender,
+            this.read,
+            this.persis,
+            this.modify,
+            this.room,
+            tokenInfo,
+            modalInteraction
+        );
+
+        if (contextualBar instanceof Error) {
+            // Something went Wrong Propably SearchPageComponent Couldn't Fetch the Pages
+            this.app.getLogger().error(contextualBar.message);
+            return;
+        }
+
+        const triggerId = this.triggerId;
+
+        if (triggerId) {
+            await this.modify.getUiController().openSurfaceView(
+                contextualBar,
+                {
+                    triggerId,
+                },
+                this.sender
+            );
+        }
+    }
+
+    public async createNotionPageOrRecord(update?: boolean): Promise<void> {
+        const userId = this.sender.id;
+        const roomId = this.room.id;
+        const tokenInfo = await this.oAuth2Storage.getCurrentWorkspace(userId);
+
+        if (!tokenInfo) {
+            await sendNotificationWithConnectBlock(
+                this.app,
+                this.sender,
+                this.read,
+                this.modify,
+                this.room
+            );
+            return;
+        }
+
+        const persistenceRead = this.read.getPersistenceReader();
+        const modalInteraction = new ModalInteractionStorage(
+            this.persis,
+            persistenceRead,
+            userId,
+            NotionPageOrRecord.VIEW_ID
+        );
+
+        const { workspace_id } = tokenInfo;
+
+        await Promise.all([
+            this.roomInteractionStorage.storeInteractionRoomId(roomId),
+            modalInteraction.clearPagesOrDatabase(workspace_id),
+        ]);
+
+        const modal = await createPageOrRecordModal(
+            this.app,
+            this.sender,
+            this.read,
+            this.persis,
+            this.modify,
+            this.room,
+            modalInteraction,
+            tokenInfo
+        );
+
+        if (modal instanceof Error) {
+            // Something went Wrong Probably SearchPageComponent Couldn't Fetch the Pages
+            this.app.getLogger().error(modal.message);
+            return;
+        }
+
+        const triggerId = this.triggerId;
+
+        if (triggerId) {
+            if (update) {
+                await this.modify.getUiController().updateSurfaceView(
+                    modal,
+                    {
+                        triggerId,
+                    },
+                    this.sender
+                );
+
+                return;
+            }
+
+            await this.modify
+                .getUiController()
+                .openSurfaceView(modal, { triggerId }, this.sender);
+        }
+
+        return;
     }
 }

@@ -7,6 +7,7 @@ export enum NotionOwnerType {
     USER = "user",
     PERSON = "person",
     BOT = "bot",
+    ME = "me",
 }
 
 export enum NotionApi {
@@ -16,6 +17,9 @@ export enum NotionApi {
     CONTENT_TYPE = "application/json",
     SEARCH = `https://api.notion.com/v1/search`,
     CREATE_DATABASE = `https://api.notion.com/v1/databases`,
+    COMMENTS = `https://api.notion.com/v1/comments`,
+    USERS = `https://api.notion.com/v1/users`,
+    PAGES = `https://api.notion.com/v1/pages`,
 }
 
 export enum Notion {
@@ -23,9 +27,21 @@ export enum Notion {
 }
 
 export enum NotionObjectTypes {
+    TYPE = "type",
     PAGE = "page",
     PAGE_ID = "page_id",
     WORKSPACE = "workspace",
     PROPERTY = "object",
-    TEXT = "text"
+    TEXT = "text",
+    FORMAT = "format",
+    EXPRESSION = "expression",
+    UNTITLED = "Untitled",
+    COMMENT = "comment",
+    PARENT = "parent",
+    MENTION = "mention",
+    DATABASE_ID = "database_id",
+    OBJECT = "object",
+    TITLE = "title",
+    INFO = "info",
+    NAME = "name",
 }
