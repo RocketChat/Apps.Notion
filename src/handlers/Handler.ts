@@ -174,4 +174,7 @@ export class Handler implements IHandler {
             );
         }
     }
+
+    public async createNotionPageOrRecord(update?: boolean): Promise<void> {
+    }
 }
