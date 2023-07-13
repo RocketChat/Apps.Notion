@@ -786,6 +786,31 @@ export class ExecuteBlockActionHandler {
             );
         }
 
+        const roomId = await roomInteractionStorage.getInteractionRoomId();
+        const room = (await this.read.getRoomReader().getById(roomId)) as IRoom;
+
+        const handler = new Handler({
+            app: this.app,
+            read: this.read,
+            modify: this.modify,
+            persis: this.persistence,
+            http: this.http,
+            sender: user,
+            room,
+            triggerId,
+        });
+
+        switch (value) {
+            case DatabaseModal.OVERFLOW_MENU_ACTION: {
+                await handler.createNotionDatabase();
+                break;
+            }
+            case NotionPageOrRecord.CHANGE_DATABASE_ACTION: {
+                await handler.createNotionPageOrRecord(true);
+                break;
+            }
+        }
+
         return this.context.getInteractionResponder().successResponse();
     }
 
