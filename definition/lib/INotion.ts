@@ -39,6 +39,9 @@ export interface INotionSDK extends INotion {
         pageId: string,
         comment: string
     ): Promise<ICommentInfo | Error>;
+    searchPagesAndDatabases(
+        token: string
+    ): Promise<Array<IPage | IDatabase> | Error>;
 }
 
 export interface IParentPage {
@@ -48,6 +51,16 @@ export interface IParentPage {
 export interface IPage {
     name: string;
     parent: IParentPage;
+}
+
+export interface IParentDatabase {
+    type: NotionObjectTypes.DATABASE_ID;
+    database_id: string;
+}
+
+export interface IDatabase {
+    info: INotionDatabase;
+    parent: IParentDatabase;
 }
 
 export interface INotionDatabase {
