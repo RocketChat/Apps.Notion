@@ -110,6 +110,10 @@ export class CommandUtility implements ICommandUtility {
                 await handler.commentOnPages();
                 break;
             }
+            case CommandParam.CREATE: {
+                await handler.createNotionPageOrRecord();
+                break;
+            }
             case CommandParam.HELP:
             default: {
                 await sendHelperNotification(

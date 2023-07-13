@@ -19,6 +19,7 @@ export enum NotionApi {
     CREATE_DATABASE = `https://api.notion.com/v1/databases`,
     COMMENTS = `https://api.notion.com/v1/comments`,
     USERS = `https://api.notion.com/v1/users`,
+    PAGES = `https://api.notion.com/v1/pages`,
 }
 
 export enum Notion {
@@ -38,4 +39,9 @@ export enum NotionObjectTypes {
     COMMENT = "comment",
     PARENT = "parent",
     MENTION = "mention",
+    DATABASE_ID = "database_id",
+    OBJECT = "object",
+    TITLE = "title",
+    INFO = "info",
+    NAME = "name",
 }

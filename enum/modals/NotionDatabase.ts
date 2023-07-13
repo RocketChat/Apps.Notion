@@ -47,4 +47,6 @@ export enum DatabaseModal {
     REMOVE_OPTION_BLOCK = "remove-option-notion-database-block-id",
     SELECT_PROPERTY_OPTION_NAME = "select-property-option-name-action",
     PROPERTY_TYPE_TITLE = "title",
+    OVERFLOW_MENU_ACTION = "create-notion-database-overflow-menu-action-id",
+    OVERFLOW_MENU_TEXT = "Create Database",
 }
