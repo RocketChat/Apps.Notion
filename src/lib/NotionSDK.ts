@@ -1,4 +1,8 @@
-import { INotionSDK, IPage } from "../../definition/lib/INotion";
+import {
+    INotionDatabase,
+    INotionSDK,
+    IPage,
+} from "../../definition/lib/INotion";
 import {
     HttpStatusCode,
     IHttp,
@@ -112,7 +116,9 @@ export class NotionSDK implements INotionSDK {
         const pageId: string = item.id;
 
         if (typesWithTitleProperty.includes(parentType)) {
-            const pageName: string = properties.title.title[0].text.content;
+            const pageName: string =
+                properties.title.title[0]?.text?.content ||
+                NotionObjectTypes.UNTITLED;
             return this.returnPage(pageName, pageId);
         }
 
@@ -126,7 +132,9 @@ export class NotionSDK implements INotionSDK {
             properties[firstColumn].title &&
             properties[firstColumn].title.length
         ) {
-            const name: string = properties[firstColumn].title[0].text.content;
+            const name: string =
+                properties[firstColumn].title[0]?.text?.content ||
+                NotionObjectTypes.UNTITLED;
             return this.returnPage(name, pageId);
         }
 
@@ -135,7 +143,9 @@ export class NotionSDK implements INotionSDK {
             properties[lastColumn].title &&
             properties[lastColumn].title.length
         ) {
-            const name: string = properties[lastColumn].title[0].text.content;
+            const name: string =
+                properties[lastColumn].title[0]?.text?.content ||
+                NotionObjectTypes.UNTITLED;
             return this.returnPage(name, pageId);
         }
 
@@ -176,8 +186,10 @@ export class NotionSDK implements INotionSDK {
         }
     }
 
-    public async createNotionDatabase(token: string, data: object) {
-        // return type we will create in next PR
+    public async createNotionDatabase(
+        token: string,
+        data: object
+    ): Promise<INotionDatabase | Error> {
         try {
             const response = await this.http.post(NotionApi.CREATE_DATABASE, {
                 data,
@@ -197,10 +209,14 @@ export class NotionSDK implements INotionSDK {
                 );
             }
 
-            return {
-                name: response.data.title[0]?.text?.content || "Untitled",
+            const result: INotionDatabase = {
+                name:
+                    response.data.title[0]?.text?.content ||
+                    NotionObjectTypes.UNTITLED,
                 link: response.data.url,
             };
+
+            return result;
         } catch (err) {
             throw new AppsEngineException(err as string);
         }

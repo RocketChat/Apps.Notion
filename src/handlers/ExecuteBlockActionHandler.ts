@@ -20,6 +20,9 @@ import { createDatabaseModal } from "../modals/createDatabaseModal";
 import { OAuth2Storage } from "../authorization/OAuth2Storage";
 import { Error } from "../../errors/Error";
 import { sendNotificationWithConnectBlock } from "../helper/message";
+import { PropertyTypeValue } from "../../enum/modals/common/NotionProperties";
+import { Modals } from "../../enum/modals/common/Modals";
+import { getDuplicatePropertyNameViewErrors } from "../helper/getDuplicatePropNameViewError";
 
 export class ExecuteBlockActionHandler {
     private context: UIKitBlockInteractionContext;
@@ -35,7 +38,7 @@ export class ExecuteBlockActionHandler {
     }
 
     public async handleActions(): Promise<IUIKitResponse> {
-        const { actionId, user, room, container } =
+        const { actionId, user, room, container, blockId } =
             this.context.getInteractionData();
         const persistenceRead = this.read.getPersistenceReader();
         const modalInteraction = new ModalInteractionStorage(
@@ -77,7 +80,74 @@ export class ExecuteBlockActionHandler {
                 );
                 break;
             }
+            case DatabaseModal.REMOVE_OPTION_ACTION:
+            case DatabaseModal.ADD_OPTION_ACTION: {
+                this.handleOptionAction(
+                    modalInteraction,
+                    oAuth2Storage,
+                    roomInteractionStorage
+                );
+                break;
+            }
             default: {
+                // Property Type Select Action
+                const propertyTypeSelected =
+                    DatabaseModal.PROPERTY_TYPE_SELECT_ACTION.toString();
+                const isPropertyTypeDispatchAction =
+                    actionId.startsWith(propertyTypeSelected);
+
+                // Property Name Character Entered Action
+                const propertyNameEntered =
+                    DatabaseModal.PROPERTY_NAME_ACTION.toString();
+
+                const titlePropertyNameEntered =
+                    DatabaseModal.TITLE_PROPERTY_ACTION.toString();
+
+                const isPropertyNameDispatchAction =
+                    actionId.startsWith(propertyNameEntered) ||
+                    actionId.startsWith(titlePropertyNameEntered);
+
+                // Property Type Select Option Name Action
+
+                const SelectPropertyOptionNameAction =
+                    DatabaseModal.PROPERTY_TYPE_SELECT_BLOCK.toString();
+
+                const SelectPropertyOptionNameEntered =
+                    DatabaseModal.SELECT_PROPERTY_OPTION_NAME.toString();
+
+                const isSelectOptionNameDispatchAction = blockId.startsWith(
+                    SelectPropertyOptionNameAction
+                );
+
+                const typeOfActionOccurred = isPropertyTypeDispatchAction
+                    ? propertyTypeSelected
+                    : isPropertyNameDispatchAction
+                    ? propertyNameEntered
+                    : isSelectOptionNameDispatchAction
+                    ? SelectPropertyOptionNameEntered
+                    : null;
+
+                switch (typeOfActionOccurred) {
+                    case DatabaseModal.PROPERTY_TYPE_SELECT_ACTION: {
+                        this.handlePropertyTypeSelectAction(
+                            modalInteraction,
+                            oAuth2Storage,
+                            roomInteractionStorage
+                        );
+                        break;
+                    }
+                    case DatabaseModal.PROPERTY_NAME_ACTION: {
+                        return this.handleDuplicatePropertyNameAction(
+                            modalInteraction
+                        );
+                        break;
+                    }
+                    case DatabaseModal.SELECT_PROPERTY_OPTION_NAME: {
+                        break;
+                    }
+                    default: {
+                    }
+                }
             }
         }
 
@@ -131,6 +201,22 @@ export class ExecuteBlockActionHandler {
         const record: object = JSON.parse(value as string);
         await modalInteraction.clearInteractionActionId(record);
 
+        const RemovedFieldPropertyName: string =
+            record?.[DatabaseModal.PROPERTY_NAME];
+
+        const PropertyNameState = await modalInteraction.getInputElementState(
+            DatabaseModal.PROPERTY_NAME
+        );
+
+        // removed field from property name state (which may have the state) if exists
+        if (PropertyNameState) {
+            delete PropertyNameState[RemovedFieldPropertyName];
+            await modalInteraction.storeInputElementState(
+                DatabaseModal.PROPERTY_NAME,
+                PropertyNameState
+            );
+        }
+
         this.handleUpdateofDatabaseModal(
             modalInteraction,
             oAuth2Storage,
@@ -143,7 +229,7 @@ export class ExecuteBlockActionHandler {
         oAuth2Storage: OAuth2Storage,
         roomInteractionStorage: RoomInteractionStorage
     ) {
-        const { user } = this.context.getInteractionData();
+        const { user, triggerId } = this.context.getInteractionData();
         const tokenInfo = await oAuth2Storage.getCurrentWorkspace(user.id);
         const roomId = await roomInteractionStorage.getInteractionRoomId();
         const room = (await this.read.getRoomReader().getById(roomId)) as IRoom;
@@ -176,8 +262,6 @@ export class ExecuteBlockActionHandler {
             return;
         }
 
-        const triggerId = this.context.getInteractionData().triggerId;
-
         await this.modify.getUiController().updateSurfaceView(
             modal,
             {
@@ -185,5 +269,206 @@ export class ExecuteBlockActionHandler {
             },
             user
         );
+    }
+
+    private async handlePropertyTypeSelectAction(
+        modalInteraction: ModalInteractionStorage,
+        oAuth2Storage: OAuth2Storage,
+        roomInteractionStorage: RoomInteractionStorage
+    ): Promise<void> {
+        const { value, actionId } = this.context.getInteractionData();
+        const { data } = await modalInteraction.getAllInteractionActionId();
+        const index = data.findIndex((record) => {
+            return record?.[DatabaseModal.PROPERTY_TYPE] === actionId;
+        });
+
+        const PropertyType: string = data[index]?.[DatabaseModal.PROPERTY_TYPE];
+        const PropertyName: string = data[index]?.[DatabaseModal.PROPERTY_NAME];
+
+        const commonProperties = {
+            PropertyType,
+            PropertyName,
+        };
+
+        if (value) {
+            switch (value) {
+                case PropertyTypeValue.NUMBER: {
+                    data[index] = {
+                        ...commonProperties,
+                        [Modals.ADDITIONAL_CONFIG]: {
+                            type: value,
+                            [Modals.DROPDOWN]: uuid(),
+                        },
+                    };
+                    break;
+                }
+                case PropertyTypeValue.FORMULA: {
+                    data[index] = {
+                        ...commonProperties,
+                        [Modals.ADDITIONAL_CONFIG]: {
+                            type: value,
+                            [Modals.INPUTFIELD]: uuid(),
+                        },
+                    };
+                    break;
+                }
+                case PropertyTypeValue.MULTI_SELECT:
+                case PropertyTypeValue.SELECT: {
+                    data[index] = {
+                        ...commonProperties,
+                        [Modals.ADDITIONAL_CONFIG]: {
+                            type: value,
+                            [Modals.OPTIONS]: [
+                                {
+                                    [Modals.INPUTFIELD]: uuid(),
+                                    [Modals.DROPDOWN]: uuid(),
+                                },
+                            ],
+                        },
+                    };
+                    break;
+                }
+                default: {
+                    data[index] = {
+                        ...commonProperties,
+                    };
+                }
+            }
+
+            await modalInteraction.updateInteractionActionId(data);
+            await this.handleUpdateofDatabaseModal(
+                modalInteraction,
+                oAuth2Storage,
+                roomInteractionStorage
+            );
+        }
+    }
+
+    private async handleOptionAction(
+        modalInteraction: ModalInteractionStorage,
+        oAuth2Storage: OAuth2Storage,
+        roomInteractionStorage: RoomInteractionStorage
+    ): Promise<void> {
+        const { value, actionId } = this.context.getInteractionData();
+        if (value) {
+            const { data } = await modalInteraction.getAllInteractionActionId();
+            const index = data.findIndex((record) => {
+                return record?.[DatabaseModal.PROPERTY_TYPE] === value;
+            });
+
+            const options: Array<{
+                [Modals.INPUTFIELD]: string;
+                [Modals.DROPDOWN]: string;
+            }> = data[index]?.[Modals.ADDITIONAL_CONFIG]?.[Modals.OPTIONS];
+
+            if (actionId.toString() === DatabaseModal.ADD_OPTION_ACTION) {
+                options.push({
+                    [Modals.INPUTFIELD]: uuid(),
+                    [Modals.DROPDOWN]: uuid(),
+                });
+            } else {
+                options.pop();
+            }
+
+            await modalInteraction.updateInteractionActionId(data);
+            await this.handleUpdateofDatabaseModal(
+                modalInteraction,
+                oAuth2Storage,
+                roomInteractionStorage
+            );
+        }
+    }
+
+    private async handleDuplicatePropertyNameAction(
+        modalInteraction: ModalInteractionStorage
+    ): Promise<IUIKitResponse> {
+        const { container } = this.context.getInteractionData();
+
+        const PropertyNameState = await this.handlePropertyNameState(
+            modalInteraction
+        );
+
+        if (PropertyNameState) {
+            const errors = await getDuplicatePropertyNameViewErrors(
+                PropertyNameState
+            );
+
+            if (
+                Object.keys(errors).length ||
+                PropertyNameState[Modals.VIEWERROR]
+            ) {
+                return this.context
+                    .getInteractionResponder()
+                    .viewErrorResponse({
+                        viewId: container.id,
+                        errors,
+                    });
+            }
+        }
+
+        return this.context.getInteractionResponder().successResponse();
+    }
+
+    private async handlePropertyNameState(
+        modalInteraction: ModalInteractionStorage
+    ): Promise<object | undefined> {
+        const { value, actionId, container } =
+            this.context.getInteractionData();
+
+        const inputElementState = await modalInteraction.getInputElementState(
+            DatabaseModal.PROPERTY_NAME
+        );
+
+        // when there is no other state and the value is empty
+        const noOtherStateAndEmptyValue = !value && inputElementState;
+
+        if (noOtherStateAndEmptyValue) {
+            if (Object.keys(inputElementState).length === 1) {
+                delete inputElementState[actionId];
+
+                await modalInteraction.clearInputElementState(
+                    DatabaseModal.PROPERTY_NAME
+                );
+                return undefined;
+            }
+        }
+
+        // when there is no state and character is entered
+        const nullStateAndCharEntered = !inputElementState;
+
+        if (nullStateAndCharEntered) {
+            const state = { [actionId]: value, [Modals.VIEWERROR]: false };
+            await modalInteraction.storeInputElementState(
+                DatabaseModal.PROPERTY_NAME,
+                state
+            );
+            return state;
+        }
+
+        const isViewErrorPreviously = await getDuplicatePropertyNameViewErrors(
+            inputElementState
+        );
+
+        if (Object.keys(isViewErrorPreviously).length) {
+            inputElementState[Modals.VIEWERROR] = true;
+        } else {
+            inputElementState[Modals.VIEWERROR] = false;
+        }
+        // when there is other state and value is not empty
+        const StateExistAndValueNotEmpty = value && value.length;
+
+        if (StateExistAndValueNotEmpty) {
+            inputElementState[actionId] = value;
+        } else {
+            // when there is other state and value is empty
+            delete inputElementState[actionId];
+        }
+
+        await modalInteraction.storeInputElementState(
+            DatabaseModal.PROPERTY_NAME,
+            inputElementState
+        );
+
+        return inputElementState;
     }
 }

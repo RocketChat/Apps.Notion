@@ -19,9 +19,21 @@ import { IUser } from "@rocket.chat/apps-engine/definition/users";
 import { ModalInteractionStorage } from "../storage/ModalInteraction";
 import { ITokenInfo } from "../../definition/authorization/IOAuth2Storage";
 import { DropDownComponent } from "./common/DropDownComponent";
-import { getPropertyTypes } from "../helper/getPropertyTypes";
+import {
+    getNumberPropertyFormat,
+    getPropertyTypes,
+    getSelectOptionColors,
+} from "../helper/getPropertyTypes";
 import { getConnectPreview } from "../helper/getConnectLayout";
 import { IRoom } from "@rocket.chat/apps-engine/definition/rooms";
+import { Modals } from "../../enum/modals/common/Modals";
+import {
+    Color,
+    Number,
+    PropertyTypeValue,
+} from "../../enum/modals/common/NotionProperties";
+import { NotionObjectTypes } from "../../enum/Notion";
+import { ButtonInActionComponent } from "./common/buttonInActionComponent";
 
 export async function createDatabaseModal(
     app: NotionApp,
@@ -66,6 +78,7 @@ export async function createDatabaseModal(
             placeholder: DatabaseModal.TITLE_PROPERTY_PLACEHOLDER,
             label: DatabaseModal.TITLE_PROPERTY_LABEL,
             optional: false,
+            dispatchActionConfigOnInput: true,
         },
         {
             blockId: DatabaseModal.TITLE_PROPERTY_BLOCK,
@@ -94,7 +107,7 @@ export async function createDatabaseModal(
     if (records) {
         records.data.forEach((record, index) => {
             let block: Block;
-            if(index === 0){
+            if (index === 0) {
                 blocks.push(divider);
             }
             const options = getPropertyTypes();
@@ -104,6 +117,7 @@ export async function createDatabaseModal(
                     placeholder: DatabaseModal.PROPERTY_TYPE_SELECT_PLACEHOLDER,
                     text: DatabaseModal.PROPERTY_TYPE_SELECT_LABEL,
                     options,
+                    dispatchActionConfigOnSelect: true,
                 },
                 {
                     blockId: DatabaseModal.PROPERTY_TYPE_SELECT_BLOCK,
@@ -119,6 +133,7 @@ export async function createDatabaseModal(
                     placeholder: DatabaseModal.PROPERTY_NAME_PLACEHOLDER,
                     label: DatabaseModal.PROPERTY_NAME_LABEL,
                     optional: false,
+                    dispatchActionConfigOnInput: true
                 },
                 {
                     blockId: DatabaseModal.PROPERTY_NAME_BLOCK,
@@ -126,6 +141,9 @@ export async function createDatabaseModal(
                 }
             );
             blocks.push(block);
+
+            const configBlocks = addConfigPropertyTypeInteraction(record, app);
+            blocks.push(...configBlocks);
 
             block = ButtonInSectionComponent(
                 {
@@ -173,4 +191,138 @@ export async function createDatabaseModal(
         close,
         submit,
     };
+}
+
+function addConfigPropertyTypeInteraction(record: object, app: NotionApp) {
+    const config: object | undefined = record?.[Modals.ADDITIONAL_CONFIG];
+    let blocks: Block[] = [];
+
+    if (config) {
+        const type: string = config?.[NotionObjectTypes.TYPE];
+        switch (type) {
+            case PropertyTypeValue.NUMBER: {
+                const options = getNumberPropertyFormat();
+                const initialValue = Number.NUMBER.toString();
+                const actionId: string = config?.[Modals.DROPDOWN];
+                const dropDown = DropDownComponent(
+                    {
+                        app,
+                        placeholder:
+                            DatabaseModal.NUMBER_PROPERTY_FORMAT_PLACEHOLDER,
+                        text: DatabaseModal.NUMBER_PROPERTY_FORMAT_LABEL,
+                        initialValue: initialValue,
+                        options,
+                    },
+                    {
+                        blockId: DatabaseModal.PROPERTY_TYPE_SELECT_BLOCK,
+                        actionId,
+                    }
+                );
+
+                blocks.push(dropDown);
+                break;
+            }
+            case PropertyTypeValue.FORMULA: {
+                const actionId = config?.[Modals.INPUTFIELD];
+                const inputField = inputElementComponent(
+                    {
+                        app,
+                        placeholder: DatabaseModal.FORMULA_PLACEHOLDER,
+                        label: DatabaseModal.FORMULA_LABEL,
+                        optional: false,
+                    },
+                    {
+                        blockId: DatabaseModal.PROPERTY_TYPE_SELECT_BLOCK,
+                        actionId,
+                    }
+                );
+                blocks.push(inputField);
+                break;
+            }
+            case PropertyTypeValue.MULTI_SELECT:
+            case PropertyTypeValue.SELECT: {
+                const options: Array<{
+                    [Modals.INPUTFIELD]: string;
+                    [Modals.DROPDOWN]: string;
+                }> = config?.[Modals.OPTIONS];
+
+                const colorOption = getSelectOptionColors();
+                const initialValue = Color.DEFAULT.toString();
+
+                options.forEach((option) => {
+                    const actionIdInputField: string =
+                        option?.[Modals.INPUTFIELD];
+                    const actionIdDropDown: string = option?.[Modals.DROPDOWN];
+                    const inputField = inputElementComponent(
+                        {
+                            app,
+                            placeholder:
+                                DatabaseModal.SELECT_PROPERTY_OPTION_PLACEHOLDER,
+                            label: DatabaseModal.SELECT_PROPERTY_OPTION_LABEL,
+                            optional: false,
+                            dispatchActionConfigOnInput: true
+                        },
+                        {
+                            blockId: DatabaseModal.PROPERTY_TYPE_SELECT_BLOCK,
+                            actionId: actionIdInputField,
+                        }
+                    );
+                    blocks.push(inputField);
+
+                    const dropDown = DropDownComponent(
+                        {
+                            app,
+                            placeholder:
+                                DatabaseModal.SELECT_PROPERTY_OPTION_COLOR_PLACEHOLDER,
+                            text: DatabaseModal.SELECT_PROPERTY_OPTION_COLOR_LABEL,
+                            initialValue: initialValue,
+                            options: colorOption,
+                        },
+                        {
+                            blockId: DatabaseModal.PROPERTY_TYPE_SELECT_BLOCK,
+                            actionId: actionIdDropDown,
+                        }
+                    );
+
+                    blocks.push(dropDown);
+                });
+
+                if (options.length > 1) {
+                    const removeOptionButton = ButtonInSectionComponent(
+                        {
+                            app,
+                            buttonText: DatabaseModal.REMOVE_OPTION_BUTTON_TEXT,
+                            style: ButtonStyle.DANGER,
+                            value: record?.[DatabaseModal.PROPERTY_TYPE],
+                        },
+                        {
+                            blockId: DatabaseModal.REMOVE_OPTION_BLOCK,
+                            actionId: DatabaseModal.REMOVE_OPTION_ACTION,
+                        }
+                    );
+                    blocks.push(removeOptionButton);
+                }
+
+                const optionButton = ButtonInActionComponent(
+                    {
+                        app,
+                        buttonText: DatabaseModal.ADD_OPTION_BUTTON_TEXT,
+                        style: ButtonStyle.PRIMARY,
+                        value: record?.[DatabaseModal.PROPERTY_TYPE],
+                    },
+                    {
+                        blockId: DatabaseModal.ADD_OPTION_BLOCK,
+                        actionId: DatabaseModal.ADD_OPTION_ACTION,
+                    }
+                );
+
+                blocks.push(optionButton);
+                break;
+            }
+            default: {
+            }
+        }
+    }
+
+    return blocks;
 }
