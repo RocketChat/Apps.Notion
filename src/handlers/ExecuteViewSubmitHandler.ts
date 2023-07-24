@@ -14,6 +14,7 @@ import { ModalInteractionStorage } from "../storage/ModalInteraction";
 import { clearAllInteraction } from "../helper/clearInteractions";
 import { OAuth2Storage } from "../authorization/OAuth2Storage";
 import {
+    sendMessageWithAttachments,
     sendNotification,
     sendNotificationWithAttachments,
     sendNotificationWithConnectBlock,
@@ -29,10 +30,20 @@ import { IMessageAttachmentField } from "@rocket.chat/apps-engine/definition/mes
 import { NotionPageOrRecord } from "../../enum/modals/NotionPageOrRecord";
 import { NotionObjectTypes } from "../../enum/Notion";
 import { ITokenInfo } from "../../definition/authorization/IOAuth2Storage";
-import { IDatabase, IPage } from "../../definition/lib/INotion";
+import {
+    IDatabase,
+    IPage,
+    IParentDatabase,
+} from "../../definition/lib/INotion";
 import { SearchPageAndDatabase } from "../../enum/modals/common/SearchPageAndDatabaseComponent";
 import { NotionWorkspace } from "../../enum/modals/NotionWorkspace";
 import { getConnectPreview } from "../helper/getConnectLayout";
+import { getTitleProperty } from "../helper/getTitleProperty";
+import { markdownToRichText } from "@tryfabric/martian";
+import {
+    CheckboxEnum,
+    PropertyTypeValue,
+} from "../../enum/modals/common/NotionProperties";
 
 export class ExecuteViewSubmitHandler {
     private context: UIKitViewSubmitInteractionContext;
@@ -258,7 +269,13 @@ export class ExecuteViewSubmitHandler {
             );
         }
 
-        return this.handleCreationOfRecord();
+        return this.handleCreationOfRecord(
+            tokenInfo,
+            room,
+            oAuth2Storage,
+            modalInteraction,
+            Object as IDatabase
+        );
     }
 
     private async handleCreationOfPage(
@@ -299,7 +316,69 @@ export class ExecuteViewSubmitHandler {
         return this.context.getInteractionResponder().successResponse();
     }
 
-    private async handleCreationOfRecord(): Promise<IUIKitResponse> {
+    private async handleCreationOfRecord(
+        tokenInfo: ITokenInfo,
+        room: IRoom,
+        oAuth2Storage: OAuth2Storage,
+        modalInteraction: ModalInteractionStorage,
+        database: IDatabase
+    ): Promise<IUIKitResponse> {
+        const { view, user } = this.context.getInteractionData();
+        const { state } = view;
+        const { NotionSdk } = this.app.getUtils();
+        const { access_token, workspace_name, owner } = tokenInfo;
+        const username = owner.user.name;
+
+        const properties = (await modalInteraction.getInputElementState(
+            SearchPageAndDatabase.ACTION_ID
+        )) as object;
+
+        const propertyElements =
+            await modalInteraction.getAllInteractionActionId();
+
+        const data = await this.getPagePropParamObject(
+            state,
+            properties,
+            propertyElements
+        );
+
+        const createdRecord = await NotionSdk.createRecord(
+            access_token,
+            database,
+            data
+        );
+
+        let message: string;
+
+        if (createdRecord instanceof Error) {
+            this.app.getLogger().error(createdRecord.message);
+            message = `🚫 Something went wrong while creating record in **${workspace_name}**.`;
+            await sendNotification(this.read, this.modify, user, room, {
+                message,
+            });
+        } else {
+            const { info } = database;
+            const databasename = info.name;
+            const databaselink = info.link;
+            const title: string =
+                state?.[NotionPageOrRecord.TITLE_BLOCK]?.[
+                    NotionPageOrRecord.TITLE_ACTION
+                ];
+
+            message = `✨ Created **${title}** in [**${databasename}**](${databaselink})`;
+
+            await sendMessageWithAttachments(
+                this.read,
+                this.modify,
+                user,
+                room,
+                {
+                    message: message,
+                    fields: createdRecord,
+                }
+            );
+        }
+
         return this.context.getInteractionResponder().successResponse();
     }
 
@@ -353,5 +432,126 @@ export class ExecuteViewSubmitHandler {
 
         await roomInteractionStorage.clearInteractionRoomId();
         return this.context.getInteractionResponder().successResponse();
+    }
+
+    private async getPagePropParamObject(
+        state: object | undefined,
+        properties: object,
+        propertyElements: { data: object[] } | undefined
+    ): Promise<object> {
+        const title: string =
+            state?.[NotionPageOrRecord.TITLE_BLOCK]?.[
+                NotionPageOrRecord.TITLE_ACTION
+            ];
+
+        const { label } = await getTitleProperty(properties);
+
+        const data: object = {
+            [label]: {
+                [NotionObjectTypes.TITLE]: markdownToRichText(title),
+            },
+        };
+
+        const propertyValues: object =
+            state?.[NotionPageOrRecord.PROPERTY_SELECTED_BLOCK_ELEMENT];
+
+        propertyElements?.data?.forEach((propertyInfo: object) => {
+            const propertyObject: object =
+                propertyInfo?.[NotionObjectTypes.OBJECT];
+            const propertyName: string =
+                propertyObject?.[NotionObjectTypes.NAME];
+            const propertyType: string =
+                propertyObject?.[NotionObjectTypes.TYPE];
+            const actionId: string = propertyInfo?.[Modals.VALUE];
+            const propertyValue: string | Array<string> =
+                propertyValues?.[actionId];
+            switch (propertyType) {
+                case PropertyTypeValue.CHECKBOX: {
+                    data[propertyName] = {
+                        [PropertyTypeValue.CHECKBOX]:
+                            propertyValue == CheckboxEnum.TRUE,
+                    };
+                    break;
+                }
+                case PropertyTypeValue.TEXT: {
+                    data[propertyName] = {
+                        [PropertyTypeValue.TEXT]: markdownToRichText(
+                            propertyValue as string
+                        ),
+                    };
+                    break;
+                }
+                case PropertyTypeValue.NUMBER: {
+                    data[propertyName] = {
+                        [PropertyTypeValue.NUMBER]: Number(propertyValue),
+                    };
+                    break;
+                }
+                case PropertyTypeValue.URL: {
+                    data[propertyName] = {
+                        [PropertyTypeValue.URL]: propertyValue,
+                    };
+                    break;
+                }
+                case PropertyTypeValue.EMAIL: {
+                    data[propertyName] = {
+                        [PropertyTypeValue.EMAIL]: propertyValue,
+                    };
+                    break;
+                }
+                case PropertyTypeValue.PHONE_NUMBER: {
+                    data[propertyName] = {
+                        [PropertyTypeValue.PHONE_NUMBER]: propertyValue,
+                    };
+                    break;
+                }
+                case PropertyTypeValue.DATE: {
+                    data[propertyName] = {
+                        [PropertyTypeValue.DATE]: {
+                            start: propertyValue,
+                        },
+                    };
+                    break;
+                }
+                case PropertyTypeValue.SELECT: {
+                    data[propertyName] = {
+                        [PropertyTypeValue.SELECT]: {
+                            name: propertyValue,
+                        },
+                    };
+                    break;
+                }
+                case PropertyTypeValue.PEOPLE: {
+                    const people: Array<object> = [];
+                    (propertyValue as Array<string>)?.forEach((element) => {
+                        people.push(JSON.parse(element));
+                    });
+                    data[propertyName] = {
+                        [PropertyTypeValue.PEOPLE]: people,
+                    };
+                    break;
+                }
+                case PropertyTypeValue.MULTI_SELECT: {
+                    const multiSelect: Array<object> = [];
+                    (propertyValue as Array<string>)?.forEach((element) => {
+                        multiSelect.push({ name: element });
+                    });
+                    data[propertyName] = {
+                        [PropertyTypeValue.MULTI_SELECT]: multiSelect,
+                    };
+                    break;
+                }
+                case "status": {
+                    data[propertyName] = {
+                        status: {
+                            name: propertyValue,
+                        },
+                    };
+                    break;
+                }
+            }
+        });
+
+        return data;
     }
 }

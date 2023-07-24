@@ -21,6 +21,9 @@ import { NotionPageOrRecord } from "../../enum/modals/NotionPageOrRecord";
 import { createPageOrRecordModal } from "../modals/createPageOrRecordModal";
 import { changeWorkspaceModal } from "../modals/changeWorkspaceModal";
 import { NotionWorkspace } from "../../enum/modals/NotionWorkspace";
+import { SearchPageAndDatabase } from "../../enum/modals/common/SearchPageAndDatabaseComponent";
+import { NotionObjectTypes } from "../../enum/Notion";
+import { PropertyTypeValue } from "../../enum/modals/common/NotionProperties";
 
 export class Handler implements IHandler {
     public app: NotionApp;
@@ -207,6 +210,14 @@ export class Handler implements IHandler {
         await Promise.all([
             this.roomInteractionStorage.storeInteractionRoomId(roomId),
             modalInteraction.clearPagesOrDatabase(workspace_id),
+            modalInteraction.clearInputElementState(
+                SearchPageAndDatabase.ACTION_ID
+            ),
+            modalInteraction.clearAllInteractionActionId(),
+            modalInteraction.clearInputElementState(
+                NotionObjectTypes.PROPERTIES
+            ),
+            modalInteraction.clearInputElementState(PropertyTypeValue.PEOPLE),
         ]);
 
         const modal = await createPageOrRecordModal(

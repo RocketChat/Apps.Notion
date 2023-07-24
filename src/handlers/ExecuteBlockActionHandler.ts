@@ -26,8 +26,11 @@ import { getDuplicatePropertyNameViewErrors } from "../helper/getDuplicatePropNa
 import { SearchPage } from "../../enum/modals/common/SearchPageComponent";
 import { createCommentContextualBar } from "../modals/createCommentContextualBar";
 import { CommentPage } from "../../enum/modals/CommentPage";
-import { NotionObjectTypes } from "../../enum/Notion";
-import { ITokenInfo } from "../../definition/authorization/IOAuth2Storage";
+import { NotionObjectTypes, NotionOwnerType } from "../../enum/Notion";
+import {
+    INotionUser,
+    ITokenInfo,
+} from "../../definition/authorization/IOAuth2Storage";
 import {
     ICommentInfo,
     IDatabase,
@@ -41,6 +44,7 @@ import { createPageOrRecordModal } from "../modals/createPageOrRecordModal";
 import { NotionPageOrRecord } from "../../enum/modals/NotionPageOrRecord";
 import { NotionWorkspace } from "../../enum/modals/NotionWorkspace";
 import { changeWorkspaceModal } from "../modals/changeWorkspaceModal";
+import { getPropertiesIdsObject } from "../helper/getPropertiesIdsObject";
 
 export class ExecuteBlockActionHandler {
     private context: UIKitBlockInteractionContext;
@@ -149,6 +153,23 @@ export class ExecuteBlockActionHandler {
 
                 break;
             }
+            case NotionPageOrRecord.ADD_PROPERTY_ACTION: {
+                return this.handleRecordAddPropertyAction(
+                    modalInteraction,
+                    oAuth2Storage,
+                    roomInteractionStorage
+                );
+                break;
+            }
+            case NotionPageOrRecord.REMOVE_PROPERTY_ACTION: {
+                return this.handleRecordRemovePropertyAction(
+                    modalInteraction,
+                    oAuth2Storage,
+                    roomInteractionStorage
+                );
+
+                break;
+            }
             case NotionWorkspace.CHANGE_WORKSPACE_ACTION: {
                 return this.handleChangeWorkspaceAction(
                     modalInteraction,
@@ -187,12 +208,20 @@ export class ExecuteBlockActionHandler {
                     SelectPropertyOptionNameAction
                 );
 
+                // Notion Record Property Select Action
+                const propertySelectAction =
+                    NotionPageOrRecord.PROPERTY_ACTION.toString();
+                const isPropertySelectAction =
+                    actionId.startsWith(propertySelectAction);
+
                 const typeOfActionOccurred = isPropertyTypeDispatchAction
                     ? propertyTypeSelected
                     : isPropertyNameDispatchAction
                     ? propertyNameEntered
                     : isSelectOptionNameDispatchAction
                     ? SelectPropertyOptionNameEntered
+                    : isPropertySelectAction
+                    ? propertySelectAction
                     : null;
 
                 switch (typeOfActionOccurred) {
@@ -211,6 +240,14 @@ export class ExecuteBlockActionHandler {
                         break;
                     }
                     case DatabaseModal.SELECT_PROPERTY_OPTION_NAME: {
+                        break;
+                    }
+                    case NotionPageOrRecord.PROPERTY_ACTION: {
+                        return this.handleRecordPropertySelectAction(
+                            modalInteraction,
+                            oAuth2Storage,
+                            roomInteractionStorage
+                        );
                         break;
                     }
                     default: {
@@ -860,6 +897,33 @@ export class ExecuteBlockActionHandler {
         }
 
         const database = Object as IDatabase;
+
+        const databaseId = database.parent.database_id;
+        const { NotionSdk } = this.app.getUtils();
+        const { access_token } = tokenInfo;
+
+        const properties = await NotionSdk.retrieveDatabase(
+            access_token,
+            databaseId
+        );
+
+        if (properties instanceof Error) {
+            this.app.getLogger().error(properties.message);
+            return this.context.getInteractionResponder().errorResponse();
+        }
+
+        await modalInteraction.storeInputElementState(
+            SearchPageAndDatabase.ACTION_ID,
+            properties
+        );
+
+        const propertiesId = getPropertiesIdsObject(properties);
+
+        await modalInteraction.storeInputElementState(
+            NotionObjectTypes.PROPERTIES,
+            propertiesId
+        );
+
         const modal = await createPageOrRecordModal(
             this.app,
             user,
@@ -920,6 +984,252 @@ export class ExecuteBlockActionHandler {
             modalInteraction,
             changedTokenInfo
         );
+
+        return this.context
+            .getInteractionResponder()
+            .updateModalViewResponse(modal);
+    }
+
+    private async handleRecordAddPropertyAction(
+        modalInteraction: ModalInteractionStorage,
+        oAuth2Storage: OAuth2Storage,
+        roomInteractionStorage: RoomInteractionStorage
+    ): Promise<IUIKitResponse> {
+        const { value, user } = this.context.getInteractionData();
+
+        const tokenInfo = await oAuth2Storage.getCurrentWorkspace(user.id);
+        const roomId = await roomInteractionStorage.getInteractionRoomId();
+        const room = (await this.read.getRoomReader().getById(roomId)) as IRoom;
+
+        if (!tokenInfo) {
+            await sendNotificationWithConnectBlock(
+                this.app,
+                user,
+                this.read,
+                this.modify,
+                room
+            );
+
+            return this.context.getInteractionResponder().errorResponse();
+        }
+
+        if (!value) {
+            return this.context.getInteractionResponder().errorResponse();
+        }
+
+        await modalInteraction.storeInteractionActionId({
+            property: NotionPageOrRecord.PROPERTY_ACTION + uuid(),
+        });
+
+        const database: IDatabase = JSON.parse(value);
+
+        const modal = await createPageOrRecordModal(
+            this.app,
+            user,
+            this.read,
+            this.persistence,
+            this.modify,
+            room,
+            modalInteraction,
+            tokenInfo,
+            database,
+            true
+        );
+
+        if (modal instanceof Error) {
+            this.app.getLogger().error(modal.message);
+            return this.context.getInteractionResponder().errorResponse();
+        }
+
+        return this.context
+            .getInteractionResponder()
+            .updateModalViewResponse(modal);
+    }
+
+    private async handleRecordPropertySelectAction(
+        modalInteraction: ModalInteractionStorage,
+        oAuth2Storage: OAuth2Storage,
+        roomInteractionStorage: RoomInteractionStorage
+    ): Promise<IUIKitResponse> {
+        const { actionId, user, value } = this.context.getInteractionData();
+        const tokenInfo = await oAuth2Storage.getCurrentWorkspace(user.id);
+        const roomId = await roomInteractionStorage.getInteractionRoomId();
+        const room = (await this.read.getRoomReader().getById(roomId)) as IRoom;
+
+        if (!tokenInfo) {
+            await sendNotificationWithConnectBlock(
+                this.app,
+                user,
+                this.read,
+                this.modify,
+                room
+            );
+
+            return this.context.getInteractionResponder().errorResponse();
+        }
+
+        if (!value) {
+            return this.context.getInteractionResponder().errorResponse();
+        }
+
+        const propertyElements =
+            await modalInteraction.getAllInteractionActionId();
+
+        const propertiesId = (await modalInteraction.getInputElementState(
+            NotionObjectTypes.PROPERTIES
+        )) as object;
+
+        const actionValue: {
+            parent: IDatabase;
+            propertyObject: object;
+        } = JSON.parse(value);
+
+        const { parent, propertyObject } = actionValue;
+        const propertyId: string = propertyObject?.[NotionObjectTypes.ID];
+        const propertyType: string = propertyObject?.[NotionObjectTypes.TYPE];
+
+        if (propertyType.includes(PropertyTypeValue.PEOPLE.toString())) {
+            const { NotionSdk } = this.app.getUtils();
+            const { access_token } = tokenInfo;
+            const users = await NotionSdk.retrieveAllUsers(access_token);
+
+            if (users instanceof Error) {
+                this.app.getLogger().error(users.message);
+                return this.context.getInteractionResponder().errorResponse();
+            }
+
+            let people: Array<INotionUser> = [];
+
+            users.forEach((person) => {
+                if (person.type.includes(NotionOwnerType.PERSON)) {
+                    people.push(person as INotionUser);
+                }
+            });
+
+            await modalInteraction.storeInputElementState(
+                PropertyTypeValue.PEOPLE,
+                { people }
+            );
+        }
+
+        const data = propertyElements.data;
+
+        const index = data.findIndex((item) => {
+            const propertySelectActionId: string = item?.[Modals.PROPERTY];
+            return propertySelectActionId === actionId;
+        });
+
+        const previouslySelectedOption: object | undefined =
+            data[index]?.[NotionObjectTypes.OBJECT];
+
+        if (previouslySelectedOption) {
+            const previouslySelectedOptionId: string =
+                previouslySelectedOption?.[NotionObjectTypes.ID];
+
+            propertiesId[previouslySelectedOptionId] =
+                !propertiesId[previouslySelectedOptionId];
+        }
+
+        propertiesId[propertyId] = true;
+
+        data[index][NotionObjectTypes.OBJECT] = propertyObject;
+
+        data[index][Modals.VALUE] = uuid();
+
+        await modalInteraction.updateInteractionActionId(data);
+
+        await modalInteraction.storeInputElementState(
+            NotionObjectTypes.PROPERTIES,
+            propertiesId
+        );
+
+        const modal = await createPageOrRecordModal(
+            this.app,
+            user,
+            this.read,
+            this.persistence,
+            this.modify,
+            room,
+            modalInteraction,
+            tokenInfo,
+            parent
+        );
+
+        if (modal instanceof Error) {
+            this.app.getLogger().error(modal.message);
+            return this.context.getInteractionResponder().errorResponse();
+        }
+
+        return this.context
+            .getInteractionResponder()
+            .updateModalViewResponse(modal);
+    }
+
+    private async handleRecordRemovePropertyAction(
+        modalInteraction: ModalInteractionStorage,
+        oAuth2Storage: OAuth2Storage,
+        roomInteractionStorage: RoomInteractionStorage
+    ): Promise<IUIKitResponse> {
+        const { user, value } = this.context.getInteractionData();
+        const tokenInfo = await oAuth2Storage.getCurrentWorkspace(user.id);
+        const roomId = await roomInteractionStorage.getInteractionRoomId();
+        const room = (await this.read.getRoomReader().getById(roomId)) as IRoom;
+
+        if (!tokenInfo) {
+            await sendNotificationWithConnectBlock(
+                this.app,
+                user,
+                this.read,
+                this.modify,
+                room
+            );
+
+            return this.context.getInteractionResponder().errorResponse();
+        }
+
+        if (!value) {
+            return this.context.getInteractionResponder().errorResponse();
+        }
+
+        const {
+            parent,
+            propertyObject,
+        }: { parent: IDatabase; propertyObject: object } = JSON.parse(value);
+
+        await modalInteraction.clearInteractionActionId(propertyObject);
+
+        const propertyId: string | undefined =
+            propertyObject?.[NotionObjectTypes.OBJECT]?.[NotionObjectTypes.ID];
+
+        if (propertyId) {
+            const propertiesId = (await modalInteraction.getInputElementState(
+                NotionObjectTypes.PROPERTIES
+            )) as object;
+
+            propertiesId[propertyId] = false;
+
+            await modalInteraction.storeInputElementState(
+                NotionObjectTypes.PROPERTIES,
+                propertiesId
+            );
+        }
+
+        const modal = await createPageOrRecordModal(
+            this.app,
+            user,
+            this.read,
+            this.persistence,
+            this.modify,
+            room,
+            modalInteraction,
+            tokenInfo,
+            parent
+        );
+
+        if (modal instanceof Error) {
+            this.app.getLogger().error(modal.message);
+            return this.context.getInteractionResponder().errorResponse();
+        }
 
         return this.context
             .getInteractionResponder()

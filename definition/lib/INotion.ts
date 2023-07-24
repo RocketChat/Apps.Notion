@@ -4,6 +4,9 @@ import { INotionUser, ITokenInfo } from "../authorization/IOAuth2Storage";
 import { ClientError, Error } from "../../errors/Error";
 import { NotionObjectTypes, NotionOwnerType } from "../../enum/Notion";
 import { RichText } from "@tryfabric/martian/build/src/notion";
+import { RecordPropertyType } from "../../enum/modals/common/NotionProperties";
+import { Modals } from "../../enum/modals/common/Modals";
+import { IMessageAttachmentField } from "@rocket.chat/apps-engine/definition/messages";
 
 export interface INotion {
     baseUrl: string;
@@ -47,6 +50,15 @@ export interface INotionSDK extends INotion {
         page: IPage,
         prop: IPageProperties
     ): Promise<INotionPage | Error>;
+    retrieveDatabase(
+        token: string,
+        database_id: string
+    ): Promise<object | Error>;
+    createRecord(
+        token: string,
+        database: IDatabase,
+        properties: object
+    ): Promise<Array<IMessageAttachmentField> | Error>;
 }
 
 export interface IParentPage {
@@ -113,4 +125,41 @@ export interface IPageProperties {
 
 export interface INotionPage extends INotionDatabase {
     title: string;
+}
+
+export interface IDatabaseProperties {
+    title: IDatabaseTitle;
+    additionalProperties?: IDatabaseAddProperties;
+}
+
+export interface IDatabaseTitle {
+    id: string;
+    type: NotionObjectTypes.TITLE;
+    name: string;
+}
+
+export interface IDatabaseAddProperties {
+    [key: string]: {
+        id: string;
+        name: string;
+        type: RecordPropertyType;
+        config?: IDatabasePropertiesConfig;
+    };
+}
+
+interface IDatabasePropertiesConfig {
+    [Modals.OPTIONS]?: Array<{
+        id: string;
+        color: string;
+        name: string;
+    }>;
+
+    [Modals.GROUPS]?: Array<{
+        id: string;
+        color: string;
+        name: string;
+        options_ids: Array<string>;
+    }>;
+
+    [NotionObjectTypes.EXPRESSION]?: string;
 }

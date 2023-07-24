@@ -11,6 +11,8 @@ import {
     PlainTextInputElement,
     OverflowElement,
     Option,
+    DatePickerElement,
+    MultiStaticSelectElement,
 } from "@rocket.chat/ui-kit";
 import { ButtonParam } from "../../definition/ui-kit/Element/IButtonElement";
 import { ImageParam } from "../../definition/ui-kit/Element/IImageElement";
@@ -20,6 +22,8 @@ import {
 } from "../../definition/ui-kit/Element/IStaticSelectElement";
 import { PlainTextInputParam } from "../../definition/ui-kit/Element/IPlainTextInputElement";
 import { OverflowElementParam } from "../../definition/ui-kit/Element/IOverflowElement";
+import { DatePickerElementParam } from "../../definition/ui-kit/Element/IDatePickerElement";
+import { MultiStaticSelectElementParam } from "../../definition/ui-kit/Element/IMultiStaticSelectElement";
 
 export class ElementBuilder implements IElementBuilder {
     constructor(private readonly appId: string) {}
@@ -158,5 +162,69 @@ export class ElementBuilder implements IElementBuilder {
             actionId,
         };
         return overflow;
+    }
+
+    public createDatePicker(
+        param: DatePickerElementParam,
+        interaction: ElementInteractionParam
+    ): DatePickerElement {
+        const { initialDate, text, dispatchActionConfig } = param;
+        const { blockId, actionId } = interaction;
+
+        const datePicker: DatePickerElement = {
+            type: BlockElementType.DATEPICKER,
+            ...(text
+                ? {
+                      placeholder: {
+                          type: TextObjectType.PLAIN_TEXT,
+                          text,
+                      },
+                  }
+                : undefined),
+            initialDate,
+            appId: this.appId,
+            blockId,
+            actionId,
+            dispatchActionConfig,
+        };
+
+        return datePicker;
+    }
+
+    public createMultiStaticSelect(
+        param: MultiStaticSelectElementParam,
+        interaction: ElementInteractionParam
+    ): MultiStaticSelectElement {
+        const {
+            text,
+            options,
+            optionGroups,
+            maxSelectItems,
+            initialOption,
+            initialValue,
+            dispatchActionConfig,
+            confirm,
+        } = param;
+        const { blockId, actionId } = interaction;
+
+        const multiStaticSelect: MultiStaticSelectElement = {
+            type: BlockElementType.MULTI_STATIC_SELECT,
+            placeholder: {
+                type: TextObjectType.PLAIN_TEXT,
+                text,
+            },
+            options,
+            optionGroups,
+            maxSelectItems,
+            initialOption,
+            initialValue,
+            appId: this.appId,
+            blockId,
+            actionId,
+            dispatchActionConfig,
+            confirm,
+        };
+
+        return multiStaticSelect;
     }
 }
