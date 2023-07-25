@@ -8,6 +8,7 @@ export interface IHandler extends Omit<ICommandUtilityParams, "params"> {
     createNotionDatabase(): Promise<void>;
     commentOnPages(): Promise<void>;
     createNotionPageOrRecord(): Promise<void>;
+    changeNotionWorkspace(): Promise<void>;
 }
 
 export type IHanderParams = Omit<ICommandUtilityParams, "params">;
