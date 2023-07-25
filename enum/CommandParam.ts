@@ -4,6 +4,7 @@ export enum CommandParam {
     CREATE = "create",
     HELP = "help",
     COMMENT = "comment",
+    WORKSPACE = "workspace",
 }
 
 export enum SubCommandParam {
