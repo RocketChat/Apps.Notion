@@ -31,6 +31,8 @@ import { NotionObjectTypes } from "../../enum/Notion";
 import { ITokenInfo } from "../../definition/authorization/IOAuth2Storage";
 import { IDatabase, IPage } from "../../definition/lib/INotion";
 import { SearchPageAndDatabase } from "../../enum/modals/common/SearchPageAndDatabaseComponent";
+import { NotionWorkspace } from "../../enum/modals/NotionWorkspace";
+import { getConnectPreview } from "../helper/getConnectLayout";
 
 export class ExecuteViewSubmitHandler {
     private context: UIKitViewSubmitInteractionContext;
@@ -80,6 +82,15 @@ export class ExecuteViewSubmitHandler {
             case NotionPageOrRecord.VIEW_ID: {
                 return this.handleCreationOfPageOrRecord(
                     room,
+                    oAuth2Storage,
+                    modalInteraction
+                );
+                break;
+            }
+            case NotionWorkspace.VIEW_ID: {
+                return this.handleSelectOfWorkspace(
+                    room,
+                    roomInteractionStorage,
                     oAuth2Storage,
                     modalInteraction
                 );
@@ -289,6 +300,58 @@ export class ExecuteViewSubmitHandler {
     }
 
     private async handleCreationOfRecord(): Promise<IUIKitResponse> {
+        return this.context.getInteractionResponder().successResponse();
+    }
+
+    private async handleSelectOfWorkspace(
+        room: IRoom,
+        roomInteractionStorage: RoomInteractionStorage,
+        oAuth2Storage: OAuth2Storage,
+        modalInteraction: ModalInteractionStorage
+    ): Promise<IUIKitResponse> {
+        const { user, triggerId, view } = this.context.getInteractionData();
+        const tokenInfo = await oAuth2Storage.getCurrentWorkspace(user.id);
+        if (!tokenInfo) {
+            await sendNotificationWithConnectBlock(
+                this.app,
+                user,
+                this.read,
+                this.modify,
+                room
+            );
+            return this.context.getInteractionResponder().errorResponse();
+        }
+
+        const { state } = view;
+
+        if (!state) {
+            return this.context.getInteractionResponder().errorResponse();
+        }
+
+        const workspaceInfo: string =
+            state?.[NotionWorkspace.CHANGE_WORKSPACE_BLOCK]?.[
+                NotionWorkspace.CHANGE_WORKSPACE_ACTION
+            ];
+
+        const selectedWorkspace: ITokenInfo = JSON.parse(workspaceInfo);
+
+        if (selectedWorkspace !== tokenInfo) {
+            await oAuth2Storage.connectUserToWorkspace(
+                selectedWorkspace,
+                user.id
+            );
+
+            const connectPreview = getConnectPreview(
+                this.app.getID(),
+                selectedWorkspace
+            );
+
+            await sendNotification(this.read, this.modify, user, room, {
+                blocks: [connectPreview],
+            });
+        }
+
+        await roomInteractionStorage.clearInteractionRoomId();
         return this.context.getInteractionResponder().successResponse();
     }
 }
