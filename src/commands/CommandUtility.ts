@@ -114,6 +114,7 @@ export class CommandUtility implements ICommandUtility {
                 await handler.createNotionPageOrRecord();
                 break;
             }
+            case CommandParam.WS:
             case CommandParam.WORKSPACE: {
                 await handler.changeNotionWorkspace();
                 break;

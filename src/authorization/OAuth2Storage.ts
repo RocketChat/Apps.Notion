@@ -101,15 +101,16 @@ export class OAuth2Storage implements IOAuth2Storage {
         let workspaces = await this.getAllConnectedWorkspaces(userId);
 
         if (workspaces) {
-            const index = workspaces.findIndex((workspace) => {
-                return workspace.workspace_id === tokenInfo.workspace_id;
+            const newWorkspaces: ITokenInfo[] = [];
+
+            workspaces.forEach((workspace, i) => {
+                if (!(workspace.workspace_id === tokenInfo.workspace_id)) {
+                    newWorkspaces.push(workspace);
+                }
             });
 
-            if (index < 0) {
-                workspaces.push(tokenInfo);
-            } else {
-                workspaces[index] = tokenInfo;
-            }
+            newWorkspaces.push(tokenInfo);
+            workspaces = newWorkspaces;
         } else {
             workspaces = [tokenInfo];
         }
