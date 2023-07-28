@@ -944,4 +944,44 @@ export class NotionSDK implements INotionSDK {
 
         return fields;
     }
+
+    public async retrievePage(
+        token: string,
+        pageId: string
+    ): Promise<(IPage & { url: string }) | Error> {
+        try {
+            const response = await this.http.get(
+                NotionApi.PAGES + `/${pageId}`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": NotionApi.CONTENT_TYPE,
+                        "User-Agent": NotionApi.USER_AGENT,
+                        "Notion-Version": this.NotionVersion,
+                    },
+                }
+            );
+
+            if (!response.statusCode.toString().startsWith("2")) {
+                return this.handleErrorResponse(
+                    response.statusCode,
+                    `Error While retrieving Page: `,
+                    response.content
+                );
+            }
+
+            const pageInfo = response.data;
+            const page = (await this.getPageObjectFromResults(
+                pageInfo
+            )) as IPage;
+            const url: string = pageInfo?.url;
+            
+            return {
+                ...page,
+                url,
+            };
+        } catch (err) {
+            throw new AppsEngineException(err as string);
+        }
+    }
 }

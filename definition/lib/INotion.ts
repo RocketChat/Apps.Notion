@@ -59,6 +59,10 @@ export interface INotionSDK extends INotion {
         database: IDatabase,
         properties: object
     ): Promise<Array<IMessageAttachmentField> | Error>;
+    retrievePage(
+        token: string,
+        pageId: string
+    ): Promise<(IPage & { url: string }) | Error>;
 }
 
 export interface IParentPage {

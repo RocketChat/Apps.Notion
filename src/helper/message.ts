@@ -215,3 +215,28 @@ export async function sendMessageWithAttachments(
 
     await modify.getCreator().finish(messageBuilder);
 }
+
+export async function sendMessage(
+    read: IRead,
+    modify: IModify,
+    user: IUser,
+    room: IRoom,
+    content: { message?: string; blocks?: Array<Block> }
+): Promise<void> {
+    const { message, blocks } = content;
+    const messageBuilder = modify
+        .getCreator()
+        .startMessage()
+        .setSender(user)
+        .setRoom(room)
+        .setGroupable(false)
+        .setParseUrls(true);
+
+    if (message) {
+        messageBuilder.setText(message);
+    } else if (blocks) {
+        messageBuilder.setBlocks(blocks);
+    }
+    await modify.getCreator().finish(messageBuilder);
+    return;
+}

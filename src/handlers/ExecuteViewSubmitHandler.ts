@@ -15,6 +15,7 @@ import { ModalInteractionStorage } from "../storage/ModalInteraction";
 import { clearAllInteraction } from "../helper/clearInteractions";
 import { OAuth2Storage } from "../authorization/OAuth2Storage";
 import {
+    sendMessage,
     sendMessageWithAttachments,
     sendNotification,
     sendNotificationWithAttachments,
@@ -45,6 +46,8 @@ import {
     PropertyTypeValue,
 } from "../../enum/modals/common/NotionProperties";
 import { Block } from "@rocket.chat/ui-kit";
+import { SharePage } from "../../enum/modals/SharePage";
+import { SearchPage } from "../../enum/modals/common/SearchPageComponent";
 
 export class ExecuteViewSubmitHandler {
     private context: UIKitViewSubmitInteractionContext;
@@ -103,6 +106,14 @@ export class ExecuteViewSubmitHandler {
                 return this.handleSelectOfWorkspace(
                     room,
                     roomInteractionStorage,
+                    oAuth2Storage,
+                    modalInteraction
+                );
+                break;
+            }
+            case SharePage.VIEW_ID: {
+                return this.handleSharePage(
+                    room,
                     oAuth2Storage,
                     modalInteraction
                 );
@@ -630,5 +641,48 @@ export class ExecuteViewSubmitHandler {
         });
 
         return data;
+    }
+
+    public async handleSharePage(
+        room: IRoom,
+        oAuth2Storage: OAuth2Storage,
+        modalInteraction: ModalInteractionStorage
+    ): Promise<IUIKitResponse> {
+        const { view, user } = this.context.getInteractionData();
+        const { state } = view;
+
+        const { NotionSdk } = this.app.getUtils();
+        const tokenInfo = await oAuth2Storage.getCurrentWorkspace(user.id);
+
+        if (!tokenInfo) {
+            await sendNotificationWithConnectBlock(
+                this.app,
+                user,
+                this.read,
+                this.modify,
+                room
+            );
+            return this.context.getInteractionResponder().errorResponse();
+        }
+
+        const { workspace_name, owner, access_token } = tokenInfo;
+        const pageId: string =
+            state?.[SearchPage.BLOCK_ID]?.[SharePage.ACTION_ID];
+
+        const pageInfo = await NotionSdk.retrievePage(access_token, pageId);
+
+        if (pageInfo instanceof Error) {
+            return this.context.getInteractionResponder().errorResponse();
+        }
+
+        const { name, parent, url } = pageInfo;
+
+        const message = `✨ Sharing [**${name}**](${url}) from **${workspace_name}**`;
+
+        await sendMessage(this.read, this.modify, user, room, {
+            message,
+        });
+
+        return this.context.getInteractionResponder().successResponse();
     }
 }
