@@ -83,9 +83,6 @@ export class ExecuteViewClosedHandler {
                     ),
                     modalInteraction.clearAllInteractionActionId(),
                     modalInteraction.clearInputElementState(
-                        NotionObjectTypes.PROPERTIES
-                    ),
-                    modalInteraction.clearInputElementState(
                         PropertyTypeValue.PEOPLE
                     )
                 ]);

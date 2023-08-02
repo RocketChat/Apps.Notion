@@ -22,8 +22,9 @@ import { createPageOrRecordModal } from "../modals/createPageOrRecordModal";
 import { changeWorkspaceModal } from "../modals/changeWorkspaceModal";
 import { NotionWorkspace } from "../../enum/modals/NotionWorkspace";
 import { SearchPageAndDatabase } from "../../enum/modals/common/SearchPageAndDatabaseComponent";
-import { NotionObjectTypes } from "../../enum/Notion";
+import { NotionObjectTypes, NotionOwnerType } from "../../enum/Notion";
 import { PropertyTypeValue } from "../../enum/modals/common/NotionProperties";
+import { INotionUser } from "../../definition/authorization/IOAuth2Storage";
 
 export class Handler implements IHandler {
     public app: NotionApp;
@@ -205,7 +206,7 @@ export class Handler implements IHandler {
             NotionPageOrRecord.VIEW_ID
         );
 
-        const { workspace_id } = tokenInfo;
+        const { workspace_id, access_token } = tokenInfo;
 
         await Promise.all([
             this.roomInteractionStorage.storeInteractionRoomId(roomId),
@@ -214,10 +215,6 @@ export class Handler implements IHandler {
                 SearchPageAndDatabase.ACTION_ID
             ),
             modalInteraction.clearAllInteractionActionId(),
-            modalInteraction.clearInputElementState(
-                NotionObjectTypes.PROPERTIES
-            ),
-            modalInteraction.clearInputElementState(PropertyTypeValue.PEOPLE),
         ]);
 
         const modal = await createPageOrRecordModal(
@@ -255,6 +252,28 @@ export class Handler implements IHandler {
             await this.modify
                 .getUiController()
                 .openSurfaceView(modal, { triggerId }, this.sender);
+        }
+
+        const { NotionSdk } = this.app.getUtils();
+        const users = await NotionSdk.retrieveAllUsers(access_token);
+
+        if (users instanceof Error) {
+            this.app.getLogger().error(users.message);
+        } else {
+            let people: Array<INotionUser> = [];
+
+            users.forEach((person) => {
+                if (person.type.includes(NotionOwnerType.PERSON)) {
+                    people.push(person as INotionUser);
+                }
+            });
+
+            await modalInteraction.storeInputElementState(
+                PropertyTypeValue.PEOPLE,
+                {
+                    people,
+                }
+            );
         }
 
         return;

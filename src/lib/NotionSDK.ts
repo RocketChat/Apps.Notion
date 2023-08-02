@@ -776,8 +776,6 @@ export class NotionSDK implements INotionSDK {
 
     private async getFieldsFromRecord(properties: object) {
         const fields: Array<IMessageAttachmentField> = [];
-        console.log(properties);
-
         const propertyKeys = Object.keys(properties);
 
         for (let index = 0; index < propertyKeys.length; ++index) {
@@ -881,7 +879,7 @@ export class NotionSDK implements INotionSDK {
                     const value: Array<object> | null =
                         propertyObject?.[propertyType];
                     let fieldValue = "";
-                    if (value) {
+                    if (value && value.length) {
                         const fullLength = value.length;
                         value.forEach((element, index) => {
                             const name: string =
@@ -902,9 +900,29 @@ export class NotionSDK implements INotionSDK {
                     break;
                 }
                 case PropertyTypeValue.MULTI_SELECT: {
-                    const value: object | null = propertyObject?.[propertyType];
-                    if (value) {
-                        console.log(value);
+                    const value: Array<{
+                        id: string;
+                        name: string;
+                        color: string;
+                    }> | null = propertyObject?.[propertyType];
+                    if (value && value.length) {
+                        const fullLength = value.length;
+                        let MultiSelectValue = "";
+                        value.forEach((element, index) => {
+                            const name: string =
+                                element?.[NotionObjectTypes.NAME];
+                            MultiSelectValue += `${name}`;
+
+                            if (index < fullLength - 1) {
+                                MultiSelectValue += ", ";
+                            }
+                        });
+
+                        fields.push({
+                            short: true,
+                            title: propertyKeys[index],
+                            value: MultiSelectValue,
+                        });
                     }
                     break;
                 }

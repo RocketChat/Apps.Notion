@@ -463,8 +463,9 @@ export class ExecuteViewSubmitHandler {
             const propertyType: string =
                 propertyObject?.[NotionObjectTypes.TYPE];
             const actionId: string = propertyInfo?.[Modals.VALUE];
-            const propertyValue: string | Array<string> =
+            const propertyValue: string | Array<string> | undefined =
                 propertyValues?.[actionId];
+
             switch (propertyType) {
                 case PropertyTypeValue.CHECKBOX: {
                     data[propertyName] = {
@@ -474,79 +475,105 @@ export class ExecuteViewSubmitHandler {
                     break;
                 }
                 case PropertyTypeValue.TEXT: {
-                    data[propertyName] = {
-                        [PropertyTypeValue.TEXT]: markdownToRichText(
-                            propertyValue as string
-                        ),
-                    };
+                    if (propertyValue) {
+                        data[propertyName] = {
+                            [PropertyTypeValue.TEXT]: markdownToRichText(
+                                propertyValue as string
+                            ),
+                        };
+                    }
                     break;
                 }
                 case PropertyTypeValue.NUMBER: {
-                    data[propertyName] = {
-                        [PropertyTypeValue.NUMBER]: Number(propertyValue),
-                    };
+                    if (propertyValue) {
+                        data[propertyName] = {
+                            [PropertyTypeValue.NUMBER]: Number(propertyValue),
+                        };
+                    }
+
                     break;
                 }
                 case PropertyTypeValue.URL: {
                     data[propertyName] = {
-                        [PropertyTypeValue.URL]: propertyValue,
+                        [PropertyTypeValue.URL]: propertyValue
+                            ? propertyValue
+                            : null,
                     };
                     break;
                 }
                 case PropertyTypeValue.EMAIL: {
-                    data[propertyName] = {
-                        [PropertyTypeValue.EMAIL]: propertyValue,
-                    };
+                    if (propertyValue) {
+                        data[propertyName] = {
+                            [PropertyTypeValue.EMAIL]: propertyValue,
+                        };
+                    }
+
                     break;
                 }
                 case PropertyTypeValue.PHONE_NUMBER: {
-                    data[propertyName] = {
-                        [PropertyTypeValue.PHONE_NUMBER]: propertyValue,
-                    };
+                    if (propertyValue) {
+                        data[propertyName] = {
+                            [PropertyTypeValue.PHONE_NUMBER]: propertyValue,
+                        };
+                    }
+
                     break;
                 }
                 case PropertyTypeValue.DATE: {
-                    data[propertyName] = {
-                        [PropertyTypeValue.DATE]: {
-                            start: propertyValue,
-                        },
-                    };
+                    if (propertyValue) {
+                        data[propertyName] = {
+                            [PropertyTypeValue.DATE]: {
+                                start: propertyValue,
+                            },
+                        };
+                    }
+
                     break;
                 }
                 case PropertyTypeValue.SELECT: {
-                    data[propertyName] = {
-                        [PropertyTypeValue.SELECT]: {
-                            name: propertyValue,
-                        },
-                    };
+                    if (propertyValue) {
+                        data[propertyName] = {
+                            [PropertyTypeValue.SELECT]: {
+                                name: propertyValue,
+                            },
+                        };
+                    }
+
                     break;
                 }
                 case PropertyTypeValue.PEOPLE: {
                     const people: Array<object> = [];
-                    (propertyValue as Array<string>)?.forEach((element) => {
-                        people.push(JSON.parse(element));
-                    });
-                    data[propertyName] = {
-                        [PropertyTypeValue.PEOPLE]: people,
-                    };
+                    if (propertyValue) {
+                        (propertyValue as Array<string>)?.forEach((element) => {
+                            people.push(JSON.parse(element));
+                        });
+                        data[propertyName] = {
+                            [PropertyTypeValue.PEOPLE]: people,
+                        };
+                    }
                     break;
                 }
                 case PropertyTypeValue.MULTI_SELECT: {
-                    const multiSelect: Array<object> = [];
-                    (propertyValue as Array<string>)?.forEach((element) => {
-                        multiSelect.push({ name: element });
-                    });
-                    data[propertyName] = {
-                        [PropertyTypeValue.MULTI_SELECT]: multiSelect,
-                    };
+                    if (propertyValue) {
+                        const multiSelect: Array<object> = [];
+                        (propertyValue as Array<string>)?.forEach((element) => {
+                            multiSelect.push({ name: element });
+                        });
+                        data[propertyName] = {
+                            [PropertyTypeValue.MULTI_SELECT]: multiSelect,
+                        };
+                    }
                     break;
                 }
                 case "status": {
-                    data[propertyName] = {
-                        status: {
-                            name: propertyValue,
-                        },
-                    };
+                    if (propertyValue) {
+                        data[propertyName] = {
+                            status: {
+                                name: propertyValue,
+                            },
+                        };
+                    }
+
                     break;
                 }
             }
