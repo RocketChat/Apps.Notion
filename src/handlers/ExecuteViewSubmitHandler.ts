@@ -666,8 +666,17 @@ export class ExecuteViewSubmitHandler {
         }
 
         const { workspace_name, owner, access_token } = tokenInfo;
-        const pageId: string =
+        const pageId: string | undefined =
             state?.[SearchPage.BLOCK_ID]?.[SharePage.ACTION_ID];
+
+        if (!pageId) {
+            return this.context.getInteractionResponder().viewErrorResponse({
+                viewId: view.id,
+                errors: {
+                    [SharePage.ACTION_ID]: "Please Select a Page to Share",
+                },
+            });
+        }
 
         const pageInfo = await NotionSdk.retrievePage(access_token, pageId);
 
