@@ -13,6 +13,7 @@ import {
 } from "../../definition/command/ICommandUtility";
 import { CommandParam, SubCommandParam } from "../../enum/CommandParam";
 import { Handler } from "../handlers/Handler";
+import { sendHelperNotification } from "../helper/message";
 
 export class CommandUtility implements ICommandUtility {
     public app: NotionApp;
@@ -53,6 +54,12 @@ export class CommandUtility implements ICommandUtility {
         });
         switch (this.params.length) {
             case 0: {
+                await sendHelperNotification(
+                    this.read,
+                    this.modify,
+                    this.sender,
+                    this.room
+                );
                 break;
             }
             case 1: {
@@ -61,8 +68,15 @@ export class CommandUtility implements ICommandUtility {
             }
             case 2: {
                 await this.handleDualParam(handler);
+                break;
             }
             default: {
+                await sendHelperNotification(
+                    this.read,
+                    this.modify,
+                    this.sender,
+                    this.room
+                );
             }
         }
     }
@@ -92,7 +106,15 @@ export class CommandUtility implements ICommandUtility {
                 );
                 break;
             }
+            case CommandParam.HELP:
             default: {
+                await sendHelperNotification(
+                    this.read,
+                    this.modify,
+                    this.sender,
+                    this.room
+                );
+                break;
             }
         }
     }
@@ -105,9 +127,21 @@ export class CommandUtility implements ICommandUtility {
                     await handler.createNotionDatabase();
                     return;
                 }
+                await sendHelperNotification(
+                    this.read,
+                    this.modify,
+                    this.sender,
+                    this.room
+                );
                 break;
             }
             default: {
+                await sendHelperNotification(
+                    this.read,
+                    this.modify,
+                    this.sender,
+                    this.room
+                );
                 break;
             }
         }
