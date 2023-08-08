@@ -58,7 +58,7 @@ export interface INotionSDK extends INotion {
         token: string,
         database: IDatabase,
         properties: object
-    ): Promise<Array<IMessageAttachmentField> | Error>;
+    ): Promise<{ fields: Array<IMessageAttachmentField>; url: string } | Error>;
     retrievePage(
         token: string,
         pageId: string

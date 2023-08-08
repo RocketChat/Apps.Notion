@@ -740,7 +740,9 @@ export class NotionSDK implements INotionSDK {
         token: string,
         database: IDatabase,
         properties: object
-    ): Promise<Array<IMessageAttachmentField> | Error> {
+    ): Promise<
+        { fields: Array<IMessageAttachmentField>; url: string } | Error
+    > {
         try {
             const { parent } = database;
             const data = {
@@ -765,10 +767,14 @@ export class NotionSDK implements INotionSDK {
                     response.content
                 );
             }
-
+            const pageInfo = response.data;
+            const url: string = pageInfo?.url;
             const prop = response.data?.[NotionObjectTypes.PROPERTIES];
-            const result = await this.getFieldsFromRecord(prop);
-            return result;
+            const fields = await this.getFieldsFromRecord(prop);
+            return {
+                fields,
+                url,
+            };
         } catch (err) {
             throw new AppsEngineException(err as string);
         }

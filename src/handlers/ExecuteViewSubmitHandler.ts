@@ -32,10 +32,7 @@ import { IMessageAttachmentField } from "@rocket.chat/apps-engine/definition/mes
 import { NotionPageOrRecord } from "../../enum/modals/NotionPageOrRecord";
 import { NotionObjectTypes } from "../../enum/Notion";
 import { ITokenInfo } from "../../definition/authorization/IOAuth2Storage";
-import {
-    IDatabase,
-    IPage
-} from "../../definition/lib/INotion";
+import { IDatabase, IPage } from "../../definition/lib/INotion";
 import { SearchPageAndDatabase } from "../../enum/modals/common/SearchPageAndDatabaseComponent";
 import { NotionWorkspace } from "../../enum/modals/NotionWorkspace";
 import { getConnectPreview } from "../helper/getConnectLayout";
@@ -48,6 +45,7 @@ import {
 import { Block } from "@rocket.chat/ui-kit";
 import { SharePage } from "../../enum/modals/SharePage";
 import { SearchPage } from "../../enum/modals/common/SearchPageComponent";
+import { ActionButton } from "../../enum/modals/common/ActionButtons";
 
 export class ExecuteViewSubmitHandler {
     private context: UIKitViewSubmitInteractionContext;
@@ -425,19 +423,43 @@ export class ExecuteViewSubmitHandler {
                 state?.[NotionPageOrRecord.TITLE_BLOCK]?.[
                     NotionPageOrRecord.TITLE_ACTION
                 ];
+            const { fields, url } = createdRecord;
 
-            message = `✨ Created **${title}** in [**${databasename}**](${databaselink})`;
+            message = `✨ Created [**${title}**](${url}) in [**${databasename}**](${databaselink})`;
 
-            await sendMessageWithAttachments(
+            const messageId = await sendMessageWithAttachments(
                 this.read,
                 this.modify,
                 user,
                 room,
                 {
                     message: message,
-                    fields: createdRecord,
+                    fields,
                 }
             );
+
+            const preserveMessage = await modalInteraction.getInputElementState(
+                ActionButton.SEND_TO_PAGE_MESSAGE_ACTION
+            );
+
+            if (preserveMessage) {
+                const { id, text } = preserveMessage as {
+                    id: string;
+                    text: string;
+                };
+
+                const preserveText = `📝 Wrote in [**${title}**](${url})`;
+
+                await sendMessage(
+                    this.read,
+                    this.modify,
+                    user,
+                    room,
+                    { message: preserveText },
+                    messageId,
+                    { collapsed: false, color: "#000000", text: text }
+                );
+            }
         }
 
         return this.context.getInteractionResponder().successResponse();

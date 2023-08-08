@@ -26,7 +26,7 @@ export class ExecuteActionButtonHandler {
     }
 
     public async handleActions(): Promise<IUIKitResponse> {
-        const { actionId, user, room, triggerId } =
+        const { actionId, user, room, triggerId, message } =
             this.context.getInteractionData();
 
         const handler = new Handler({
@@ -43,6 +43,10 @@ export class ExecuteActionButtonHandler {
         switch (actionId) {
             case ActionButton.COMMENT_ON_PAGES_MESSAGE_BOX_ACTION: {
                 await handler.commentOnPages();
+                break;
+            }
+            case ActionButton.SEND_TO_PAGE_MESSAGE_ACTION: {
+                await handler.createNotionPageOrRecord(false, message);
                 break;
             }
         }

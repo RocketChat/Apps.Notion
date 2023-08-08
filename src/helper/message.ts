@@ -191,7 +191,7 @@ export async function sendMessageWithAttachments(
         blocks?: Array<Block>;
         fields: Array<IMessageAttachmentField>;
     }
-) {
+): Promise<string> {
     const { message, blocks, fields } = content;
     const messageBuilder = modify
         .getCreator()
@@ -213,7 +213,7 @@ export async function sendMessageWithAttachments(
         },
     ]);
 
-    await modify.getCreator().finish(messageBuilder);
+    return await modify.getCreator().finish(messageBuilder);
 }
 
 export async function sendMessage(
@@ -221,7 +221,9 @@ export async function sendMessage(
     modify: IModify,
     user: IUser,
     room: IRoom,
-    content: { message?: string; blocks?: Array<Block> }
+    content: { message?: string; blocks?: Array<Block> },
+    threadId?: string,
+    attachment?: IMessageAttachment
 ): Promise<void> {
     const { message, blocks } = content;
     const messageBuilder = modify
@@ -237,6 +239,15 @@ export async function sendMessage(
     } else if (blocks) {
         messageBuilder.setBlocks(blocks);
     }
+
+    if (threadId) {
+        messageBuilder.setThreadId(threadId);
+    }
+
+    if (attachment) {
+        messageBuilder.addAttachment(attachment);
+    }
+
     await modify.getCreator().finish(messageBuilder);
     return;
 }

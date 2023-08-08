@@ -22,11 +22,13 @@ import { createPageOrRecordModal } from "../modals/createPageOrRecordModal";
 import { changeWorkspaceModal } from "../modals/changeWorkspaceModal";
 import { NotionWorkspace } from "../../enum/modals/NotionWorkspace";
 import { SearchPageAndDatabase } from "../../enum/modals/common/SearchPageAndDatabaseComponent";
-import { NotionObjectTypes, NotionOwnerType } from "../../enum/Notion";
+import { NotionOwnerType } from "../../enum/Notion";
 import { PropertyTypeValue } from "../../enum/modals/common/NotionProperties";
 import { INotionUser } from "../../definition/authorization/IOAuth2Storage";
 import { sharePageModal } from "../modals/sharePageModal";
 import { SharePage } from "../../enum/modals/SharePage";
+import { IMessage } from "@rocket.chat/apps-engine/definition/messages";
+import { ActionButton } from "../../enum/modals/common/ActionButtons";
 
 export class Handler implements IHandler {
     public app: NotionApp;
@@ -184,7 +186,10 @@ export class Handler implements IHandler {
         }
     }
 
-    public async createNotionPageOrRecord(update?: boolean): Promise<void> {
+    public async createNotionPageOrRecord(
+        update?: boolean,
+        message?: IMessage
+    ): Promise<void> {
         const userId = this.sender.id;
         const roomId = this.room.id;
         const tokenInfo = await this.oAuth2Storage.getCurrentWorkspace(userId);
@@ -217,6 +222,9 @@ export class Handler implements IHandler {
                 SearchPageAndDatabase.ACTION_ID
             ),
             modalInteraction.clearAllInteractionActionId(),
+            modalInteraction.clearInputElementState(
+                ActionButton.SEND_TO_PAGE_MESSAGE_ACTION
+            ),
         ]);
 
         const modal = await createPageOrRecordModal(
@@ -249,6 +257,13 @@ export class Handler implements IHandler {
                 );
 
                 return;
+            }
+
+            if (message) {
+                await modalInteraction.storeInputElementState(
+                    ActionButton.SEND_TO_PAGE_MESSAGE_ACTION,
+                    message
+                );
             }
 
             await this.modify
