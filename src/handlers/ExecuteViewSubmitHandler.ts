@@ -368,6 +368,44 @@ export class ExecuteViewSubmitHandler {
         } else {
             const { name, link, title } = createdPage;
             message = `✨ Your Page [**${title}**](${link}) is created successfully  as a subpage in **${name}**.`;
+
+            const preserveMessage = await modalInteraction.getInputElementState(
+                ActionButton.SEND_TO_PAGE_MESSAGE_ACTION
+            );
+
+            if (preserveMessage) {
+                const preserveMessageContext = preserveMessage as {
+                    id: string;
+                    room: IRoom;
+                };
+
+                const { id } = preserveMessageContext;
+                const { type, displayName } = preserveMessageContext.room;
+                const urlPath =
+                    type === RoomType.CHANNEL
+                        ? "channel"
+                        : type === RoomType.PRIVATE_GROUP
+                        ? "group"
+                        : "direct";
+                const { siteUrl } = (await getCredentials(
+                    this.read,
+                    this.modify,
+                    user,
+                    room
+                )) as ICredential;
+
+                const messageLink = `${siteUrl}/${urlPath}/${displayName}?msg=${id}`;
+                const preserveText = `📝 Created New Page [**${title}**](${link}) and Preserved Following [Message](${messageLink}) `;
+
+                await sendMessage(
+                    this.read,
+                    this.modify,
+                    user,
+                    room,
+                    { message: preserveText },
+                    id
+                );
+            }
         }
 
         await sendNotification(this.read, this.modify, user, room, {
@@ -468,7 +506,7 @@ export class ExecuteViewSubmitHandler {
                 )) as ICredential;
 
                 const messageLink = `${siteUrl}/${urlPath}/${displayName}?msg=${id}`;
-                const preserveText = `📝 Created [**${title}**](${url}) Page and Preserved [Message](${messageLink}) `;
+                const preserveText = `📝 Created [**${title}**](${url}) Page and Preserved Following [Message](${messageLink}) `;
 
                 await sendMessage(
                     this.read,

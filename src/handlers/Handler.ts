@@ -222,9 +222,6 @@ export class Handler implements IHandler {
                 SearchPageAndDatabase.ACTION_ID
             ),
             modalInteraction.clearAllInteractionActionId(),
-            modalInteraction.clearInputElementState(
-                ActionButton.SEND_TO_PAGE_MESSAGE_ACTION
-            ),
         ]);
 
         const modal = await createPageOrRecordModal(
@@ -258,6 +255,10 @@ export class Handler implements IHandler {
 
                 return;
             }
+
+            await modalInteraction.clearInputElementState(
+                ActionButton.SEND_TO_PAGE_MESSAGE_ACTION
+            );
 
             if (message) {
                 await modalInteraction.storeInputElementState(
