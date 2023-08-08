@@ -21,6 +21,7 @@ export enum NotionApi {
     COMMENTS = `https://api.notion.com/v1/comments`,
     USERS = `https://api.notion.com/v1/users`,
     PAGES = `https://api.notion.com/v1/pages`,
+    BLOCKS = `https://api.notion.com/v1/blocks`,
 }
 
 export enum Notion {

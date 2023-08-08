@@ -463,7 +463,7 @@ export class ExecuteViewSubmitHandler {
                 state?.[NotionPageOrRecord.TITLE_BLOCK]?.[
                     NotionPageOrRecord.TITLE_ACTION
                 ];
-            const { fields, url } = createdRecord;
+            const { fields, url, pageId } = createdRecord;
 
             message = `✨ Created [**${title}**](${url}) in [**${databasename}**](${databaselink})`;
 
@@ -485,37 +485,51 @@ export class ExecuteViewSubmitHandler {
             if (preserveMessage) {
                 const preserveMessageContext = preserveMessage as {
                     id: string;
+                    text: string;
                     room: IRoom;
                 };
-
-                const { id } = preserveMessageContext;
-
-                const { type, displayName } = preserveMessageContext.room;
-                const urlPath =
-                    type === RoomType.CHANNEL
-                        ? "channel"
-                        : type === RoomType.PRIVATE_GROUP
-                        ? "group"
-                        : "direct";
-
-                const { siteUrl } = (await getCredentials(
-                    this.read,
-                    this.modify,
-                    user,
-                    room
-                )) as ICredential;
-
-                const messageLink = `${siteUrl}/${urlPath}/${displayName}?msg=${id}`;
-                const preserveText = `📝 Created [**${title}**](${url}) Page and Preserved Following [Message](${messageLink}) `;
-
-                await sendMessage(
-                    this.read,
-                    this.modify,
-                    user,
-                    room,
-                    { message: preserveText },
-                    id
+                const { id, text } = preserveMessageContext;
+                console.log("text", text);
+                const appendBlock = await NotionSdk.appendMessageBlock(
+                    access_token,
+                    text,
+                    pageId
                 );
+
+                if (appendBlock instanceof Error) {
+                    this.app.getLogger().error(appendBlock.message);
+                    message = `🚫 Something went wrong while appending message in **${workspace_name}**.`;
+                    await sendNotification(this.read, this.modify, user, room, {
+                        message,
+                    });
+                } else {
+                    const { type, displayName } = preserveMessageContext.room;
+                    const urlPath =
+                        type === RoomType.CHANNEL
+                            ? "channel"
+                            : type === RoomType.PRIVATE_GROUP
+                            ? "group"
+                            : "direct";
+
+                    const { siteUrl } = (await getCredentials(
+                        this.read,
+                        this.modify,
+                        user,
+                        room
+                    )) as ICredential;
+
+                    const messageLink = `${siteUrl}/${urlPath}/${displayName}?msg=${id}`;
+                    const preserveText = `📝 Created [**${title}**](${url}) Page and Preserved Following [Message](${messageLink}) `;
+
+                    await sendMessage(
+                        this.read,
+                        this.modify,
+                        user,
+                        room,
+                        { message: preserveText },
+                        id
+                    );
+                }
             }
         }
 

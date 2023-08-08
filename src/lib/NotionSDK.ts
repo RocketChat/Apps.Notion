@@ -741,7 +741,12 @@ export class NotionSDK implements INotionSDK {
         database: IDatabase,
         properties: object
     ): Promise<
-        { fields: Array<IMessageAttachmentField>; url: string } | Error
+        | {
+              fields: Array<IMessageAttachmentField>;
+              url: string;
+              pageId: string;
+          }
+        | Error
     > {
         try {
             const { parent } = database;
@@ -769,11 +774,14 @@ export class NotionSDK implements INotionSDK {
             }
             const pageInfo = response.data;
             const url: string = pageInfo?.url;
+            const pageId: string = pageInfo?.id;
+
             const prop = response.data?.[NotionObjectTypes.PROPERTIES];
             const fields = await this.getFieldsFromRecord(prop);
             return {
                 fields,
                 url,
+                pageId,
             };
         } catch (err) {
             throw new AppsEngineException(err as string);
@@ -981,11 +989,62 @@ export class NotionSDK implements INotionSDK {
                 pageInfo
             )) as IPage;
             const url: string = pageInfo?.url;
-            
+
             return {
                 ...page,
                 url,
             };
+        } catch (err) {
+            throw new AppsEngineException(err as string);
+        }
+    }
+
+    public async appendMessageBlock(
+        token: string,
+        message: string,
+        blockId: string
+    ): Promise<boolean | Error> {
+        try {
+            const response = await this.http.patch(
+                NotionApi.BLOCKS + `/${blockId}/children`,
+                {
+                    data: {
+                        children: [
+                            {
+                                type: "code",
+                                code: {
+                                    caption: [],
+                                    rich_text: [
+                                        {
+                                            type: "text",
+                                            text: {
+                                                content: message,
+                                            },
+                                        },
+                                    ],
+                                    language: "markdown",
+                                },
+                            },
+                        ],
+                    },
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": NotionApi.CONTENT_TYPE,
+                        "User-Agent": NotionApi.USER_AGENT,
+                        "Notion-Version": this.NotionVersion,
+                    },
+                }
+            );
+
+            if (!response.statusCode.toString().startsWith("2")) {
+                return this.handleErrorResponse(
+                    response.statusCode,
+                    `Error While Appending Message Block: `,
+                    response.content
+                );
+            }
+
+            return true;
         } catch (err) {
             throw new AppsEngineException(err as string);
         }

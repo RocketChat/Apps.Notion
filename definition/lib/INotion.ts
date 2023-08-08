@@ -58,11 +58,23 @@ export interface INotionSDK extends INotion {
         token: string,
         database: IDatabase,
         properties: object
-    ): Promise<{ fields: Array<IMessageAttachmentField>; url: string } | Error>;
+    ): Promise<
+        | {
+              fields: Array<IMessageAttachmentField>;
+              url: string;
+              pageId: string;
+          }
+        | Error
+    >;
     retrievePage(
         token: string,
         pageId: string
     ): Promise<(IPage & { url: string }) | Error>;
+    appendMessageBlock(
+        token: string,
+        message: string,
+        blockId: string
+    ): Promise<boolean | Error>;
 }
 
 export interface IParentPage {
