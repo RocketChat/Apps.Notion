@@ -366,7 +366,7 @@ export class ExecuteViewSubmitHandler {
             this.app.getLogger().error(createdPage.message);
             message = `🚫 Something went wrong while creating page in **${workspace_name}**.`;
         } else {
-            const { name, link, title } = createdPage;
+            const { name, link, title, pageId } = createdPage;
             message = `✨ Your Page [**${title}**](${link}) is created successfully  as a subpage in **${name}**.`;
 
             const preserveMessage = await modalInteraction.getInputElementState(
@@ -376,35 +376,51 @@ export class ExecuteViewSubmitHandler {
             if (preserveMessage) {
                 const preserveMessageContext = preserveMessage as {
                     id: string;
+                    text: string;
                     room: IRoom;
                 };
 
-                const { id } = preserveMessageContext;
-                const { type, displayName } = preserveMessageContext.room;
-                const urlPath =
-                    type === RoomType.CHANNEL
-                        ? "channel"
-                        : type === RoomType.PRIVATE_GROUP
-                        ? "group"
-                        : "direct";
-                const { siteUrl } = (await getCredentials(
-                    this.read,
-                    this.modify,
-                    user,
-                    room
-                )) as ICredential;
+                const { id, text } = preserveMessageContext;
 
-                const messageLink = `${siteUrl}/${urlPath}/${displayName}?msg=${id}`;
-                const preserveText = `📝 Created New Page [**${title}**](${link}) and Preserved Following [Message](${messageLink}) `;
-
-                await sendMessage(
-                    this.read,
-                    this.modify,
-                    user,
-                    room,
-                    { message: preserveText },
-                    id
+                const appendBlock = await NotionSdk.appendMessageBlock(
+                    access_token,
+                    text,
+                    pageId
                 );
+
+                if (appendBlock instanceof Error) {
+                    this.app.getLogger().error(appendBlock.message);
+                    message = `🚫 Something went wrong while appending message in **${workspace_name}**.`;
+                    await sendNotification(this.read, this.modify, user, room, {
+                        message,
+                    });
+                } else {
+                    const { type, displayName } = preserveMessageContext.room;
+                    const urlPath =
+                        type === RoomType.CHANNEL
+                            ? "channel"
+                            : type === RoomType.PRIVATE_GROUP
+                            ? "group"
+                            : "direct";
+                    const { siteUrl } = (await getCredentials(
+                        this.read,
+                        this.modify,
+                        user,
+                        room
+                    )) as ICredential;
+
+                    const messageLink = `${siteUrl}/${urlPath}/${displayName}?msg=${id}`;
+                    const preserveText = `📝 Created New Page [**${title}**](${link}) and Preserved Following [Message](${messageLink}) `;
+
+                    await sendMessage(
+                        this.read,
+                        this.modify,
+                        user,
+                        room,
+                        { message: preserveText },
+                        id
+                    );
+                }
             }
         }
 
@@ -489,7 +505,6 @@ export class ExecuteViewSubmitHandler {
                     room: IRoom;
                 };
                 const { id, text } = preserveMessageContext;
-                console.log("text", text);
                 const appendBlock = await NotionSdk.appendMessageBlock(
                     access_token,
                     text,

@@ -49,7 +49,7 @@ export interface INotionSDK extends INotion {
         token: string,
         page: IPage,
         prop: IPageProperties
-    ): Promise<INotionPage | Error>;
+    ): Promise<(INotionPage & { pageId: string }) | Error>;
     retrieveDatabase(
         token: string,
         database_id: string

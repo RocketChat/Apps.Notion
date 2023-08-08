@@ -565,7 +565,7 @@ export class NotionSDK implements INotionSDK {
         token: string,
         page: IPage,
         prop: IPageProperties
-    ): Promise<INotionPage | Error> {
+    ): Promise<(INotionPage & { pageId: string }) | Error> {
         try {
             const { name, parent } = page;
             const { title } = prop;
@@ -603,7 +603,12 @@ export class NotionSDK implements INotionSDK {
                 title,
             };
 
-            return result;
+            const pageId: string = response?.data?.id;
+
+            return {
+                ...result,
+                pageId,
+            };
         } catch (err) {
             throw new AppsEngineException(err as string);
         }
@@ -1011,18 +1016,21 @@ export class NotionSDK implements INotionSDK {
                     data: {
                         children: [
                             {
-                                type: "code",
-                                code: {
-                                    caption: [],
+                                type: "callout",
+                                callout: {
                                     rich_text: [
                                         {
                                             type: "text",
                                             text: {
                                                 content: message,
+                                                link: null,
                                             },
                                         },
                                     ],
-                                    language: "markdown",
+                                    icon: {
+                                        emoji: "⭐",
+                                    },
+                                    color: "default",
                                 },
                             },
                         ],
