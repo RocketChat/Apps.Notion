@@ -22,7 +22,7 @@ import {
     sendNotificationWithConnectBlock,
 } from "../helper/message";
 import { RoomInteractionStorage } from "../storage/RoomInteraction";
-import { IRoom } from "@rocket.chat/apps-engine/definition/rooms";
+import { IRoom, RoomType } from "@rocket.chat/apps-engine/definition/rooms";
 import { getNotionDatabaseObject } from "../helper/getNotionDatabaseObject";
 import { Error } from "../../errors/Error";
 import { Modals } from "../../enum/modals/common/Modals";
@@ -46,6 +46,8 @@ import { Block } from "@rocket.chat/ui-kit";
 import { SharePage } from "../../enum/modals/SharePage";
 import { SearchPage } from "../../enum/modals/common/SearchPageComponent";
 import { ActionButton } from "../../enum/modals/common/ActionButtons";
+import { getCredentials } from "../helper/getCredential";
+import { ICredential } from "../../definition/authorization/ICredential";
 
 export class ExecuteViewSubmitHandler {
     private context: UIKitViewSubmitInteractionContext;
@@ -443,12 +445,30 @@ export class ExecuteViewSubmitHandler {
             );
 
             if (preserveMessage) {
-                const { id, text } = preserveMessage as {
+                const preserveMessageContext = preserveMessage as {
                     id: string;
-                    text: string;
+                    room: IRoom;
                 };
 
-                const preserveText = `📝 Wrote in [**${title}**](${url})`;
+                const { id } = preserveMessageContext;
+
+                const { type, displayName } = preserveMessageContext.room;
+                const urlPath =
+                    type === RoomType.CHANNEL
+                        ? "channel"
+                        : type === RoomType.PRIVATE_GROUP
+                        ? "group"
+                        : "direct";
+
+                const { siteUrl } = (await getCredentials(
+                    this.read,
+                    this.modify,
+                    user,
+                    room
+                )) as ICredential;
+
+                const messageLink = `${siteUrl}/${urlPath}/${displayName}?msg=${id}`;
+                const preserveText = `📝 Created [**${title}**](${url}) Page and Preserved [Message](${messageLink}) `;
 
                 await sendMessage(
                     this.read,
@@ -456,8 +476,7 @@ export class ExecuteViewSubmitHandler {
                     user,
                     room,
                     { message: preserveText },
-                    messageId,
-                    { collapsed: false, color: "#000000", text: text }
+                    id
                 );
             }
         }
