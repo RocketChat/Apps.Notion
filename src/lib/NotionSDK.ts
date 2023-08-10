@@ -2,7 +2,6 @@ import {
     ICommentInfo,
     ICommentObject,
     IDatabase,
-    IDatabaseProperties,
     INotionDatabase,
     INotionPage,
     INotionSDK,
@@ -28,7 +27,6 @@ import {
     ServerError,
 } from "../../errors/Error";
 import {
-    Notion,
     NotionApi,
     NotionObjectTypes,
     NotionOwnerType,
@@ -1100,5 +1098,288 @@ export class NotionSDK implements INotionSDK {
         } catch (err) {
             throw new AppsEngineException(err as string);
         }
+    }
+
+    public async queryDatabasePages(
+        token: string,
+        databaseId: string
+    ): Promise<Array<Array<string>> | Error> {
+        try {
+            const response = await this.http.post(
+                NotionApi.CREATE_DATABASE + `/${databaseId}/query`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": NotionApi.CONTENT_TYPE,
+                        "User-Agent": NotionApi.USER_AGENT,
+                        "Notion-Version": this.NotionVersion,
+                    },
+                }
+            );
+
+            if (!response.statusCode.toString().startsWith("2")) {
+                return this.handleErrorResponse(
+                    response.statusCode,
+                    `Error While quering Database Pages List: `,
+                    response.content
+                );
+            }
+            const results = response.data?.results;
+            return this.getDatabaseTable(results);
+        } catch (err) {
+            throw new AppsEngineException(err as string);
+        }
+    }
+
+    private async getDatabaseTable(
+        results: Array<object>
+    ): Promise<Array<Array<string>>> {
+        const tableData: Array<Array<string>> = [];
+
+        if (results?.length > 0) {
+            for (let i = 0; i <= results.length; i++) {
+                tableData.push([]);
+            }
+
+            const properties = results[0]?.[NotionObjectTypes.PROPERTIES];
+            let propertyKeys = Object.keys(properties);
+
+            const supportedProperties = Object.values(
+                PropertyTypeValue
+            ) as string[];
+            supportedProperties.push(NotionObjectTypes.TITLE);
+            supportedProperties.push("status");
+
+            propertyKeys = propertyKeys.filter((propKey) => {
+                return supportedProperties.includes(
+                    properties[propKey]?.[NotionObjectTypes.TYPE]
+                );
+            });
+
+            tableData[0].push(...propertyKeys);
+
+            results?.forEach(async (item, index) => {
+                const propertyItem: object =
+                    item?.[NotionObjectTypes.PROPERTIES];
+
+                propertyKeys.forEach(async (key) => {
+                    const propertyValueObject = propertyItem?.[key];
+                    const type: string =
+                        propertyValueObject?.[NotionObjectTypes.TYPE];
+                    switch (type) {
+                        case NotionObjectTypes.TITLE: {
+                            const richText = propertyValueObject?.[type];
+                            const markdown =
+                                richText[0]?.[NotionObjectTypes.TEXT]?.[
+                                    "content"
+                                ] ?? "";
+                            tableData[index + 1].push(markdown);
+                            break;
+                        }
+                        case PropertyTypeValue.CHECKBOX: {
+                            const checkbox: boolean =
+                                propertyValueObject?.[type];
+                            if (checkbox) {
+                                tableData[index + 1].push("✅");
+                            } else {
+                                tableData[index + 1].push("❎");
+                            }
+                            break;
+                        }
+                        case PropertyTypeValue.TEXT: {
+                            const richText = propertyValueObject?.[type];
+                            const markdown =
+                                richText[0]?.[NotionObjectTypes.TEXT]?.[
+                                    "content"
+                                ] ?? "";
+                            tableData[index + 1].push(markdown);
+                            break;
+                        }
+                        case PropertyTypeValue.NUMBER: {
+                            const value: number | undefined =
+                                propertyValueObject?.[type];
+                            if (value) {
+                                tableData[index + 1].push(value.toString());
+                            } else {
+                                tableData[index + 1].push("");
+                            }
+
+                            break;
+                        }
+                        case PropertyTypeValue.URL: {
+                            const url: string | null =
+                                propertyValueObject?.[type];
+
+                            if (url) {
+                                tableData[index + 1].push(url);
+                            } else {
+                                tableData[index + 1].push("");
+                            }
+
+                            break;
+                        }
+                        case PropertyTypeValue.EMAIL: {
+                            const email: string | null =
+                                propertyValueObject?.[type];
+
+                            if (email) {
+                                tableData[index + 1].push(email);
+                            } else {
+                                tableData[index + 1].push("");
+                            }
+                            break;
+                        }
+                        case PropertyTypeValue.PHONE_NUMBER: {
+                            const phoneNumber: string | null =
+                                propertyValueObject?.[type];
+                            if (phoneNumber) {
+                                tableData[index + 1].push(phoneNumber);
+                            } else {
+                                tableData[index + 1].push("");
+                            }
+                            break;
+                        }
+                        case PropertyTypeValue.DATE: {
+                            const date: object | null =
+                                propertyValueObject?.[type];
+                            if (date) {
+                                const value = date?.["start"];
+                                tableData[index + 1].push(value);
+                            } else {
+                                tableData[index + 1].push("");
+                            }
+                            break;
+                        }
+                        case PropertyTypeValue.SELECT: {
+                            const select: object | null =
+                                propertyValueObject?.[type];
+
+                            if (select) {
+                                const selectValue =
+                                    select?.[NotionObjectTypes.NAME];
+                                tableData[index + 1].push(selectValue);
+                            } else {
+                                tableData[index + 1].push("");
+                            }
+                            break;
+                        }
+                        case PropertyTypeValue.PEOPLE: {
+                            const people: Array<object> | null =
+                                propertyValueObject?.[type];
+
+                            let fieldValue = "";
+                            if (people && people.length) {
+                                const fullLength = people.length;
+                                people.forEach((element, eleindex) => {
+                                    const name: string =
+                                        element?.[NotionObjectTypes.NAME];
+                                    fieldValue += `${name}`;
+
+                                    if (eleindex < fullLength - 1) {
+                                        fieldValue += ", ";
+                                    }
+                                });
+                            }
+
+                            tableData[index + 1].push(fieldValue);
+                            break;
+                        }
+                        case PropertyTypeValue.MULTI_SELECT: {
+                            const multiSelect: Array<{
+                                id: string;
+                                name: string;
+                                color: string;
+                            }> | null = propertyValueObject?.[type];
+
+                            let MultiSelectValue = "";
+
+                            if (multiSelect && multiSelect.length) {
+                                const fullLength = multiSelect.length;
+                                multiSelect.forEach((element, index) => {
+                                    const name: string =
+                                        element?.[NotionObjectTypes.NAME];
+                                    MultiSelectValue += `${name}`;
+
+                                    if (index < fullLength - 1) {
+                                        MultiSelectValue += ", ";
+                                    }
+                                });
+                            }
+                            tableData[index + 1].push(MultiSelectValue);
+                            break;
+                        }
+                        case "status": {
+                            const status: object | null =
+                                propertyValueObject?.[type];
+                            if (status) {
+                                const statusValue =
+                                    status?.[NotionObjectTypes.NAME];
+                                tableData[index + 1].push(statusValue);
+                            } else {
+                                tableData[index + 1].push("");
+                            }
+                            break;
+                        }
+                        case PropertyTypeValue.CREATED_BY: {
+                            const createdBy = propertyValueObject?.[type];
+                            const name: string =
+                                createdBy?.[NotionObjectTypes.NAME];
+                            tableData[index + 1].push(createdBy);
+                            break;
+                        }
+                        case PropertyTypeValue.CREATED_TIME: {
+                            const createdTime = propertyValueObject?.[type];
+                            tableData[index + 1].push(createdTime);
+                            break;
+                        }
+                        case PropertyTypeValue.LAST_EDITED_TIME: {
+                            const lastEditedTime = propertyValueObject?.[type];
+                            tableData[index + 1].push(lastEditedTime);
+                            break;
+                        }
+                        case PropertyTypeValue.LAST_EDITED_BY: {
+                            const lastEditedBy = propertyValueObject?.[type];
+                            const name: string =
+                                lastEditedBy?.[NotionObjectTypes.NAME];
+                            tableData[index + 1].push(lastEditedBy);
+                            break;
+                        }
+                        case PropertyTypeValue.FORMULA: {
+                            const formula = propertyValueObject?.[type];
+                            const value: string | null = formula?.["string"];
+                            if (value) {
+                                tableData[index + 1].push(value);
+                            } else {
+                                tableData[index + 1].push("");
+                            }
+                            break;
+                        }
+                        case PropertyTypeValue.FILES: {
+                            const files: Array<object> | null =
+                                propertyValueObject?.[type];
+                            let filesLink = "";
+
+                            if (files && files.length) {
+                                files.forEach((file, index) => {
+                                    const name: string =
+                                        file?.[NotionObjectTypes.NAME];
+                                    const url: string =
+                                        file?.["file"]?.[PropertyTypeValue.URL];
+
+                                    filesLink += `${name}`;
+
+                                    if (index < files.length - 1) {
+                                        filesLink += ", ";
+                                    }
+                                });
+                            }
+                            tableData[index + 1].push(filesLink);
+                            break;
+                        }
+                    }
+                });
+            });
+        }
+        return tableData;
     }
 }
