@@ -367,6 +367,9 @@ export class Handler implements IHandler {
             SharePage.VIEW_ID
         );
 
+        const { workspace_id } = tokenInfo;
+
+        await modalInteraction.clearPagesOrDatabase(workspace_id);
         await this.roomInteractionStorage.storeInteractionRoomId(roomId);
 
         const modal = await sharePageModal(
