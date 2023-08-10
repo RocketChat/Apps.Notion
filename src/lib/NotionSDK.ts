@@ -1057,4 +1057,48 @@ export class NotionSDK implements INotionSDK {
             throw new AppsEngineException(err as string);
         }
     }
+
+    public async searchDatabases(
+        token: string
+    ): Promise<Array<IDatabase> | Error> {
+        try {
+            const response = await this.http.post(NotionApi.SEARCH, {
+                data: {
+                    filter: {
+                        value: NotionObjectTypes.DATABASE,
+                        property: NotionObjectTypes.PROPERTY,
+                    },
+                },
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": NotionApi.CONTENT_TYPE,
+                    "User-Agent": NotionApi.USER_AGENT,
+                    "Notion-Version": this.NotionVersion,
+                },
+            });
+
+            if (!response.statusCode.toString().startsWith("2")) {
+                return this.handleErrorResponse(
+                    response.statusCode,
+                    `Error While Searching Databases: `,
+                    response.content
+                );
+            }
+
+            const { results } = response.data;
+
+            const result: Array<IDatabase> = [];
+            results.forEach(async (item) => {
+                const objectType: string = item?.[NotionObjectTypes.OBJECT];
+                const databaseObject = await this.getDatabaseObjectFromResults(
+                    item
+                );
+
+                result.push(databaseObject);
+            });
+            return result;
+        } catch (err) {
+            throw new AppsEngineException(err as string);
+        }
+    }
 }

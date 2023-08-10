@@ -7,6 +7,7 @@ export enum CommandParam {
     WORKSPACE = "workspace",
     WS = "ws",
     SHARE = "share",
+    VIEW = "view",
 }
 
 export enum SubCommandParam {
