@@ -11,6 +11,7 @@ import {
 import { NotionApp } from "../../NotionApp";
 import { ActionButton } from "../../enum/modals/common/ActionButtons";
 import { Handler } from "./Handler";
+import { IMessage } from "@rocket.chat/apps-engine/definition/messages";
 
 export class ExecuteActionButtonHandler {
     private context: UIKitActionButtonInteractionContext;
@@ -47,6 +48,10 @@ export class ExecuteActionButtonHandler {
             }
             case ActionButton.SEND_TO_NEW_PAGE_MESSAGE_ACTION: {
                 await handler.createNotionPageOrRecord(false, message);
+                break;
+            }
+            case ActionButton.SEND_TO_PAGE_MESSAGE_ACTION: {
+                await handler.sendToNotionPage(message as IMessage);
                 break;
             }
         }
