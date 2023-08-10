@@ -48,6 +48,7 @@ import { SearchPage } from "../../enum/modals/common/SearchPageComponent";
 import { ActionButton } from "../../enum/modals/common/ActionButtons";
 import { getCredentials } from "../helper/getCredential";
 import { ICredential } from "../../definition/authorization/ICredential";
+import { SendMessagePage } from "../../enum/modals/SendMessagePage";
 
 export class ExecuteViewSubmitHandler {
     private context: UIKitViewSubmitInteractionContext;
@@ -113,6 +114,14 @@ export class ExecuteViewSubmitHandler {
             }
             case SharePage.VIEW_ID: {
                 return this.handleSharePage(
+                    room,
+                    oAuth2Storage,
+                    modalInteraction
+                );
+                break;
+            }
+            case SendMessagePage.VIEW_ID: {
+                return this.handleSendMessagePage(
                     room,
                     oAuth2Storage,
                     modalInteraction
@@ -799,6 +808,112 @@ export class ExecuteViewSubmitHandler {
         await sendMessage(this.read, this.modify, user, room, {
             message,
         });
+
+        return this.context.getInteractionResponder().successResponse();
+    }
+
+    public async handleSendMessagePage(
+        room: IRoom,
+        oAuth2Storage: OAuth2Storage,
+        modalInteraction: ModalInteractionStorage
+    ): Promise<IUIKitResponse> {
+        const { view, user } = this.context.getInteractionData();
+        const { state } = view;
+
+        const { NotionSdk } = this.app.getUtils();
+        const tokenInfo = await oAuth2Storage.getCurrentWorkspace(user.id);
+
+        if (!tokenInfo) {
+            await sendNotificationWithConnectBlock(
+                this.app,
+                user,
+                this.read,
+                this.modify,
+                room
+            );
+            return this.context.getInteractionResponder().errorResponse();
+        }
+
+        const { workspace_name, owner, access_token } = tokenInfo;
+        const pageId: string | undefined =
+            state?.[SearchPage.BLOCK_ID]?.[SendMessagePage.ACTION_ID];
+
+        if (!pageId) {
+            return this.context.getInteractionResponder().viewErrorResponse({
+                viewId: view.id,
+                errors: {
+                    [SendMessagePage.ACTION_ID]:
+                        "Please Select a Page to Share",
+                },
+            });
+        }
+
+        const preserveMessage = await modalInteraction.getInputElementState(
+            ActionButton.SEND_TO_PAGE_MESSAGE_ACTION
+        );
+
+        if (preserveMessage) {
+            const preserveMessageContext = preserveMessage as {
+                id: string;
+                text: string;
+                room: IRoom;
+            };
+            const { id, text } = preserveMessageContext;
+            const appendBlock = await NotionSdk.appendMessageBlock(
+                access_token,
+                text,
+                pageId
+            );
+
+            if (appendBlock instanceof Error) {
+                this.app.getLogger().error(appendBlock.message);
+                const message = `🚫 Something went wrong while appending message in **${workspace_name}**.`;
+                await sendNotification(this.read, this.modify, user, room, {
+                    message,
+                });
+            } else {
+                const pageInfo = await NotionSdk.retrievePage(
+                    access_token,
+                    pageId
+                );
+
+                if (pageInfo instanceof Error) {
+                    this.app.getLogger().error(pageInfo.message);
+                    return this.context
+                        .getInteractionResponder()
+                        .errorResponse();
+                }
+
+                const { name, url } = pageInfo;
+                const { type, displayName } = preserveMessageContext.room;
+
+                const urlPath =
+                    type === RoomType.CHANNEL
+                        ? "channel"
+                        : type === RoomType.PRIVATE_GROUP
+                        ? "group"
+                        : "direct";
+
+                const { siteUrl } = (await getCredentials(
+                    this.read,
+                    this.modify,
+                    user,
+                    room
+                )) as ICredential;
+
+                const messageLink = `${siteUrl}/${urlPath}/${displayName}?msg=${id}`;
+                const preserveText = `📝 Preserved Following [Message](${messageLink}) in [**${name}**](${url}) `;
+
+                await sendMessage(
+                    this.read,
+                    this.modify,
+                    user,
+                    room,
+                    { message: preserveText },
+                    id
+                );
+            }
+        }
 
         return this.context.getInteractionResponder().successResponse();
     }
