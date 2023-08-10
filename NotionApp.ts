@@ -86,8 +86,15 @@ export class NotionApp extends App {
             context: UIActionButtonContext.MESSAGE_ACTION,
         };
 
+        const sendToNewPageButton: IUIActionButtonDescriptor = {
+            actionId: ActionButton.SEND_TO_NEW_PAGE_MESSAGE_ACTION,
+            labelI18n: ActionButton.SEND_TO_NEW_PAGE_MESSAGE_ACTION_LABEL,
+            context: UIActionButtonContext.MESSAGE_ACTION,
+        };
+
         configurationExtend.ui.registerButton(commentOnPagesButton);
         configurationExtend.ui.registerButton(sendToPageButton);
+        configurationExtend.ui.registerButton(sendToNewPageButton);
     }
 
     public getOAuth2Client(): OAuth2Client {

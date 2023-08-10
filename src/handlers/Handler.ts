@@ -257,12 +257,12 @@ export class Handler implements IHandler {
             }
 
             await modalInteraction.clearInputElementState(
-                ActionButton.SEND_TO_PAGE_MESSAGE_ACTION
+                ActionButton.SEND_TO_NEW_PAGE_MESSAGE_ACTION
             );
 
             if (message) {
                 await modalInteraction.storeInputElementState(
-                    ActionButton.SEND_TO_PAGE_MESSAGE_ACTION,
+                    ActionButton.SEND_TO_NEW_PAGE_MESSAGE_ACTION,
                     message
                 );
             }

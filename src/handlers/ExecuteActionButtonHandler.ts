@@ -45,7 +45,7 @@ export class ExecuteActionButtonHandler {
                 await handler.commentOnPages();
                 break;
             }
-            case ActionButton.SEND_TO_PAGE_MESSAGE_ACTION: {
+            case ActionButton.SEND_TO_NEW_PAGE_MESSAGE_ACTION: {
                 await handler.createNotionPageOrRecord(false, message);
                 break;
             }

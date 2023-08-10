@@ -370,7 +370,7 @@ export class ExecuteViewSubmitHandler {
             message = `✨ Your Page [**${title}**](${link}) is created successfully  as a subpage in **${name}**.`;
 
             const preserveMessage = await modalInteraction.getInputElementState(
-                ActionButton.SEND_TO_PAGE_MESSAGE_ACTION
+                ActionButton.SEND_TO_NEW_PAGE_MESSAGE_ACTION
             );
 
             if (preserveMessage) {
@@ -495,7 +495,7 @@ export class ExecuteViewSubmitHandler {
             );
 
             const preserveMessage = await modalInteraction.getInputElementState(
-                ActionButton.SEND_TO_PAGE_MESSAGE_ACTION
+                ActionButton.SEND_TO_NEW_PAGE_MESSAGE_ACTION
             );
 
             if (preserveMessage) {

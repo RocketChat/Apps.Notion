@@ -87,7 +87,7 @@ export class ExecuteViewClosedHandler {
                         PropertyTypeValue.PEOPLE
                     ),
                     modalInteraction.clearInputElementState(
-                        ActionButton.SEND_TO_PAGE_MESSAGE_ACTION
+                        ActionButton.SEND_TO_NEW_PAGE_MESSAGE_ACTION
                     ),
                 ]);
 

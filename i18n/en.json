@@ -7,5 +7,6 @@
     "NotionCommandParams": "connect | disconnect | workspace | create | schema | comment",
     "NotionCommandDescription": "Create Notion pages and database from Rocket.Chat",
     "CommentOnPagesLabel": "💬 Comment on Page",
-    "SendToPageLabel": "📝 Send to Page"
+    "SendToPageLabel": "📝 Send to Page",
+    "SendToNewPageLabel": "📢 Send to New Page"
 }
