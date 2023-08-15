@@ -52,6 +52,7 @@ import { SendMessagePage } from "../../enum/modals/SendMessagePage";
 import { NotionTable } from "../../enum/modals/NotionTable";
 import { SearchDatabaseComponent } from "../../enum/modals/common/SearchDatabaseComponent";
 import { table } from "table";
+import { NotionPage } from "../../enum/modals/NotionPage";
 
 export class ExecuteViewSubmitHandler {
     private context: UIKitViewSubmitInteractionContext;
@@ -133,6 +134,14 @@ export class ExecuteViewSubmitHandler {
             }
             case NotionTable.VIEW_ID: {
                 return this.handleViewTable(
+                    room,
+                    oAuth2Storage,
+                    modalInteraction
+                );
+                break;
+            }
+            case NotionPage.VIEW_ID: {
+                return this.handleViewNotionPage(
                     room,
                     oAuth2Storage,
                     modalInteraction
@@ -993,6 +1002,58 @@ export class ExecuteViewSubmitHandler {
 
         await sendNotification(this.read, this.modify, user, room, {
             message: tableText,
+        });
+
+        return this.context.getInteractionResponder().successResponse();
+    }
+
+    private async handleViewNotionPage(
+        room: IRoom,
+        oAuth2Storage: OAuth2Storage,
+        modalInteraction: ModalInteractionStorage
+    ): Promise<IUIKitResponse> {
+        const { view, user } = this.context.getInteractionData();
+        const { state } = view;
+
+        const { NotionSdk } = this.app.getUtils();
+        const tokenInfo = await oAuth2Storage.getCurrentWorkspace(user.id);
+
+        if (!tokenInfo) {
+            await sendNotificationWithConnectBlock(
+                this.app,
+                user,
+                this.read,
+                this.modify,
+                room
+            );
+            return this.context.getInteractionResponder().errorResponse();
+        }
+
+        const { workspace_name, owner, access_token } = tokenInfo;
+        const pageId: string | undefined =
+            state?.[SearchPage.BLOCK_ID]?.[NotionPage.ACTION_ID];
+
+        if (!pageId) {
+            return this.context.getInteractionResponder().viewErrorResponse({
+                viewId: view.id,
+                errors: {
+                    [NotionPage.ACTION_ID]: "Please Select a Page to View",
+                },
+            });
+        }
+
+        const pageMrkdwn = await NotionSdk.retrievePageContent(
+            access_token,
+            pageId
+        );
+
+        if (pageMrkdwn instanceof Error) {
+            return this.context.getInteractionResponder().errorResponse();
+        }
+
+        console.log(pageMrkdwn)
+        await sendNotification(this.read, this.modify, user, room, {
+            message: pageMrkdwn,
         });
 
         return this.context.getInteractionResponder().successResponse();
