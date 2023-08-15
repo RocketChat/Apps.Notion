@@ -1420,7 +1420,7 @@ export class NotionSDK implements INotionSDK {
 
     private async getPageContentInMarkdwn(results): Promise<string> {
         let pageContent = "";
-        console.log(results);
+
         results?.forEach((result) => {
             const type = result?.[NotionObjectTypes.TYPE];
             const propertyObject = result?.[type];
@@ -1481,11 +1481,9 @@ export class NotionSDK implements INotionSDK {
                     break;
                 }
                 case PageContent.COLUMN: {
-                    console.log("column", propertyObject);
                     break;
                 }
                 case PageContent.COLUMN_LIST: {
-                    console.log("column list", propertyObject);
                     break;
                 }
                 case PageContent.DIVIDER: {
@@ -1520,7 +1518,7 @@ export class NotionSDK implements INotionSDK {
                                 "content"
                             ] ?? "";
 
-                        pageContent += `# ${markdown}\n`;
+                        pageContent += `## ${markdown}\n`;
                     }
                     break;
                 }
@@ -1533,7 +1531,7 @@ export class NotionSDK implements INotionSDK {
                                 "content"
                             ] ?? "";
 
-                        pageContent += `## ${markdown}\n`;
+                        pageContent += `### ${markdown}\n`;
                     }
                     break;
                 }
@@ -1546,7 +1544,7 @@ export class NotionSDK implements INotionSDK {
                                 "content"
                             ] ?? "";
 
-                        pageContent += `### ${markdown}\n`;
+                        pageContent += `#### ${markdown}\n`;
                     }
                     break;
                 }
@@ -1559,11 +1557,9 @@ export class NotionSDK implements INotionSDK {
                     break;
                 }
                 case PageContent.LINK_PREVIEW: {
-                    console.log("link preview", propertyObject);
                     break;
                 }
                 case PageContent.PARAGRAPH: {
-                    console.log("paragraph", propertyObject);
                     const paragraph = propertyObject?.[PropertyTypeValue.TEXT];
                     if (paragraph) {
                         const markdown =

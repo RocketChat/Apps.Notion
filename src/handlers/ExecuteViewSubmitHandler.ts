@@ -1041,6 +1041,11 @@ export class ExecuteViewSubmitHandler {
                 },
             });
         }
+        const pageInfo = await NotionSdk.retrievePage(access_token, pageId);
+
+        if (pageInfo instanceof Error) {
+            return this.context.getInteractionResponder().errorResponse();
+        }
 
         const pageMrkdwn = await NotionSdk.retrievePageContent(
             access_token,
@@ -1051,9 +1056,10 @@ export class ExecuteViewSubmitHandler {
             return this.context.getInteractionResponder().errorResponse();
         }
 
-        console.log(pageMrkdwn)
+        const { name, url } = pageInfo;
+        const message = `# ${name}\n` + pageMrkdwn;
         await sendNotification(this.read, this.modify, user, room, {
-            message: pageMrkdwn,
+            message: message,
         });
 
         return this.context.getInteractionResponder().successResponse();
