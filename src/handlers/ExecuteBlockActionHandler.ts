@@ -51,6 +51,7 @@ import { getPropertiesIdsObject } from "../helper/getPropertiesIdsObject";
 import { SharePage } from "../../enum/modals/SharePage";
 import { NotionTable } from "../../enum/modals/NotionTable";
 import { SendMessagePage } from "../../enum/modals/SendMessagePage";
+import { NotionPage } from "../../enum/modals/NotionPage";
 
 export class ExecuteBlockActionHandler {
     private context: UIKitBlockInteractionContext;
@@ -167,6 +168,7 @@ export class ExecuteBlockActionHandler {
                 );
                 break;
             }
+            case NotionPage.ACTION_ID:
             case SendMessagePage.ACTION_ID:
             case SharePage.ACTION_ID: {
                 return this.handleSelectPageAction();
