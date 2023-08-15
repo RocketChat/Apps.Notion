@@ -63,7 +63,7 @@ export class CommandUtility implements ICommandUtility {
                 break;
             }
             case 1: {
-                await this.handleSingleParam();
+                await this.handleSingleParam(handler);
                 break;
             }
             case 2: {
@@ -81,7 +81,7 @@ export class CommandUtility implements ICommandUtility {
         }
     }
 
-    private async handleSingleParam(): Promise<void> {
+    private async handleSingleParam(handler: Handler): Promise<void> {
         const oAuth2ClientInstance = await this.app.getOAuth2Client();
         switch (this.params[0].toLowerCase()) {
             case CommandParam.CONNECT: {
@@ -104,6 +104,10 @@ export class CommandUtility implements ICommandUtility {
                     this.http,
                     this.persis
                 );
+                break;
+            }
+            case CommandParam.COMMENT: {
+                await handler.commentOnPages();
                 break;
             }
             case CommandParam.HELP:

@@ -1,6 +1,9 @@
 import {
+    ICommentInfo,
+    ICommentObject,
     INotionDatabase,
     INotionSDK,
+    INotionUserBot,
     IPage,
 } from "../../definition/lib/INotion";
 import {
@@ -8,7 +11,10 @@ import {
     IHttp,
 } from "@rocket.chat/apps-engine/definition/accessors";
 import { URL } from "url";
-import { ITokenInfo } from "../../definition/authorization/IOAuth2Storage";
+import {
+    INotionUser,
+    ITokenInfo,
+} from "../../definition/authorization/IOAuth2Storage";
 import {
     ClientError,
     Error,
@@ -17,9 +23,19 @@ import {
     NotFoundError,
     ServerError,
 } from "../../errors/Error";
-import { NotionApi, NotionObjectTypes } from "../../enum/Notion";
+import {
+    NotionApi,
+    NotionObjectTypes,
+    NotionOwnerType,
+} from "../../enum/Notion";
 import { OAuth2Credential, OAuth2Locator } from "../../enum/OAuth2";
 import { AppsEngineException } from "@rocket.chat/apps-engine/definition/exceptions";
+import { RichText } from "@tryfabric/martian/build/src/notion";
+import { markdownToRichText } from "@tryfabric/martian";
+import {
+    getMentionObject,
+    getWhiteSpaceTextObject,
+} from "../helper/getNotionObject";
 
 export class NotionSDK implements INotionSDK {
     baseUrl: string;
@@ -217,6 +233,250 @@ export class NotionSDK implements INotionSDK {
             };
 
             return result;
+        } catch (err) {
+            throw new AppsEngineException(err as string);
+        }
+    }
+
+    public async retrieveCommentsOnpage(
+        pageId: string,
+        token: string
+    ): Promise<Array<ICommentInfo> | Error> {
+        try {
+            const response = await this.http.get(NotionApi.COMMENTS, {
+                params: {
+                    block_id: pageId,
+                },
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": NotionApi.CONTENT_TYPE,
+                    "User-Agent": NotionApi.USER_AGENT,
+                    "Notion-Version": this.NotionVersion,
+                },
+            });
+
+            if (!response.statusCode.toString().startsWith("2")) {
+                return this.handleErrorResponse(
+                    response.statusCode,
+                    `Error While retrieving Comments: `,
+                    response.content
+                );
+            }
+
+            const users = await this.retrieveAllUsers(token);
+            if (users instanceof Error) {
+                return users;
+            }
+
+            // id -> user
+            const usersMap = new Map<string, INotionUser | INotionUserBot>();
+
+            users.forEach((user) => {
+                usersMap.set(user.id, user);
+            });
+
+            // Note: Every User has a bot user with different Id but same name
+
+            const results: Array<ICommentObject> = response.data?.results;
+            results.reverse();
+            let comments: Array<ICommentInfo> = [];
+
+            for (const result of results) {
+                const { created_by, created_time, rich_text } = result;
+                const { id } = created_by;
+                const comment = await this.richTextToMarkdown(rich_text);
+
+                let user: INotionUser | INotionUserBot | undefined =
+                    usersMap.get(id);
+                if (
+                    user?.type === NotionOwnerType.BOT &&
+                    rich_text.length &&
+                    rich_text[0].type === NotionObjectTypes.MENTION
+                ) {
+                    const mentionUser: INotionUser =
+                        rich_text[0]?.[NotionObjectTypes.MENTION]?.[
+                            NotionOwnerType.USER
+                        ];
+
+                    user = usersMap.get(mentionUser.id);
+                }
+
+                if (!user) {
+                    const publicUser = await this.retrieveUser(id, token);
+                    if (publicUser instanceof Error) {
+                        return publicUser;
+                    }
+
+                    user = publicUser;
+                }
+
+                comments.push({
+                    comment,
+                    user,
+                    created_time,
+                });
+            }
+            return comments;
+        } catch (err) {
+            throw new AppsEngineException(err as string);
+        }
+    }
+
+    private async richTextToMarkdown(richText: Array<RichText>) {
+        return richText.reduce((previous, current) => {
+            return `${previous}${this.convertToMarkdown(current)}`;
+        }, "");
+    }
+
+    private convertToMarkdown(richText: RichText) {
+        switch (richText.type) {
+            case NotionObjectTypes.TEXT: {
+                const { text, annotations } = richText;
+                let { content, link } = text;
+
+                if (annotations) {
+                    const { bold, italic, strikethrough, code } = annotations;
+
+                    if (bold) {
+                        content = `**${content}**`;
+                    }
+
+                    if (italic) {
+                        content = `_${content}_`;
+                    }
+
+                    if (code) {
+                        content = `\`${content}\``;
+                    }
+
+                    if (strikethrough) {
+                        content = `~${content}~`;
+                    }
+                }
+
+                if (link) {
+                    content = `[${content}](${link.url})`;
+                }
+
+                return content;
+                break;
+            }
+            // handle mentions and expression later
+        }
+
+        return "";
+    }
+
+    public async retrieveUser(
+        userId: string,
+        token: string
+    ): Promise<INotionUser | INotionUserBot | Error> {
+        try {
+            const response = await this.http.get(
+                NotionApi.USERS + `/${userId}`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": NotionApi.CONTENT_TYPE,
+                        "User-Agent": NotionApi.USER_AGENT,
+                        "Notion-Version": this.NotionVersion,
+                    },
+                }
+            );
+
+            if (!response.statusCode.toString().startsWith("2")) {
+                return this.handleErrorResponse(
+                    response.statusCode,
+                    `Error While retrieving User: `,
+                    response.content
+                );
+            }
+
+            const user: INotionUser = response.data;
+            return user;
+        } catch (err) {
+            throw new AppsEngineException(err as string);
+        }
+    }
+
+    public async retrieveAllUsers(
+        token: string
+    ): Promise<Array<INotionUser | INotionUserBot> | Error> {
+        try {
+            const response = await this.http.get(NotionApi.USERS, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": NotionApi.CONTENT_TYPE,
+                    "User-Agent": NotionApi.USER_AGENT,
+                    "Notion-Version": this.NotionVersion,
+                },
+            });
+
+            if (!response.statusCode.toString().startsWith("2")) {
+                return this.handleErrorResponse(
+                    response.statusCode,
+                    `Error While retrieving All Users: `,
+                    response.content
+                );
+            }
+            const users: Array<INotionUser | INotionUserBot> =
+                response.data?.results;
+            return users;
+        } catch (err) {
+            throw new AppsEngineException(err as string);
+        }
+    }
+
+    public async createCommentOnPage(
+        tokenInfo: ITokenInfo,
+        pageId: string,
+        comment: string
+    ): Promise<ICommentInfo | Error> {
+        try {
+            const { access_token, owner } = tokenInfo;
+            const { user } = owner;
+            const { name } = user;
+
+            const rich_text_mention = getMentionObject(user, name);
+            const white_space_comment = getWhiteSpaceTextObject();
+
+            const rich_text_comment = markdownToRichText(comment);
+            const rich_text = [
+                rich_text_mention,
+                white_space_comment,
+                ...rich_text_comment,
+            ];
+
+            const response = await this.http.post(NotionApi.COMMENTS, {
+                data: {
+                    [NotionObjectTypes.PARENT]: {
+                        [NotionObjectTypes.TYPE]: NotionObjectTypes.PAGE_ID,
+                        [NotionObjectTypes.PAGE_ID]: pageId,
+                    },
+                    rich_text,
+                },
+                headers: {
+                    Authorization: `Bearer ${access_token}`,
+                    "Content-Type": NotionApi.CONTENT_TYPE,
+                    "User-Agent": NotionApi.USER_AGENT,
+                    "Notion-Version": this.NotionVersion,
+                },
+            });
+
+            if (!response.statusCode.toString().startsWith("2")) {
+                return this.handleErrorResponse(
+                    response.statusCode,
+                    `Error While Creating Comment On Page: `,
+                    response.content
+                );
+            }
+            const addedComment = response.data;
+            const created_time = addedComment?.created_time;
+            return {
+                comment,
+                user,
+                created_time,
+            };
         } catch (err) {
             throw new AppsEngineException(err as string);
         }

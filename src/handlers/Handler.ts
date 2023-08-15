@@ -15,6 +15,9 @@ import { Error } from "../../errors/Error";
 import { ModalInteractionStorage } from "../storage/ModalInteraction";
 import { DatabaseModal } from "../../enum/modals/NotionDatabase";
 import { sendNotificationWithConnectBlock } from "../helper/message";
+import { CommentPage } from "../../enum/modals/CommentPage";
+import { createCommentContextualBar } from "../modals/createCommentContextualBar";
+import { SearchPage } from "../../enum/modals/common/SearchPageComponent";
 
 export class Handler implements IHandler {
     public app: NotionApp;
@@ -103,6 +106,72 @@ export class Handler implements IHandler {
                     { triggerId: this.triggerId },
                     this.sender
                 );
+        }
+    }
+
+    public async commentOnPages(): Promise<void> {
+        const userId = this.sender.id;
+        const roomId = this.room.id;
+        const tokenInfo = await this.oAuth2Storage.getCurrentWorkspace(userId);
+
+        if (!tokenInfo) {
+            await sendNotificationWithConnectBlock(
+                this.app,
+                this.sender,
+                this.read,
+                this.modify,
+                this.room
+            );
+            return;
+        }
+
+        const persistenceRead = this.read.getPersistenceReader();
+        const modalInteraction = new ModalInteractionStorage(
+            this.persis,
+            persistenceRead,
+            userId,
+            CommentPage.VIEW_ID
+        );
+        const { workspace_id } = tokenInfo;
+
+        await Promise.all([
+            this.roomInteractionStorage.storeInteractionRoomId(roomId),
+            modalInteraction.clearPagesOrDatabase(workspace_id),
+            modalInteraction.clearInputElementState(
+                CommentPage.COMMENT_INPUT_ACTION
+            ),
+            modalInteraction.clearInputElementState(
+                CommentPage.REFRESH_OPTION_VALUE
+            ),
+        ]);
+
+        const contextualBar = await createCommentContextualBar(
+            this.app,
+            this.sender,
+            this.read,
+            this.persis,
+            this.modify,
+            this.room,
+            tokenInfo,
+            modalInteraction
+        );
+
+        if (contextualBar instanceof Error) {
+            // Something went Wrong Propably SearchPageComponent Couldn't Fetch the Pages
+            this.app.getLogger().error(contextualBar.message);
+            return;
+        }
+
+        const triggerId = this.triggerId;
+
+        if (triggerId) {
+            await this.modify.getUiController().openSurfaceView(
+                contextualBar,
+                {
+                    triggerId,
+                },
+                this.sender
+            );
         }
     }
 }

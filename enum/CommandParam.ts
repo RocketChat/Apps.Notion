@@ -3,6 +3,7 @@ export enum CommandParam {
     DISCONNECT = "disconnect",
     CREATE = "create",
     HELP = "help",
+    COMMENT = "comment",
 }
 
 export enum SubCommandParam {

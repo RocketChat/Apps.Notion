@@ -23,6 +23,12 @@ import { sendNotificationWithConnectBlock } from "../helper/message";
 import { PropertyTypeValue } from "../../enum/modals/common/NotionProperties";
 import { Modals } from "../../enum/modals/common/Modals";
 import { getDuplicatePropertyNameViewErrors } from "../helper/getDuplicatePropNameViewError";
+import { SearchPage } from "../../enum/modals/common/SearchPageComponent";
+import { createCommentContextualBar } from "../modals/createCommentContextualBar";
+import { CommentPage } from "../../enum/modals/CommentPage";
+import { NotionObjectTypes } from "../../enum/Notion";
+import { ITokenInfo } from "../../definition/authorization/IOAuth2Storage";
+import { ICommentInfo } from "../../definition/lib/INotion";
 
 export class ExecuteBlockActionHandler {
     private context: UIKitBlockInteractionContext;
@@ -83,6 +89,39 @@ export class ExecuteBlockActionHandler {
             case DatabaseModal.REMOVE_OPTION_ACTION:
             case DatabaseModal.ADD_OPTION_ACTION: {
                 this.handleOptionAction(
+                    modalInteraction,
+                    oAuth2Storage,
+                    roomInteractionStorage
+                );
+                break;
+            }
+            case SearchPage.SEARCH_COMMENT_ACTION_ID: {
+                return this.handleViewCommentAction(
+                    modalInteraction,
+                    oAuth2Storage,
+                    roomInteractionStorage
+                );
+                break;
+            }
+            case CommentPage.COMMENT_ON_PAGE_SUBMIT_ACTION: {
+                return this.handleCommentOnPage(
+                    modalInteraction,
+                    oAuth2Storage,
+                    roomInteractionStorage
+                );
+                break;
+            }
+            case CommentPage.COMMENT_INPUT_ACTION: {
+                return this.handleCommentInputAction(
+                    modalInteraction,
+                    oAuth2Storage,
+                    roomInteractionStorage
+                );
+
+                break;
+            }
+            case Modals.OVERFLOW_MENU_ACTION: {
+                return this.handleRefreshCommentAction(
                     modalInteraction,
                     oAuth2Storage,
                     roomInteractionStorage
@@ -470,5 +509,236 @@ export class ExecuteBlockActionHandler {
         );
 
         return inputElementState;
+    }
+
+    private async handleViewCommentAction(
+        modalInteraction: ModalInteractionStorage,
+        oAuth2Storage: OAuth2Storage,
+        roomInteractionStorage: RoomInteractionStorage
+    ): Promise<IUIKitResponse> {
+        const { user, value } = this.context.getInteractionData();
+
+        const tokenInfo = await oAuth2Storage.getCurrentWorkspace(user.id);
+        const roomId = await roomInteractionStorage.getInteractionRoomId();
+        const room = (await this.read.getRoomReader().getById(roomId)) as IRoom;
+
+        if (!tokenInfo) {
+            await sendNotificationWithConnectBlock(
+                this.app,
+                user,
+                this.read,
+                this.modify,
+                room
+            );
+            return this.context.getInteractionResponder().errorResponse();
+        }
+
+        if (value) {
+            return this.handleUpdateOfCommentContextualBar(
+                user,
+                room,
+                tokenInfo,
+                modalInteraction,
+                value,
+                true
+            );
+        }
+
+        return this.context.getInteractionResponder().successResponse();
+    }
+
+    private async handleCommentOnPage(
+        modalInteraction: ModalInteractionStorage,
+        oAuth2Storage: OAuth2Storage,
+        roomInteractionStorage: RoomInteractionStorage
+    ): Promise<IUIKitResponse> {
+        const { user, container, triggerId, value } =
+            this.context.getInteractionData();
+
+        const tokenInfo = await oAuth2Storage.getCurrentWorkspace(user.id);
+        const roomId = await roomInteractionStorage.getInteractionRoomId();
+        const room = (await this.read.getRoomReader().getById(roomId)) as IRoom;
+
+        if (!tokenInfo) {
+            await sendNotificationWithConnectBlock(
+                this.app,
+                user,
+                this.read,
+                this.modify,
+                room
+            );
+            return this.context.getInteractionResponder().errorResponse();
+        }
+
+        const commentText = await modalInteraction.getInputElementState(
+            CommentPage.COMMENT_INPUT_ACTION
+        );
+
+        const missingObject = await this.getMissingPropertiesForCommentBar(
+            commentText,
+            value
+        );
+
+        if (Object.keys(missingObject).length) {
+            return this.context.getInteractionResponder().viewErrorResponse({
+                viewId: container.id,
+                errors: missingObject,
+            });
+        }
+
+        const pageId = value as string;
+        const comment: string = commentText?.[NotionObjectTypes.COMMENT];
+        const { NotionSdk } = this.app.getUtils();
+
+        const addComment = await NotionSdk.createCommentOnPage(
+            tokenInfo,
+            pageId,
+            comment
+        );
+
+        if (addComment instanceof Error) {
+            this.app.getLogger().error(addComment);
+            return this.context.getInteractionResponder().errorResponse();
+        }
+
+        await modalInteraction.clearInputElementState(
+            CommentPage.COMMENT_INPUT_ACTION
+        );
+
+        const comments = [addComment];
+        const commentsInfo = await modalInteraction.getInputElementState(
+            CommentPage.REFRESH_OPTION_VALUE
+        );
+
+        if (commentsInfo) {
+            const oldComments = commentsInfo?.[Modals.DATA] as ICommentInfo[];
+            comments.push(...oldComments);
+        }
+
+        await modalInteraction.storeInputElementState(
+            CommentPage.REFRESH_OPTION_VALUE,
+            {
+                data: comments,
+            }
+        );
+
+        return this.handleUpdateOfCommentContextualBar(
+            user,
+            room,
+            tokenInfo,
+            modalInteraction,
+            pageId
+        );
+    }
+
+    private async handleCommentInputAction(
+        modalInteraction: ModalInteractionStorage,
+        oAuth2Storage: OAuth2Storage,
+        roomInteractionStorage: RoomInteractionStorage
+    ): Promise<IUIKitResponse> {
+        const { value, container } = this.context.getInteractionData();
+
+        if (value) {
+            await modalInteraction.storeInputElementState(
+                CommentPage.COMMENT_INPUT_ACTION,
+                {
+                    comment: value,
+                }
+            );
+        } else {
+            await modalInteraction.clearInputElementState(
+                CommentPage.COMMENT_INPUT_ACTION
+            );
+        }
+
+        return this.context.getInteractionResponder().viewErrorResponse({
+            viewId: container.id,
+            errors: {},
+        });
+    }
+
+    private async getMissingPropertiesForCommentBar(
+        commentText?: object,
+        page?: string
+    ) {
+        const missingObject = {};
+
+        if (!page) {
+            missingObject[SearchPage.SEARCH_COMMENT_ACTION_ID] =
+                "Select Notion Page to Comment";
+        }
+        if (!commentText) {
+            missingObject[CommentPage.COMMENT_INPUT_ACTION] =
+                "Comment is required";
+        }
+
+        return missingObject;
+    }
+
+    private async handleRefreshCommentAction(
+        modalInteraction: ModalInteractionStorage,
+        oAuth2Storage: OAuth2Storage,
+        roomInteractionStorage: RoomInteractionStorage
+    ): Promise<IUIKitResponse> {
+        const { user, container, triggerId, value } =
+            this.context.getInteractionData();
+
+        const tokenInfo = await oAuth2Storage.getCurrentWorkspace(user.id);
+        const roomId = await roomInteractionStorage.getInteractionRoomId();
+        const room = (await this.read.getRoomReader().getById(roomId)) as IRoom;
+
+        if (!tokenInfo) {
+            await sendNotificationWithConnectBlock(
+                this.app,
+                user,
+                this.read,
+                this.modify,
+                room
+            );
+            return this.context.getInteractionResponder().errorResponse();
+        }
+
+        const pageId = value as string;
+
+        return this.handleUpdateOfCommentContextualBar(
+            user,
+            room,
+            tokenInfo,
+            modalInteraction,
+            pageId,
+            true
+        );
+    }
+
+    private async handleUpdateOfCommentContextualBar(
+        user: IUser,
+        room: IRoom,
+        tokenInfo: ITokenInfo,
+        modalInteraction: ModalInteractionStorage,
+        pageId: string,
+        refresh?: boolean
+    ): Promise<IUIKitResponse> {
+        const contextualBar = await createCommentContextualBar(
+            this.app,
+            user,
+            this.read,
+            this.persistence,
+            this.modify,
+            room,
+            tokenInfo,
+            modalInteraction,
+            pageId,
+            refresh
+        );
+
+        if (contextualBar instanceof Error) {
+            // Something went Wrong Propably SearchPageComponent Couldn't Fetch the Pages
+            this.app.getLogger().error(contextualBar.message);
+            return this.context.getInteractionResponder().errorResponse();
+        }
+
+        return this.context
+            .getInteractionResponder()
+            .updateContextualBarViewResponse(contextualBar);
     }
 }

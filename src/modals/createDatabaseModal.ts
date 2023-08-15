@@ -34,6 +34,7 @@ import {
 } from "../../enum/modals/common/NotionProperties";
 import { NotionObjectTypes } from "../../enum/Notion";
 import { ButtonInActionComponent } from "./common/buttonInActionComponent";
+import { SearchPage } from "../../enum/modals/common/SearchPageComponent";
 
 export async function createDatabaseModal(
     app: NotionApp,
@@ -52,7 +53,8 @@ export async function createDatabaseModal(
     const searchForPageComponent = await searchPageComponent(
         app,
         modalInteraction,
-        tokenInfo
+        tokenInfo,
+        SearchPage.ACTION_ID
     );
 
     if (searchForPageComponent instanceof Error) {
