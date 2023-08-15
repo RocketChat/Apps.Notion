@@ -515,4 +515,7 @@ export class Handler implements IHandler {
                 .openSurfaceView(modal, { triggerId }, this.sender);
         }
     }
+
+    public async viewNotionPage(): Promise<void> {
+    }
 }

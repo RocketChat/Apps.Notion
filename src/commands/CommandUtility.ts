@@ -127,6 +127,10 @@ export class CommandUtility implements ICommandUtility {
                 await handler.viewNotionTable();
                 break;
             }
+            case CommandParam.VIEW_PAGE: {
+                await handler.viewNotionPage();
+                break;
+            }
             case CommandParam.HELP:
             default: {
                 await sendHelperNotification(

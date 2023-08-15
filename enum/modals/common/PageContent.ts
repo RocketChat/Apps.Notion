@@ -1,0 +1,35 @@
+export enum PageContent {
+    BOOKMARK = "bookmark",
+    BREADCRUMB = "breadcrumb",
+    BULLET_LIST_ITEM = "bulleted_list_item",
+    CALLOUT = "callout",
+    CHILD_PAGE = "child_page",
+    CHILD_DATABASE = "child_database",
+    CODE = "code",
+    COLUMN = "column",
+    COLUMN_LIST = "column_list",
+    DIVIDER = "divider",
+    EMBED = "embed",
+    EQUATION = "equation",
+    FILE = "file",
+    HEADING_1 = "heading_1",
+    HEADING_2 = "heading_2",
+    HEADING_3 = "heading_3",
+    IMAGE = "image",
+    LINK_PREVIEW = "link_preview",
+    NUMBER_LIST_ITEM = "numbered_list_item",
+    PARAGRAPH = "paragraph",
+    PDF = "pdf",
+    QUOTE = "quote",
+    SYNCED_BLOCK = "synced_block",
+    TABLE = "table",
+    TABLE_OF_CONTENTS = "table_of_contents",
+    TODO = "to_do",
+    TOGGLE_BLOCKS = "toggle",
+    VIDEO = "video",
+    // Mention Left
+}
+
+export enum FileType {
+    EXTERNAL = "external",
+}
