@@ -1,5 +1,6 @@
 import {
     BlockType,
+    ButtonStyle,
     IUIKitResponse,
     UIKitViewSubmitInteractionContext,
 } from "@rocket.chat/apps-engine/definition/uikit";
@@ -53,6 +54,7 @@ import { NotionTable } from "../../enum/modals/NotionTable";
 import { SearchDatabaseComponent } from "../../enum/modals/common/SearchDatabaseComponent";
 import { table } from "table";
 import { NotionPage } from "../../enum/modals/NotionPage";
+import { ButtonInSectionComponent } from "../modals/common/buttonInSectionComponent";
 
 export class ExecuteViewSubmitHandler {
     private context: UIKitViewSubmitInteractionContext;
@@ -823,10 +825,23 @@ export class ExecuteViewSubmitHandler {
 
         const { name, parent, url } = pageInfo;
 
-        const message = `✨ Sharing [**${name}**](${url}) from **${workspace_name}**`;
+        const message = `Sharing [**${name}**](${url}) from **${workspace_name}✨ **`;
+        const viewPage = ButtonInSectionComponent(
+            {
+                app: this.app,
+                buttonText: SharePage.VIEW,
+                value: JSON.stringify(pageInfo),
+                style: ButtonStyle.PRIMARY,
+                text: message,
+            },
+            {
+                blockId: SharePage.VIEW_PAGE_BLOCK,
+                actionId: SharePage.VIEW_PAGE_ACTION,
+            }
+        );
 
         await sendMessage(this.read, this.modify, user, room, {
-            message,
+            blocks: [viewPage],
         });
 
         return this.context.getInteractionResponder().successResponse();
