@@ -28,7 +28,17 @@ import { createCommentContextualBar } from "../modals/createCommentContextualBar
 import { CommentPage } from "../../enum/modals/CommentPage";
 import { NotionObjectTypes } from "../../enum/Notion";
 import { ITokenInfo } from "../../definition/authorization/IOAuth2Storage";
-import { ICommentInfo } from "../../definition/lib/INotion";
+import {
+    ICommentInfo,
+    IDatabase,
+    IPage,
+    IParentDatabase,
+    IParentPage,
+} from "../../definition/lib/INotion";
+import { SearchPageAndDatabase } from "../../enum/modals/common/SearchPageAndDatabaseComponent";
+import { Handler } from "./Handler";
+import { createPageOrRecordModal } from "../modals/createPageOrRecordModal";
+import { NotionPageOrRecord } from "../../enum/modals/NotionPageOrRecord";
 
 export class ExecuteBlockActionHandler {
     private context: UIKitBlockInteractionContext;
@@ -121,11 +131,20 @@ export class ExecuteBlockActionHandler {
                 break;
             }
             case Modals.OVERFLOW_MENU_ACTION: {
-                return this.handleRefreshCommentAction(
+                return this.handleOverFlowMenuAction(
                     modalInteraction,
                     oAuth2Storage,
                     roomInteractionStorage
                 );
+                break;
+            }
+            case SearchPageAndDatabase.ACTION_ID: {
+                return this.handleSearchPageAndDatabaseAction(
+                    modalInteraction,
+                    oAuth2Storage,
+                    roomInteractionStorage
+                );
+
                 break;
             }
             default: {
@@ -740,5 +759,116 @@ export class ExecuteBlockActionHandler {
         return this.context
             .getInteractionResponder()
             .updateContextualBarViewResponse(contextualBar);
+    }
+
+    private async handleOverFlowMenuAction(
+        modalInteraction: ModalInteractionStorage,
+        oAuth2Storage: OAuth2Storage,
+        roomInteractionStorage: RoomInteractionStorage
+    ): Promise<IUIKitResponse> {
+        const { value, user, triggerId } = this.context.getInteractionData();
+
+        if (!value) {
+            return this.context.getInteractionResponder().errorResponse();
+        }
+
+        // Check if the value is pageId. if not then it is not a refresh comment action
+        const OverFlowActions = [
+            DatabaseModal.OVERFLOW_MENU_ACTION.toString(),
+            NotionPageOrRecord.CHANGE_DATABASE_ACTION.toString(),
+        ];
+
+        if (!OverFlowActions.includes(value)) {
+            return this.handleRefreshCommentAction(
+                modalInteraction,
+                oAuth2Storage,
+                roomInteractionStorage
+            );
+        }
+
+        const roomId = await roomInteractionStorage.getInteractionRoomId();
+        const room = (await this.read.getRoomReader().getById(roomId)) as IRoom;
+
+        const handler = new Handler({
+            app: this.app,
+            read: this.read,
+            modify: this.modify,
+            persis: this.persistence,
+            http: this.http,
+            sender: user,
+            room,
+            triggerId,
+        });
+
+        switch (value) {
+            case DatabaseModal.OVERFLOW_MENU_ACTION: {
+                await handler.createNotionDatabase();
+                break;
+            }
+            case NotionPageOrRecord.CHANGE_DATABASE_ACTION: {
+                await handler.createNotionPageOrRecord(true);
+                break;
+            }
+        }
+
+        return this.context.getInteractionResponder().successResponse();
+    }
+
+    private async handleSearchPageAndDatabaseAction(
+        modalInteraction: ModalInteractionStorage,
+        oAuth2Storage: OAuth2Storage,
+        roomInteractionStorage: RoomInteractionStorage
+    ): Promise<IUIKitResponse> {
+        const { value, user } = this.context.getInteractionData();
+
+        const tokenInfo = await oAuth2Storage.getCurrentWorkspace(user.id);
+        const roomId = await roomInteractionStorage.getInteractionRoomId();
+        const room = (await this.read.getRoomReader().getById(roomId)) as IRoom;
+
+        if (!tokenInfo) {
+            await sendNotificationWithConnectBlock(
+                this.app,
+                user,
+                this.read,
+                this.modify,
+                room
+            );
+
+            return this.context.getInteractionResponder().errorResponse();
+        }
+
+        if (!value) {
+            return this.context.getInteractionResponder().errorResponse();
+        }
+
+        let Object: IPage | IDatabase = JSON.parse(value);
+        let parentObject: IParentPage | IParentDatabase = Object.parent;
+
+        // update the modal if database is selected
+        if (parentObject.type.includes(NotionObjectTypes.PAGE_ID)) {
+            return this.context.getInteractionResponder().successResponse();
+        }
+
+        const database = Object as IDatabase;
+        const modal = await createPageOrRecordModal(
+            this.app,
+            user,
+            this.read,
+            this.persistence,
+            this.modify,
+            room,
+            modalInteraction,
+            tokenInfo,
+            database
+        );
+
+        if (modal instanceof Error) {
+            this.app.getLogger().error(modal.message);
+            return this.context.getInteractionResponder().errorResponse();
+        }
+
+        return this.context
+            .getInteractionResponder()
+            .updateModalViewResponse(modal);
     }
 }

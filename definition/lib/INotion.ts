@@ -39,6 +39,14 @@ export interface INotionSDK extends INotion {
         pageId: string,
         comment: string
     ): Promise<ICommentInfo | Error>;
+    searchPagesAndDatabases(
+        token: string
+    ): Promise<Array<IPage | IDatabase> | Error>;
+    createPage(
+        token: string,
+        page: IPage,
+        prop: IPageProperties
+    ): Promise<INotionPage | Error>;
 }
 
 export interface IParentPage {
@@ -48,6 +56,16 @@ export interface IParentPage {
 export interface IPage {
     name: string;
     parent: IParentPage;
+}
+
+export interface IParentDatabase {
+    type: NotionObjectTypes.DATABASE_ID;
+    database_id: string;
+}
+
+export interface IDatabase {
+    info: INotionDatabase;
+    parent: IParentDatabase;
 }
 
 export interface INotionDatabase {
@@ -87,4 +105,12 @@ interface INotionBot {
         workspace: boolean;
     };
     workspace_name: string;
+}
+
+export interface IPageProperties {
+    title: string;
+}
+
+export interface INotionPage extends INotionDatabase {
+    title: string;
 }

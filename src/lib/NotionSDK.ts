@@ -1,10 +1,13 @@
 import {
     ICommentInfo,
     ICommentObject,
+    IDatabase,
     INotionDatabase,
+    INotionPage,
     INotionSDK,
     INotionUserBot,
     IPage,
+    IPageProperties,
 } from "../../definition/lib/INotion";
 import {
     HttpStatusCode,
@@ -170,7 +173,7 @@ export class NotionSDK implements INotionSDK {
 
     private returnPage(name: string, page_id: string): IPage {
         return {
-            name,
+            name: `📄 ${name}`,
             parent: {
                 type: NotionObjectTypes.PAGE_ID,
                 page_id,
@@ -477,6 +480,121 @@ export class NotionSDK implements INotionSDK {
                 user,
                 created_time,
             };
+        } catch (err) {
+            throw new AppsEngineException(err as string);
+        }
+    }
+
+    public async searchPagesAndDatabases(
+        token: string
+    ): Promise<Array<IPage | IDatabase> | Error> {
+        try {
+            const response = await this.http.post(NotionApi.SEARCH, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": NotionApi.CONTENT_TYPE,
+                    "User-Agent": NotionApi.USER_AGENT,
+                    "Notion-Version": this.NotionVersion,
+                },
+            });
+
+            if (!response.statusCode.toString().startsWith("2")) {
+                return this.handleErrorResponse(
+                    response.statusCode,
+                    `Error While Searching Pages: `,
+                    response.content
+                );
+            }
+
+            const { results } = response.data;
+
+            const result: Array<IPage | IDatabase> = [];
+            results.forEach(async (item) => {
+                const objectType: string = item?.[NotionObjectTypes.OBJECT];
+                if (objectType.includes(NotionObjectTypes.PAGE)) {
+                    const pageObject = await this.getPageObjectFromResults(
+                        item
+                    );
+
+                    if (pageObject) {
+                        result.push(pageObject);
+                    }
+                } else {
+                    const databaseObject =
+                        await this.getDatabaseObjectFromResults(item);
+
+                    result.push(databaseObject);
+                }
+            });
+
+            return result;
+        } catch (err) {
+            throw new AppsEngineException(err as string);
+        }
+    }
+
+    private async getDatabaseObjectFromResults(item): Promise<IDatabase> {
+        const databaseNameTitleObject = item?.[NotionObjectTypes.TITLE];
+        const name: string = databaseNameTitleObject.length
+            ? databaseNameTitleObject[0]?.plain_text
+            : "Untitled";
+        const database_id: string = item.id;
+
+        return {
+            info: {
+                name: `📚 ${name}`,
+                link: item?.url,
+            },
+            parent: {
+                type: NotionObjectTypes.DATABASE_ID,
+                database_id,
+            },
+        };
+    }
+
+    public async createPage(
+        token: string,
+        page: IPage,
+        prop: IPageProperties
+    ): Promise<INotionPage | Error> {
+        try {
+            const { name, parent } = page;
+            const { title } = prop;
+
+            const data = {
+                parent,
+                properties: {
+                    [NotionObjectTypes.TITLE]: {
+                        [NotionObjectTypes.TITLE]: markdownToRichText(title),
+                    },
+                },
+            };
+
+            const response = await this.http.post(NotionApi.PAGES, {
+                data,
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": NotionApi.CONTENT_TYPE,
+                    "User-Agent": NotionApi.USER_AGENT,
+                    "Notion-Version": this.NotionVersion,
+                },
+            });
+
+            if (!response.statusCode.toString().startsWith("2")) {
+                return this.handleErrorResponse(
+                    response.statusCode,
+                    `Error While Creating Page: `,
+                    response.content
+                );
+            }
+
+            let result: INotionPage = {
+                link: response?.data?.url,
+                name,
+                title,
+            };
+
+            return result;
         } catch (err) {
             throw new AppsEngineException(err as string);
         }

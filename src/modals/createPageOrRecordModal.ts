@@ -1,0 +1,141 @@
+import { IUser } from "@rocket.chat/apps-engine/definition/users";
+import { NotionApp } from "../../NotionApp";
+import {
+    IModify,
+    IPersistence,
+    IRead,
+    IUIKitSurfaceViewParam,
+} from "@rocket.chat/apps-engine/definition/accessors";
+import { IRoom } from "@rocket.chat/apps-engine/definition/rooms";
+import { ModalInteractionStorage } from "../storage/ModalInteraction";
+import { ITokenInfo } from "../../definition/authorization/IOAuth2Storage";
+import { Error } from "../../errors/Error";
+import { NotionPageOrRecord } from "../../enum/modals/NotionPageOrRecord";
+import {
+    ButtonStyle,
+    UIKitSurfaceType,
+} from "@rocket.chat/apps-engine/definition/uikit";
+import { TextObjectType, Block } from "@rocket.chat/ui-kit";
+import { getConnectPreview } from "../helper/getConnectLayout";
+import { inputElementComponent } from "./common/inputElementComponent";
+import { searchPageOrDatabaseComponent } from "./common/searchPageOrDatabaseComponent";
+import { SearchPageAndDatabase } from "../../enum/modals/common/SearchPageAndDatabaseComponent";
+import { DatabaseModal } from "../../enum/modals/NotionDatabase";
+import { OverflowMenuComponent } from "./common/OverflowMenuComponent";
+import { Modals } from "../../enum/modals/common/Modals";
+import { IDatabase } from "../../definition/lib/INotion";
+import { getSelectDatabaseLayout } from "../helper/getSelectDatabaseLayout";
+
+export async function createPageOrRecordModal(
+    app: NotionApp,
+    user: IUser,
+    read: IRead,
+    persistence: IPersistence,
+    modify: IModify,
+    room: IRoom,
+    modalInteraction: ModalInteractionStorage,
+    tokenInfo: ITokenInfo,
+    parent?: IDatabase
+): Promise<IUIKitSurfaceViewParam | Error> {
+    const { elementBuilder, blockBuilder } = app.getUtils();
+    const divider = blockBuilder.createDividerBlock();
+    const blocks: Block[] = [];
+    const appId = app.getID();
+    const overFlowMenuText = [DatabaseModal.OVERFLOW_MENU_TEXT.toString()];
+    const overFlowMenuValue = [DatabaseModal.OVERFLOW_MENU_ACTION.toString()];
+
+    if (parent) {
+        overFlowMenuText.push(
+            NotionPageOrRecord.CHANGE_DATABASE_TEXT.toString()
+        );
+        overFlowMenuValue.push(
+            NotionPageOrRecord.CHANGE_DATABASE_ACTION.toString()
+        );
+    }
+
+    const overflowMenu = await OverflowMenuComponent(
+        {
+            app,
+            text: overFlowMenuText,
+            value: overFlowMenuValue,
+        },
+        {
+            blockId: Modals.OVERFLOW_MENU_BLOCK,
+            actionId: Modals.OVERFLOW_MENU_ACTION,
+        }
+    );
+
+    blocks.push(overflowMenu);
+    if (!parent) {
+        const connectBlock = getConnectPreview(appId, tokenInfo);
+        blocks.push(connectBlock);
+    }
+
+    if (!parent) {
+        const SearchForPageOrDatabaseComponent =
+            await searchPageOrDatabaseComponent(
+                app,
+                modalInteraction,
+                tokenInfo,
+                SearchPageAndDatabase.ACTION_ID
+            );
+
+        if (SearchForPageOrDatabaseComponent instanceof Error) {
+            return SearchForPageOrDatabaseComponent;
+        }
+
+        blocks.push(SearchForPageOrDatabaseComponent);
+    } else {
+        const { info } = parent;
+        const SelectedDatabaseLayout = getSelectDatabaseLayout(
+            appId,
+            tokenInfo,
+            info
+        );
+
+        blocks.push(SelectedDatabaseLayout);
+    }
+
+    const titleOfPageOrRecordBlock = inputElementComponent(
+        {
+            app,
+            placeholder: NotionPageOrRecord.TITLE_PLACEHOLDER,
+            label: NotionPageOrRecord.TITLE_LABEL,
+            optional: false,
+        },
+        {
+            blockId: NotionPageOrRecord.TITLE_BLOCK,
+            actionId: NotionPageOrRecord.TITLE_ACTION,
+        }
+    );
+
+    blocks.push(titleOfPageOrRecordBlock);
+
+    const submit = elementBuilder.addButton(
+        { text: NotionPageOrRecord.CREATE, style: ButtonStyle.PRIMARY },
+        {
+            actionId: NotionPageOrRecord.CREATE_ACTION,
+            blockId: NotionPageOrRecord.CREATE_BLOCK,
+        }
+    );
+
+    const close = elementBuilder.addButton(
+        { text: NotionPageOrRecord.CLOSE, style: ButtonStyle.DANGER },
+        {
+            actionId: NotionPageOrRecord.CLOSE_ACTION,
+            blockId: NotionPageOrRecord.CLOSE_BLOCK,
+        }
+    );
+
+    return {
+        id: NotionPageOrRecord.VIEW_ID,
+        type: UIKitSurfaceType.MODAL,
+        title: {
+            type: TextObjectType.MRKDWN,
+            text: NotionPageOrRecord.TITLE,
+        },
+        blocks,
+        close,
+        submit,
+    };
+}

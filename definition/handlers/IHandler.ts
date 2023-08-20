@@ -6,6 +6,8 @@ export interface IHandler extends Omit<ICommandUtilityParams, "params"> {
     oAuth2Storage: OAuth2Storage;
     roomInteractionStorage: RoomInteractionStorage;
     createNotionDatabase(): Promise<void>;
+    commentOnPages(): Promise<void>;
+    createNotionPageOrRecord(): Promise<void>;
 }
 
 export type IHanderParams = Omit<ICommandUtilityParams, "params">;

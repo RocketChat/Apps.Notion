@@ -17,7 +17,8 @@ import { DatabaseModal } from "../../enum/modals/NotionDatabase";
 import { sendNotificationWithConnectBlock } from "../helper/message";
 import { CommentPage } from "../../enum/modals/CommentPage";
 import { createCommentContextualBar } from "../modals/createCommentContextualBar";
-import { SearchPage } from "../../enum/modals/common/SearchPageComponent";
+import { NotionPageOrRecord } from "../../enum/modals/NotionPageOrRecord";
+import { createPageOrRecordModal } from "../modals/createPageOrRecordModal";
 
 export class Handler implements IHandler {
     public app: NotionApp;
@@ -173,5 +174,76 @@ export class Handler implements IHandler {
                 this.sender
             );
         }
+    }
+
+    public async createNotionPageOrRecord(update?: boolean): Promise<void> {
+        const userId = this.sender.id;
+        const roomId = this.room.id;
+        const tokenInfo = await this.oAuth2Storage.getCurrentWorkspace(userId);
+
+        if (!tokenInfo) {
+            await sendNotificationWithConnectBlock(
+                this.app,
+                this.sender,
+                this.read,
+                this.modify,
+                this.room
+            );
+            return;
+        }
+
+        const persistenceRead = this.read.getPersistenceReader();
+        const modalInteraction = new ModalInteractionStorage(
+            this.persis,
+            persistenceRead,
+            userId,
+            NotionPageOrRecord.VIEW_ID
+        );
+
+        const { workspace_id } = tokenInfo;
+
+        await Promise.all([
+            this.roomInteractionStorage.storeInteractionRoomId(roomId),
+            modalInteraction.clearPagesOrDatabase(workspace_id),
+        ]);
+
+        const modal = await createPageOrRecordModal(
+            this.app,
+            this.sender,
+            this.read,
+            this.persis,
+            this.modify,
+            this.room,
+            modalInteraction,
+            tokenInfo
+        );
+
+        if (modal instanceof Error) {
+            // Something went Wrong Probably SearchPageComponent Couldn't Fetch the Pages
+            this.app.getLogger().error(modal.message);
+            return;
+        }
+
+        const triggerId = this.triggerId;
+
+        if (triggerId) {
+            if (update) {
+                await this.modify.getUiController().updateSurfaceView(
+                    modal,
+                    {
+                        triggerId,
+                    },
+                    this.sender
+                );
+
+                return;
+            }
+
+            await this.modify
+                .getUiController()
+                .openSurfaceView(modal, { triggerId }, this.sender);
+        }
+
+        return;
     }
 }
