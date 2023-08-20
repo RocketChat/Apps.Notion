@@ -6,7 +6,17 @@ export interface IOAuth2Storage {
         userId: string
     ): Promise<void>;
     getCurrentWorkspace(userId: string): Promise<ITokenInfo | null>;
-    disconnectUserFromCurrentWorkspace(userId: string): Promise<ITokenInfo | null>;
+    disconnectUserFromCurrentWorkspace(
+        userId: string
+    ): Promise<ITokenInfo | null>;
+    preserveNewWorkspace(tokenInfo: ITokenInfo, userId: string): Promise<void>;
+    getAllConnectedWorkspaces(
+        userId: string
+    ): Promise<ITokenInfo[] | undefined>;
+    removeDisconnectedWorkspace(
+        tokenInfo: ITokenInfo,
+        userId: string
+    ): Promise<void>;
 }
 
 export interface ITokenInfo {

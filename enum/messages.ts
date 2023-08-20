@@ -3,7 +3,9 @@ export enum Messages {
         • use \`/notion disconnect\` to disconnect workspace   
         • use \`/notion comment\` to comment on notion page   
         • use \`/notion create\` to create page or record   
-        • use \`/notion create database\` to create database
+        • use \`/notion create db\` to create database   
+        • use \`/notion workspace\` to change workspace
+
         `,
     HELPER_TEXT = `:wave: Need some help with \`/notion\`?`,
 }

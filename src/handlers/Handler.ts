@@ -19,6 +19,8 @@ import { CommentPage } from "../../enum/modals/CommentPage";
 import { createCommentContextualBar } from "../modals/createCommentContextualBar";
 import { NotionPageOrRecord } from "../../enum/modals/NotionPageOrRecord";
 import { createPageOrRecordModal } from "../modals/createPageOrRecordModal";
+import { changeWorkspaceModal } from "../modals/changeWorkspaceModal";
+import { NotionWorkspace } from "../../enum/modals/NotionWorkspace";
 
 export class Handler implements IHandler {
     public app: NotionApp;
@@ -245,5 +247,51 @@ export class Handler implements IHandler {
         }
 
         return;
+    }
+
+    public async changeNotionWorkspace(): Promise<void> {
+        const userId = this.sender.id;
+        const roomId = this.room.id;
+        const tokenInfo = await this.oAuth2Storage.getCurrentWorkspace(userId);
+
+        if (!tokenInfo) {
+            await sendNotificationWithConnectBlock(
+                this.app,
+                this.sender,
+                this.read,
+                this.modify,
+                this.room
+            );
+            return;
+        }
+
+        const persistenceRead = this.read.getPersistenceReader();
+        const modalInteraction = new ModalInteractionStorage(
+            this.persis,
+            persistenceRead,
+            userId,
+            NotionWorkspace.VIEW_ID
+        );
+
+        await this.roomInteractionStorage.storeInteractionRoomId(roomId);
+
+        const modal = await changeWorkspaceModal(
+            this.app,
+            this.sender,
+            this.read,
+            this.persis,
+            this.modify,
+            this.room,
+            modalInteraction,
+            tokenInfo
+        );
+
+        const triggerId = this.triggerId;
+
+        if (triggerId) {
+            await this.modify
+                .getUiController()
+                .openSurfaceView(modal, { triggerId }, this.sender);
+        }
     }
 }

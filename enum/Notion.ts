@@ -1,6 +1,7 @@
 export enum NotionTokenType {
     TOKEN_TYPE = "bearer",
     CURRENT_WORKSPACE = "notion_current_workspace",
+    ALL_CONNECTED_WORKSPACES = "notion_all_connected_workspaces",
 }
 
 export enum NotionOwnerType {

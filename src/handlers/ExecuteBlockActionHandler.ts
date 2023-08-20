@@ -39,6 +39,8 @@ import { SearchPageAndDatabase } from "../../enum/modals/common/SearchPageAndDat
 import { Handler } from "./Handler";
 import { createPageOrRecordModal } from "../modals/createPageOrRecordModal";
 import { NotionPageOrRecord } from "../../enum/modals/NotionPageOrRecord";
+import { NotionWorkspace } from "../../enum/modals/NotionWorkspace";
+import { changeWorkspaceModal } from "../modals/changeWorkspaceModal";
 
 export class ExecuteBlockActionHandler {
     private context: UIKitBlockInteractionContext;
@@ -145,6 +147,14 @@ export class ExecuteBlockActionHandler {
                     roomInteractionStorage
                 );
 
+                break;
+            }
+            case NotionWorkspace.CHANGE_WORKSPACE_ACTION: {
+                return this.handleChangeWorkspaceAction(
+                    modalInteraction,
+                    oAuth2Storage,
+                    roomInteractionStorage
+                );
                 break;
             }
             default: {
@@ -866,6 +876,50 @@ export class ExecuteBlockActionHandler {
             this.app.getLogger().error(modal.message);
             return this.context.getInteractionResponder().errorResponse();
         }
+
+        return this.context
+            .getInteractionResponder()
+            .updateModalViewResponse(modal);
+    }
+
+    private async handleChangeWorkspaceAction(
+        modalInteraction: ModalInteractionStorage,
+        oAuth2Storage: OAuth2Storage,
+        roomInteractionStorage: RoomInteractionStorage
+    ): Promise<IUIKitResponse> {
+        const { value, user, triggerId } = this.context.getInteractionData();
+
+        const tokenInfo = await oAuth2Storage.getCurrentWorkspace(user.id);
+        const roomId = await roomInteractionStorage.getInteractionRoomId();
+        const room = (await this.read.getRoomReader().getById(roomId)) as IRoom;
+
+        if (!tokenInfo) {
+            await sendNotificationWithConnectBlock(
+                this.app,
+                user,
+                this.read,
+                this.modify,
+                room
+            );
+            return this.context.getInteractionResponder().errorResponse();
+        }
+
+        if (!value) {
+            return this.context.getInteractionResponder().errorResponse();
+        }
+
+        const changedTokenInfo: ITokenInfo = JSON.parse(value);
+
+        const modal = await changeWorkspaceModal(
+            this.app,
+            user,
+            this.read,
+            this.persistence,
+            this.modify,
+            room,
+            modalInteraction,
+            changedTokenInfo
+        );
 
         return this.context
             .getInteractionResponder()
