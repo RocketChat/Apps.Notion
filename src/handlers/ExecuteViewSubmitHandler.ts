@@ -1,4 +1,5 @@
 import {
+    BlockType,
     IUIKitResponse,
     UIKitViewSubmitInteractionContext,
 } from "@rocket.chat/apps-engine/definition/uikit";
@@ -32,8 +33,7 @@ import { NotionObjectTypes } from "../../enum/Notion";
 import { ITokenInfo } from "../../definition/authorization/IOAuth2Storage";
 import {
     IDatabase,
-    IPage,
-    IParentDatabase,
+    IPage
 } from "../../definition/lib/INotion";
 import { SearchPageAndDatabase } from "../../enum/modals/common/SearchPageAndDatabaseComponent";
 import { NotionWorkspace } from "../../enum/modals/NotionWorkspace";
@@ -44,6 +44,7 @@ import {
     CheckboxEnum,
     PropertyTypeValue,
 } from "../../enum/modals/common/NotionProperties";
+import { Block } from "@rocket.chat/ui-kit";
 
 export class ExecuteViewSubmitHandler {
     private context: UIKitViewSubmitInteractionContext;
@@ -232,7 +233,7 @@ export class ExecuteViewSubmitHandler {
         modalInteraction: ModalInteractionStorage
     ): Promise<IUIKitResponse> {
         const { user, view } = this.context.getInteractionData();
-        const { state } = view;
+        const { state, blocks } = view;
 
         const tokenInfo = await oAuth2Storage.getCurrentWorkspace(user.id);
 
@@ -248,15 +249,64 @@ export class ExecuteViewSubmitHandler {
         }
 
         // handle missing properties later
-
-        const Object: IPage | IDatabase = JSON.parse(
+        const pageSelectState: string | undefined =
             state?.[SearchPageAndDatabase.BLOCK_ID]?.[
                 SearchPageAndDatabase.ACTION_ID
-            ]
+            ];
+
+        const missingObject = {};
+
+        const title: string | undefined =
+            state?.[NotionPageOrRecord.TITLE_BLOCK]?.[
+                NotionPageOrRecord.TITLE_ACTION
+            ];
+
+        if (!title) {
+            if (!pageSelectState) {
+                missingObject[NotionPageOrRecord.TITLE_ACTION] =
+                    "Please Provide a Title";
+            } else {
+                const titleBlockDatabaseSelected = blocks[2] as Block;
+                let titleViewError;
+
+                if (titleBlockDatabaseSelected.type == BlockType.INPUT) {
+                    if (
+                        titleBlockDatabaseSelected.element.type ===
+                        "plain_text_input"
+                    ) {
+                        titleViewError = titleBlockDatabaseSelected?.[
+                            "label"
+                        ]?.[NotionObjectTypes.TEXT] as string;
+                    } else {
+                        const titleBlock = blocks[3] as Block;
+                        titleViewError = titleBlock?.["label"]?.[
+                            NotionObjectTypes.TEXT
+                        ] as string;
+                    }
+                }
+
+                missingObject[
+                    NotionPageOrRecord.TITLE_ACTION
+                ] = `Please Provide ${titleViewError}`;
+            }
+        }
+
+        if (!pageSelectState) {
+            missingObject[SearchPageAndDatabase.ACTION_ID] =
+                "Please Select a Page or Database";
+        }
+
+        if (Object.keys(missingObject).length) {
+            return this.context.getInteractionResponder().viewErrorResponse({
+                viewId: view.id,
+                errors: missingObject,
+            });
+        }
+
+        const Objects: IPage | IDatabase = JSON.parse(
+            pageSelectState as string
         );
-
-        const { parent } = Object;
-
+        const { parent } = Objects;
         const parentType: string = parent.type;
 
         if (parentType.includes(NotionObjectTypes.PAGE_ID)) {
@@ -265,7 +315,7 @@ export class ExecuteViewSubmitHandler {
                 room,
                 oAuth2Storage,
                 modalInteraction,
-                Object as IPage
+                Objects as IPage
             );
         }
 
@@ -274,7 +324,7 @@ export class ExecuteViewSubmitHandler {
             room,
             oAuth2Storage,
             modalInteraction,
-            Object as IDatabase
+            Objects as IDatabase
         );
     }
 
