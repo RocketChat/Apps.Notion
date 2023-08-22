@@ -254,7 +254,7 @@ export class ExecuteViewSubmitHandler {
                 SearchPageAndDatabase.ACTION_ID
             ];
 
-        const missingObject = {};
+        const missingPropObject = {};
 
         const title: string | undefined =
             state?.[NotionPageOrRecord.TITLE_BLOCK]?.[
@@ -263,7 +263,7 @@ export class ExecuteViewSubmitHandler {
 
         if (!title) {
             if (!pageSelectState) {
-                missingObject[NotionPageOrRecord.TITLE_ACTION] =
+                missingPropObject[NotionPageOrRecord.TITLE_ACTION] =
                     "Please Provide a Title";
             } else {
                 const titleBlockDatabaseSelected = blocks[2] as Block;
@@ -285,21 +285,21 @@ export class ExecuteViewSubmitHandler {
                     }
                 }
 
-                missingObject[
+                missingPropObject[
                     NotionPageOrRecord.TITLE_ACTION
                 ] = `Please Provide ${titleViewError}`;
             }
         }
 
         if (!pageSelectState) {
-            missingObject[SearchPageAndDatabase.ACTION_ID] =
+            missingPropObject[SearchPageAndDatabase.ACTION_ID] =
                 "Please Select a Page or Database";
         }
 
-        if (Object.keys(missingObject).length) {
+        if (Object.keys(missingPropObject).length) {
             return this.context.getInteractionResponder().viewErrorResponse({
                 viewId: view.id,
-                errors: missingObject,
+                errors: missingPropObject,
             });
         }
 
