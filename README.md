@@ -119,7 +119,7 @@ Where RocketChat and Notion work together seamlessly to fuel your team's success
 
 ## ✨ Glimpse :
 
-[Video Demo Day]()
+[Video Demo Day](https://www.youtube.com/watch?v=G1fZBqy5jp8)
 
 <!-- CONTRIBUTING -->
 
