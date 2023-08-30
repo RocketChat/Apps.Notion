@@ -22,11 +22,15 @@ import { createPageOrRecordModal } from "../modals/createPageOrRecordModal";
 import { changeWorkspaceModal } from "../modals/changeWorkspaceModal";
 import { NotionWorkspace } from "../../enum/modals/NotionWorkspace";
 import { SearchPageAndDatabase } from "../../enum/modals/common/SearchPageAndDatabaseComponent";
-import { NotionObjectTypes, NotionOwnerType } from "../../enum/Notion";
+import { NotionOwnerType } from "../../enum/Notion";
 import { PropertyTypeValue } from "../../enum/modals/common/NotionProperties";
 import { INotionUser } from "../../definition/authorization/IOAuth2Storage";
 import { sharePageModal } from "../modals/sharePageModal";
 import { SharePage } from "../../enum/modals/SharePage";
+import { IMessage } from "@rocket.chat/apps-engine/definition/messages";
+import { ActionButton } from "../../enum/modals/common/ActionButtons";
+import { SendMessagePage } from "../../enum/modals/SendMessagePage";
+import { sendMessagePageModal } from "../modals/sendMessagePageModal";
 
 export class Handler implements IHandler {
     public app: NotionApp;
@@ -184,7 +188,10 @@ export class Handler implements IHandler {
         }
     }
 
-    public async createNotionPageOrRecord(update?: boolean): Promise<void> {
+    public async createNotionPageOrRecord(
+        update?: boolean,
+        message?: IMessage
+    ): Promise<void> {
         const userId = this.sender.id;
         const roomId = this.room.id;
         const tokenInfo = await this.oAuth2Storage.getCurrentWorkspace(userId);
@@ -249,6 +256,17 @@ export class Handler implements IHandler {
                 );
 
                 return;
+            }
+
+            await modalInteraction.clearInputElementState(
+                ActionButton.SEND_TO_NEW_PAGE_MESSAGE_ACTION
+            );
+
+            if (message) {
+                await modalInteraction.storeInputElementState(
+                    ActionButton.SEND_TO_NEW_PAGE_MESSAGE_ACTION,
+                    message
+                );
             }
 
             await this.modify
@@ -351,6 +369,9 @@ export class Handler implements IHandler {
             SharePage.VIEW_ID
         );
 
+        const { workspace_id } = tokenInfo;
+
+        await modalInteraction.clearPagesOrDatabase(workspace_id);
         await this.roomInteractionStorage.storeInteractionRoomId(roomId);
 
         const modal = await sharePageModal(
@@ -373,6 +394,66 @@ export class Handler implements IHandler {
         const triggerId = this.triggerId;
 
         if (triggerId) {
+            await this.modify
+                .getUiController()
+                .openSurfaceView(modal, { triggerId }, this.sender);
+        }
+    }
+
+    public async sendToNotionPage(message: IMessage): Promise<void> {
+        const userId = this.sender.id;
+        const roomId = this.room.id;
+        const tokenInfo = await this.oAuth2Storage.getCurrentWorkspace(userId);
+
+        if (!tokenInfo) {
+            await sendNotificationWithConnectBlock(
+                this.app,
+                this.sender,
+                this.read,
+                this.modify,
+                this.room
+            );
+            return;
+        }
+
+        const persistenceRead = this.read.getPersistenceReader();
+        const modalInteraction = new ModalInteractionStorage(
+            this.persis,
+            persistenceRead,
+            userId,
+            SendMessagePage.VIEW_ID
+        );
+
+        const { workspace_id } = tokenInfo;
+
+        await modalInteraction.clearPagesOrDatabase(workspace_id);
+        await this.roomInteractionStorage.storeInteractionRoomId(roomId);
+
+        const modal = await sendMessagePageModal(
+            this.app,
+            this.sender,
+            this.read,
+            this.persis,
+            this.modify,
+            this.room,
+            modalInteraction,
+            tokenInfo
+        );
+
+        if (modal instanceof Error) {
+            // Something went Wrong Probably SearchPageComponent Couldn't Fetch the Pages
+            this.app.getLogger().error(modal.message);
+            return;
+        }
+
+        const triggerId = this.triggerId;
+
+        if (triggerId) {
+            await modalInteraction.storeInputElementState(
+                ActionButton.SEND_TO_PAGE_MESSAGE_ACTION,
+                message
+            );
+
             await this.modify
                 .getUiController()
                 .openSurfaceView(modal, { triggerId }, this.sender);

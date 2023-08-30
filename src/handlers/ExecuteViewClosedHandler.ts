@@ -19,6 +19,7 @@ import { NotionPageOrRecord } from "../../enum/modals/NotionPageOrRecord";
 import { SearchPageAndDatabase } from "../../enum/modals/common/SearchPageAndDatabaseComponent";
 import { NotionObjectTypes } from "../../enum/Notion";
 import { PropertyTypeValue } from "../../enum/modals/common/NotionProperties";
+import { ActionButton } from "../../enum/modals/common/ActionButtons";
 
 export class ExecuteViewClosedHandler {
     private context: UIKitViewCloseInteractionContext;
@@ -84,7 +85,10 @@ export class ExecuteViewClosedHandler {
                     modalInteraction.clearAllInteractionActionId(),
                     modalInteraction.clearInputElementState(
                         PropertyTypeValue.PEOPLE
-                    )
+                    ),
+                    modalInteraction.clearInputElementState(
+                        ActionButton.SEND_TO_NEW_PAGE_MESSAGE_ACTION
+                    ),
                 ]);
 
                 break;

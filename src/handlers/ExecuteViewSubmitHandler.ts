@@ -22,7 +22,7 @@ import {
     sendNotificationWithConnectBlock,
 } from "../helper/message";
 import { RoomInteractionStorage } from "../storage/RoomInteraction";
-import { IRoom } from "@rocket.chat/apps-engine/definition/rooms";
+import { IRoom, RoomType } from "@rocket.chat/apps-engine/definition/rooms";
 import { getNotionDatabaseObject } from "../helper/getNotionDatabaseObject";
 import { Error } from "../../errors/Error";
 import { Modals } from "../../enum/modals/common/Modals";
@@ -32,10 +32,7 @@ import { IMessageAttachmentField } from "@rocket.chat/apps-engine/definition/mes
 import { NotionPageOrRecord } from "../../enum/modals/NotionPageOrRecord";
 import { NotionObjectTypes } from "../../enum/Notion";
 import { ITokenInfo } from "../../definition/authorization/IOAuth2Storage";
-import {
-    IDatabase,
-    IPage
-} from "../../definition/lib/INotion";
+import { IDatabase, IPage } from "../../definition/lib/INotion";
 import { SearchPageAndDatabase } from "../../enum/modals/common/SearchPageAndDatabaseComponent";
 import { NotionWorkspace } from "../../enum/modals/NotionWorkspace";
 import { getConnectPreview } from "../helper/getConnectLayout";
@@ -48,6 +45,10 @@ import {
 import { Block } from "@rocket.chat/ui-kit";
 import { SharePage } from "../../enum/modals/SharePage";
 import { SearchPage } from "../../enum/modals/common/SearchPageComponent";
+import { ActionButton } from "../../enum/modals/common/ActionButtons";
+import { getCredentials } from "../helper/getCredential";
+import { ICredential } from "../../definition/authorization/ICredential";
+import { SendMessagePage } from "../../enum/modals/SendMessagePage";
 
 export class ExecuteViewSubmitHandler {
     private context: UIKitViewSubmitInteractionContext;
@@ -113,6 +114,14 @@ export class ExecuteViewSubmitHandler {
             }
             case SharePage.VIEW_ID: {
                 return this.handleSharePage(
+                    room,
+                    oAuth2Storage,
+                    modalInteraction
+                );
+                break;
+            }
+            case SendMessagePage.VIEW_ID: {
+                return this.handleSendMessagePage(
                     room,
                     oAuth2Storage,
                     modalInteraction
@@ -366,8 +375,62 @@ export class ExecuteViewSubmitHandler {
             this.app.getLogger().error(createdPage.message);
             message = `🚫 Something went wrong while creating page in **${workspace_name}**.`;
         } else {
-            const { name, link, title } = createdPage;
+            const { name, link, title, pageId } = createdPage;
             message = `✨ Your Page [**${title}**](${link}) is created successfully  as a subpage in **${name}**.`;
+
+            const preserveMessage = await modalInteraction.getInputElementState(
+                ActionButton.SEND_TO_NEW_PAGE_MESSAGE_ACTION
+            );
+
+            if (preserveMessage) {
+                const preserveMessageContext = preserveMessage as {
+                    id: string;
+                    text: string;
+                    room: IRoom;
+                };
+
+                const { id, text } = preserveMessageContext;
+
+                const appendBlock = await NotionSdk.appendMessageBlock(
+                    access_token,
+                    text,
+                    pageId
+                );
+
+                if (appendBlock instanceof Error) {
+                    this.app.getLogger().error(appendBlock.message);
+                    message = `🚫 Something went wrong while appending message in **${workspace_name}**.`;
+                    await sendNotification(this.read, this.modify, user, room, {
+                        message,
+                    });
+                } else {
+                    const { type, displayName } = preserveMessageContext.room;
+                    const urlPath =
+                        type === RoomType.CHANNEL
+                            ? "channel"
+                            : type === RoomType.PRIVATE_GROUP
+                            ? "group"
+                            : "direct";
+                    const { siteUrl } = (await getCredentials(
+                        this.read,
+                        this.modify,
+                        user,
+                        room
+                    )) as ICredential;
+
+                    const messageLink = `${siteUrl}/${urlPath}/${displayName}?msg=${id}`;
+                    const preserveText = `📝 Created New Page [**${title}**](${link}) and Preserved Following [Message](${messageLink}) `;
+
+                    await sendMessage(
+                        this.read,
+                        this.modify,
+                        user,
+                        room,
+                        { message: preserveText },
+                        id
+                    );
+                }
+            }
         }
 
         await sendNotification(this.read, this.modify, user, room, {
@@ -425,19 +488,73 @@ export class ExecuteViewSubmitHandler {
                 state?.[NotionPageOrRecord.TITLE_BLOCK]?.[
                     NotionPageOrRecord.TITLE_ACTION
                 ];
+            const { fields, url, pageId } = createdRecord;
 
-            message = `✨ Created **${title}** in [**${databasename}**](${databaselink})`;
+            message = `✨ Created [**${title}**](${url}) in [**${databasename}**](${databaselink})`;
 
-            await sendMessageWithAttachments(
+            const messageId = await sendMessageWithAttachments(
                 this.read,
                 this.modify,
                 user,
                 room,
                 {
                     message: message,
-                    fields: createdRecord,
+                    fields,
                 }
             );
+
+            const preserveMessage = await modalInteraction.getInputElementState(
+                ActionButton.SEND_TO_NEW_PAGE_MESSAGE_ACTION
+            );
+
+            if (preserveMessage) {
+                const preserveMessageContext = preserveMessage as {
+                    id: string;
+                    text: string;
+                    room: IRoom;
+                };
+                const { id, text } = preserveMessageContext;
+                const appendBlock = await NotionSdk.appendMessageBlock(
+                    access_token,
+                    text,
+                    pageId
+                );
+
+                if (appendBlock instanceof Error) {
+                    this.app.getLogger().error(appendBlock.message);
+                    message = `🚫 Something went wrong while appending message in **${workspace_name}**.`;
+                    await sendNotification(this.read, this.modify, user, room, {
+                        message,
+                    });
+                } else {
+                    const { type, displayName } = preserveMessageContext.room;
+                    const urlPath =
+                        type === RoomType.CHANNEL
+                            ? "channel"
+                            : type === RoomType.PRIVATE_GROUP
+                            ? "group"
+                            : "direct";
+
+                    const { siteUrl } = (await getCredentials(
+                        this.read,
+                        this.modify,
+                        user,
+                        room
+                    )) as ICredential;
+
+                    const messageLink = `${siteUrl}/${urlPath}/${displayName}?msg=${id}`;
+                    const preserveText = `📝 Created [**${title}**](${url}) Page and Preserved Following [Message](${messageLink}) `;
+
+                    await sendMessage(
+                        this.read,
+                        this.modify,
+                        user,
+                        room,
+                        { message: preserveText },
+                        id
+                    );
+                }
+            }
         }
 
         return this.context.getInteractionResponder().successResponse();
@@ -691,6 +808,112 @@ export class ExecuteViewSubmitHandler {
         await sendMessage(this.read, this.modify, user, room, {
             message,
         });
+
+        return this.context.getInteractionResponder().successResponse();
+    }
+
+    public async handleSendMessagePage(
+        room: IRoom,
+        oAuth2Storage: OAuth2Storage,
+        modalInteraction: ModalInteractionStorage
+    ): Promise<IUIKitResponse> {
+        const { view, user } = this.context.getInteractionData();
+        const { state } = view;
+
+        const { NotionSdk } = this.app.getUtils();
+        const tokenInfo = await oAuth2Storage.getCurrentWorkspace(user.id);
+
+        if (!tokenInfo) {
+            await sendNotificationWithConnectBlock(
+                this.app,
+                user,
+                this.read,
+                this.modify,
+                room
+            );
+            return this.context.getInteractionResponder().errorResponse();
+        }
+
+        const { workspace_name, owner, access_token } = tokenInfo;
+        const pageId: string | undefined =
+            state?.[SearchPage.BLOCK_ID]?.[SendMessagePage.ACTION_ID];
+
+        if (!pageId) {
+            return this.context.getInteractionResponder().viewErrorResponse({
+                viewId: view.id,
+                errors: {
+                    [SendMessagePage.ACTION_ID]:
+                        "Please Select a Page to Share",
+                },
+            });
+        }
+
+        const preserveMessage = await modalInteraction.getInputElementState(
+            ActionButton.SEND_TO_PAGE_MESSAGE_ACTION
+        );
+
+        if (preserveMessage) {
+            const preserveMessageContext = preserveMessage as {
+                id: string;
+                text: string;
+                room: IRoom;
+            };
+            const { id, text } = preserveMessageContext;
+            const appendBlock = await NotionSdk.appendMessageBlock(
+                access_token,
+                text,
+                pageId
+            );
+
+            if (appendBlock instanceof Error) {
+                this.app.getLogger().error(appendBlock.message);
+                const message = `🚫 Something went wrong while appending message in **${workspace_name}**.`;
+                await sendNotification(this.read, this.modify, user, room, {
+                    message,
+                });
+            } else {
+                const pageInfo = await NotionSdk.retrievePage(
+                    access_token,
+                    pageId
+                );
+
+                if (pageInfo instanceof Error) {
+                    this.app.getLogger().error(pageInfo.message);
+                    return this.context
+                        .getInteractionResponder()
+                        .errorResponse();
+                }
+
+                const { name, url } = pageInfo;
+                const { type, displayName } = preserveMessageContext.room;
+
+                const urlPath =
+                    type === RoomType.CHANNEL
+                        ? "channel"
+                        : type === RoomType.PRIVATE_GROUP
+                        ? "group"
+                        : "direct";
+
+                const { siteUrl } = (await getCredentials(
+                    this.read,
+                    this.modify,
+                    user,
+                    room
+                )) as ICredential;
+
+                const messageLink = `${siteUrl}/${urlPath}/${displayName}?msg=${id}`;
+                const preserveText = `📝 Preserved Following [Message](${messageLink}) in [**${name}**](${url}) `;
+
+                await sendMessage(
+                    this.read,
+                    this.modify,
+                    user,
+                    room,
+                    { message: preserveText },
+                    id
+                );
+            }
+        }
 
         return this.context.getInteractionResponder().successResponse();
     }

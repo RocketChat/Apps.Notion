@@ -49,7 +49,7 @@ export interface INotionSDK extends INotion {
         token: string,
         page: IPage,
         prop: IPageProperties
-    ): Promise<INotionPage | Error>;
+    ): Promise<(INotionPage & { pageId: string }) | Error>;
     retrieveDatabase(
         token: string,
         database_id: string
@@ -58,11 +58,23 @@ export interface INotionSDK extends INotion {
         token: string,
         database: IDatabase,
         properties: object
-    ): Promise<Array<IMessageAttachmentField> | Error>;
+    ): Promise<
+        | {
+              fields: Array<IMessageAttachmentField>;
+              url: string;
+              pageId: string;
+          }
+        | Error
+    >;
     retrievePage(
         token: string,
         pageId: string
     ): Promise<(IPage & { url: string }) | Error>;
+    appendMessageBlock(
+        token: string,
+        message: string,
+        blockId: string
+    ): Promise<boolean | Error>;
 }
 
 export interface IParentPage {

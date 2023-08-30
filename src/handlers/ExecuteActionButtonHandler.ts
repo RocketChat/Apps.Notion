@@ -11,6 +11,7 @@ import {
 import { NotionApp } from "../../NotionApp";
 import { ActionButton } from "../../enum/modals/common/ActionButtons";
 import { Handler } from "./Handler";
+import { IMessage } from "@rocket.chat/apps-engine/definition/messages";
 
 export class ExecuteActionButtonHandler {
     private context: UIKitActionButtonInteractionContext;
@@ -26,7 +27,7 @@ export class ExecuteActionButtonHandler {
     }
 
     public async handleActions(): Promise<IUIKitResponse> {
-        const { actionId, user, room, triggerId } =
+        const { actionId, user, room, triggerId, message } =
             this.context.getInteractionData();
 
         const handler = new Handler({
@@ -43,6 +44,14 @@ export class ExecuteActionButtonHandler {
         switch (actionId) {
             case ActionButton.COMMENT_ON_PAGES_MESSAGE_BOX_ACTION: {
                 await handler.commentOnPages();
+                break;
+            }
+            case ActionButton.SEND_TO_NEW_PAGE_MESSAGE_ACTION: {
+                await handler.createNotionPageOrRecord(false, message);
+                break;
+            }
+            case ActionButton.SEND_TO_PAGE_MESSAGE_ACTION: {
+                await handler.sendToNotionPage(message as IMessage);
                 break;
             }
         }
