@@ -119,6 +119,10 @@ export class CommandUtility implements ICommandUtility {
                 await handler.changeNotionWorkspace();
                 break;
             }
+            case CommandParam.SHARE: {
+                await handler.shareNotionPage();
+                break;
+            }
             case CommandParam.HELP:
             default: {
                 await sendHelperNotification(

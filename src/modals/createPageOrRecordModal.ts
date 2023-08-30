@@ -25,6 +25,12 @@ import { OverflowMenuComponent } from "./common/OverflowMenuComponent";
 import { Modals } from "../../enum/modals/common/Modals";
 import { IDatabase } from "../../definition/lib/INotion";
 import { getSelectDatabaseLayout } from "../helper/getSelectDatabaseLayout";
+import { getTitleProperty } from "../helper/getTitleProperty";
+import { ButtonInSectionComponent } from "./common/buttonInSectionComponent";
+import { DropDownComponent } from "./common/DropDownComponent";
+import { NotionObjectTypes } from "../../enum/Notion";
+import { getPropertySelectedElement } from "../helper/getPropertySelectedElement";
+import { PropertyTypeValue } from "../../enum/modals/common/NotionProperties";
 
 export async function createPageOrRecordModal(
     app: NotionApp,
@@ -35,7 +41,8 @@ export async function createPageOrRecordModal(
     room: IRoom,
     modalInteraction: ModalInteractionStorage,
     tokenInfo: ITokenInfo,
-    parent?: IDatabase
+    parent?: IDatabase,
+    addPropertyAction?: boolean
 ): Promise<IUIKitSurfaceViewParam | Error> {
     const { elementBuilder, blockBuilder } = app.getUtils();
     const divider = blockBuilder.createDividerBlock();
@@ -43,6 +50,21 @@ export async function createPageOrRecordModal(
     const appId = app.getID();
     const overFlowMenuText = [DatabaseModal.OVERFLOW_MENU_TEXT.toString()];
     const overFlowMenuValue = [DatabaseModal.OVERFLOW_MENU_ACTION.toString()];
+    let properties: object | undefined;
+    let addedProperty: { data: Array<object> } | undefined;
+    let allUsers: object | undefined;
+
+    if (parent) {
+        properties = await modalInteraction.getInputElementState(
+            SearchPageAndDatabase.ACTION_ID
+        );
+
+        addedProperty = await modalInteraction.getAllInteractionActionId();
+
+        allUsers = await modalInteraction.getInputElementState(
+            PropertyTypeValue.PEOPLE
+        );
+    }
 
     if (parent) {
         overFlowMenuText.push(
@@ -95,12 +117,21 @@ export async function createPageOrRecordModal(
 
         blocks.push(SelectedDatabaseLayout);
     }
+    let labelOfPageOrRecord = NotionPageOrRecord.TITLE_LABEL.toString();
+    let placeholderOfPageOrRecord =
+        NotionPageOrRecord.TITLE_PLACEHOLDER.toString();
+
+    if (parent && properties) {
+        const { label, placeholder } = await getTitleProperty(properties);
+        labelOfPageOrRecord = `${label} *`;
+        placeholderOfPageOrRecord = placeholder;
+    }
 
     const titleOfPageOrRecordBlock = inputElementComponent(
         {
             app,
-            placeholder: NotionPageOrRecord.TITLE_PLACEHOLDER,
-            label: NotionPageOrRecord.TITLE_LABEL,
+            placeholder: placeholderOfPageOrRecord,
+            label: labelOfPageOrRecord,
             optional: false,
         },
         {
@@ -110,6 +141,30 @@ export async function createPageOrRecordModal(
     );
 
     blocks.push(titleOfPageOrRecordBlock);
+
+    if (parent && addedProperty) {
+        const data = addedProperty.data;
+        data.forEach(async (item, index) => {
+            if (index === 0) {
+                blocks.push(divider);
+            }
+
+            const selectedPropertyTypeElementActionId = item?.[Modals.VALUE];
+            if (selectedPropertyTypeElementActionId) {
+                const PropertySelectedElement = getPropertySelectedElement(
+                    app,
+                    selectedPropertyTypeElementActionId,
+                    item,
+                    modalInteraction,
+                    allUsers
+                );
+
+                blocks.push(PropertySelectedElement);
+            }
+
+            blocks.push(divider);
+        });
+    }
 
     const submit = elementBuilder.addButton(
         { text: NotionPageOrRecord.CREATE, style: ButtonStyle.PRIMARY },

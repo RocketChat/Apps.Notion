@@ -1,4 +1,3 @@
-import { ButtonStyle } from "@rocket.chat/apps-engine/definition/uikit";
 import {
     ButtonElement,
     ImageElement,
@@ -6,6 +5,8 @@ import {
     PlainTextInputElement,
     OverflowElement,
     Option,
+    DatePickerElement,
+    MultiStaticSelectElement,
 } from "@rocket.chat/ui-kit";
 import { ButtonParam } from "./IButtonElement";
 import { ImageParam } from "./IImageElement";
@@ -15,6 +16,8 @@ import {
 } from "./IStaticSelectElement";
 import { PlainTextInputParam } from "./IPlainTextInputElement";
 import { OverflowElementParam } from "./IOverflowElement";
+import { DatePickerElementParam } from "./IDatePickerElement";
+import { MultiStaticSelectElementParam } from "./IMultiStaticSelectElement";
 
 export interface IElementBuilder {
     addButton(
@@ -35,6 +38,14 @@ export interface IElementBuilder {
         param: OverflowElementParam,
         interaction: ElementInteractionParam
     ): OverflowElement;
+    createDatePicker(
+        param: DatePickerElementParam,
+        interaction: ElementInteractionParam
+    ): DatePickerElement;
+    createMultiStaticSelect(
+        param: MultiStaticSelectElementParam,
+        interaction: ElementInteractionParam
+    ): MultiStaticSelectElement;
 }
 
 export type ElementInteractionParam = { blockId: string; actionId: string };

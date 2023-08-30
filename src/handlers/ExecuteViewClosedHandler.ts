@@ -16,6 +16,9 @@ import { OAuth2Storage } from "../authorization/OAuth2Storage";
 import { ITokenInfo } from "../../definition/authorization/IOAuth2Storage";
 import { CommentPage } from "../../enum/modals/CommentPage";
 import { NotionPageOrRecord } from "../../enum/modals/NotionPageOrRecord";
+import { SearchPageAndDatabase } from "../../enum/modals/common/SearchPageAndDatabaseComponent";
+import { NotionObjectTypes } from "../../enum/Notion";
+import { PropertyTypeValue } from "../../enum/modals/common/NotionProperties";
 
 export class ExecuteViewClosedHandler {
     private context: UIKitViewCloseInteractionContext;
@@ -75,6 +78,13 @@ export class ExecuteViewClosedHandler {
 
                 await Promise.all([
                     modalInteraction.clearPagesOrDatabase(workspace_id),
+                    modalInteraction.clearInputElementState(
+                        SearchPageAndDatabase.ACTION_ID
+                    ),
+                    modalInteraction.clearAllInteractionActionId(),
+                    modalInteraction.clearInputElementState(
+                        PropertyTypeValue.PEOPLE
+                    )
                 ]);
 
                 break;

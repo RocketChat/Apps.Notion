@@ -20,14 +20,20 @@ import { createDatabaseModal } from "../modals/createDatabaseModal";
 import { OAuth2Storage } from "../authorization/OAuth2Storage";
 import { Error } from "../../errors/Error";
 import { sendNotificationWithConnectBlock } from "../helper/message";
-import { PropertyTypeValue } from "../../enum/modals/common/NotionProperties";
+import {
+    NotSupportedPropertyTypes,
+    PropertyTypeValue,
+} from "../../enum/modals/common/NotionProperties";
 import { Modals } from "../../enum/modals/common/Modals";
 import { getDuplicatePropertyNameViewErrors } from "../helper/getDuplicatePropNameViewError";
 import { SearchPage } from "../../enum/modals/common/SearchPageComponent";
 import { createCommentContextualBar } from "../modals/createCommentContextualBar";
 import { CommentPage } from "../../enum/modals/CommentPage";
-import { NotionObjectTypes } from "../../enum/Notion";
-import { ITokenInfo } from "../../definition/authorization/IOAuth2Storage";
+import { NotionObjectTypes, NotionOwnerType } from "../../enum/Notion";
+import {
+    INotionUser,
+    ITokenInfo,
+} from "../../definition/authorization/IOAuth2Storage";
 import {
     ICommentInfo,
     IDatabase,
@@ -41,6 +47,8 @@ import { createPageOrRecordModal } from "../modals/createPageOrRecordModal";
 import { NotionPageOrRecord } from "../../enum/modals/NotionPageOrRecord";
 import { NotionWorkspace } from "../../enum/modals/NotionWorkspace";
 import { changeWorkspaceModal } from "../modals/changeWorkspaceModal";
+import { getPropertiesIdsObject } from "../helper/getPropertiesIdsObject";
+import { SharePage } from "../../enum/modals/SharePage";
 
 export class ExecuteBlockActionHandler {
     private context: UIKitBlockInteractionContext;
@@ -155,6 +163,10 @@ export class ExecuteBlockActionHandler {
                     oAuth2Storage,
                     roomInteractionStorage
                 );
+                break;
+            }
+            case SharePage.ACTION_ID: {
+                return this.handleSelectPageAction();
                 break;
             }
             default: {
@@ -860,6 +872,28 @@ export class ExecuteBlockActionHandler {
         }
 
         const database = Object as IDatabase;
+
+        const databaseId = database.parent.database_id;
+        const { NotionSdk } = this.app.getUtils();
+        const { access_token } = tokenInfo;
+
+        const properties = await NotionSdk.retrieveDatabase(
+            access_token,
+            databaseId
+        );
+
+        if (properties instanceof Error) {
+            this.app.getLogger().error(properties.message);
+            return this.context.getInteractionResponder().errorResponse();
+        }
+
+        await modalInteraction.storeInputElementState(
+            SearchPageAndDatabase.ACTION_ID,
+            properties
+        );
+
+        await this.storeAllElements(properties, tokenInfo, modalInteraction);
+
         const modal = await createPageOrRecordModal(
             this.app,
             user,
@@ -888,7 +922,6 @@ export class ExecuteBlockActionHandler {
         roomInteractionStorage: RoomInteractionStorage
     ): Promise<IUIKitResponse> {
         const { value, user, triggerId } = this.context.getInteractionData();
-
         const tokenInfo = await oAuth2Storage.getCurrentWorkspace(user.id);
         const roomId = await roomInteractionStorage.getInteractionRoomId();
         const room = (await this.read.getRoomReader().getById(roomId)) as IRoom;
@@ -924,5 +957,40 @@ export class ExecuteBlockActionHandler {
         return this.context
             .getInteractionResponder()
             .updateModalViewResponse(modal);
+    }
+
+    private async storeAllElements(
+        properties,
+        tokenInfo: ITokenInfo,
+        modalInteraction: ModalInteractionStorage
+    ) {
+        const result: Array<object> = [];
+
+        for (const [property] of Object.entries(properties)) {
+            const propertyObject: object = properties[property];
+            const propertyType: string =
+                propertyObject?.[NotionObjectTypes.TYPE];
+            const propertyId: string = propertyObject?.[NotionObjectTypes.ID];
+
+            if (!propertyType.includes(NotionObjectTypes.TITLE.toString())) {
+                if (!NotSupportedPropertyTypes.includes(propertyType)) {
+                    result.push({
+                        value: uuid(),
+                        object: propertyObject,
+                    });
+                }
+            }
+        }
+
+        await modalInteraction.updateInteractionActionId(result);
+    }
+
+    private async handleSelectPageAction(): Promise<IUIKitResponse> {
+        const { value, container } = this.context.getInteractionData();
+
+        return this.context.getInteractionResponder().viewErrorResponse({
+            viewId: container.id,
+            errors: {},
+        });
     }
 }

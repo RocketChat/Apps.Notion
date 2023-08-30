@@ -1,4 +1,5 @@
 import {
+    BlockType,
     IUIKitResponse,
     UIKitViewSubmitInteractionContext,
 } from "@rocket.chat/apps-engine/definition/uikit";
@@ -14,6 +15,8 @@ import { ModalInteractionStorage } from "../storage/ModalInteraction";
 import { clearAllInteraction } from "../helper/clearInteractions";
 import { OAuth2Storage } from "../authorization/OAuth2Storage";
 import {
+    sendMessage,
+    sendMessageWithAttachments,
     sendNotification,
     sendNotificationWithAttachments,
     sendNotificationWithConnectBlock,
@@ -29,10 +32,22 @@ import { IMessageAttachmentField } from "@rocket.chat/apps-engine/definition/mes
 import { NotionPageOrRecord } from "../../enum/modals/NotionPageOrRecord";
 import { NotionObjectTypes } from "../../enum/Notion";
 import { ITokenInfo } from "../../definition/authorization/IOAuth2Storage";
-import { IDatabase, IPage } from "../../definition/lib/INotion";
+import {
+    IDatabase,
+    IPage
+} from "../../definition/lib/INotion";
 import { SearchPageAndDatabase } from "../../enum/modals/common/SearchPageAndDatabaseComponent";
 import { NotionWorkspace } from "../../enum/modals/NotionWorkspace";
 import { getConnectPreview } from "../helper/getConnectLayout";
+import { getTitleProperty } from "../helper/getTitleProperty";
+import { markdownToRichText } from "@tryfabric/martian";
+import {
+    CheckboxEnum,
+    PropertyTypeValue,
+} from "../../enum/modals/common/NotionProperties";
+import { Block } from "@rocket.chat/ui-kit";
+import { SharePage } from "../../enum/modals/SharePage";
+import { SearchPage } from "../../enum/modals/common/SearchPageComponent";
 
 export class ExecuteViewSubmitHandler {
     private context: UIKitViewSubmitInteractionContext;
@@ -91,6 +106,14 @@ export class ExecuteViewSubmitHandler {
                 return this.handleSelectOfWorkspace(
                     room,
                     roomInteractionStorage,
+                    oAuth2Storage,
+                    modalInteraction
+                );
+                break;
+            }
+            case SharePage.VIEW_ID: {
+                return this.handleSharePage(
+                    room,
                     oAuth2Storage,
                     modalInteraction
                 );
@@ -221,7 +244,7 @@ export class ExecuteViewSubmitHandler {
         modalInteraction: ModalInteractionStorage
     ): Promise<IUIKitResponse> {
         const { user, view } = this.context.getInteractionData();
-        const { state } = view;
+        const { state, blocks } = view;
 
         const tokenInfo = await oAuth2Storage.getCurrentWorkspace(user.id);
 
@@ -237,15 +260,64 @@ export class ExecuteViewSubmitHandler {
         }
 
         // handle missing properties later
-
-        const Object: IPage | IDatabase = JSON.parse(
+        const pageSelectState: string | undefined =
             state?.[SearchPageAndDatabase.BLOCK_ID]?.[
                 SearchPageAndDatabase.ACTION_ID
-            ]
+            ];
+
+        const missingPropObject = {};
+
+        const title: string | undefined =
+            state?.[NotionPageOrRecord.TITLE_BLOCK]?.[
+                NotionPageOrRecord.TITLE_ACTION
+            ];
+
+        if (!title) {
+            if (!pageSelectState) {
+                missingPropObject[NotionPageOrRecord.TITLE_ACTION] =
+                    "Please Provide a Title";
+            } else {
+                const titleBlockDatabaseSelected = blocks[2] as Block;
+                let titleViewError;
+
+                if (titleBlockDatabaseSelected.type == BlockType.INPUT) {
+                    if (
+                        titleBlockDatabaseSelected.element.type ===
+                        "plain_text_input"
+                    ) {
+                        titleViewError = titleBlockDatabaseSelected?.[
+                            "label"
+                        ]?.[NotionObjectTypes.TEXT] as string;
+                    } else {
+                        const titleBlock = blocks[3] as Block;
+                        titleViewError = titleBlock?.["label"]?.[
+                            NotionObjectTypes.TEXT
+                        ] as string;
+                    }
+                }
+
+                missingPropObject[
+                    NotionPageOrRecord.TITLE_ACTION
+                ] = `Please Provide ${titleViewError}`;
+            }
+        }
+
+        if (!pageSelectState) {
+            missingPropObject[SearchPageAndDatabase.ACTION_ID] =
+                "Please Select a Page or Database";
+        }
+
+        if (Object.keys(missingPropObject).length) {
+            return this.context.getInteractionResponder().viewErrorResponse({
+                viewId: view.id,
+                errors: missingPropObject,
+            });
+        }
+
+        const Objects: IPage | IDatabase = JSON.parse(
+            pageSelectState as string
         );
-
-        const { parent } = Object;
-
+        const { parent } = Objects;
         const parentType: string = parent.type;
 
         if (parentType.includes(NotionObjectTypes.PAGE_ID)) {
@@ -254,11 +326,17 @@ export class ExecuteViewSubmitHandler {
                 room,
                 oAuth2Storage,
                 modalInteraction,
-                Object as IPage
+                Objects as IPage
             );
         }
 
-        return this.handleCreationOfRecord();
+        return this.handleCreationOfRecord(
+            tokenInfo,
+            room,
+            oAuth2Storage,
+            modalInteraction,
+            Objects as IDatabase
+        );
     }
 
     private async handleCreationOfPage(
@@ -299,7 +377,69 @@ export class ExecuteViewSubmitHandler {
         return this.context.getInteractionResponder().successResponse();
     }
 
-    private async handleCreationOfRecord(): Promise<IUIKitResponse> {
+    private async handleCreationOfRecord(
+        tokenInfo: ITokenInfo,
+        room: IRoom,
+        oAuth2Storage: OAuth2Storage,
+        modalInteraction: ModalInteractionStorage,
+        database: IDatabase
+    ): Promise<IUIKitResponse> {
+        const { view, user } = this.context.getInteractionData();
+        const { state } = view;
+        const { NotionSdk } = this.app.getUtils();
+        const { access_token, workspace_name, owner } = tokenInfo;
+        const username = owner.user.name;
+
+        const properties = (await modalInteraction.getInputElementState(
+            SearchPageAndDatabase.ACTION_ID
+        )) as object;
+
+        const propertyElements =
+            await modalInteraction.getAllInteractionActionId();
+
+        const data = await this.getPagePropParamObject(
+            state,
+            properties,
+            propertyElements
+        );
+
+        const createdRecord = await NotionSdk.createRecord(
+            access_token,
+            database,
+            data
+        );
+
+        let message: string;
+
+        if (createdRecord instanceof Error) {
+            this.app.getLogger().error(createdRecord.message);
+            message = `🚫 Something went wrong while creating record in **${workspace_name}**.`;
+            await sendNotification(this.read, this.modify, user, room, {
+                message,
+            });
+        } else {
+            const { info } = database;
+            const databasename = info.name;
+            const databaselink = info.link;
+            const title: string =
+                state?.[NotionPageOrRecord.TITLE_BLOCK]?.[
+                    NotionPageOrRecord.TITLE_ACTION
+                ];
+
+            message = `✨ Created **${title}** in [**${databasename}**](${databaselink})`;
+
+            await sendMessageWithAttachments(
+                this.read,
+                this.modify,
+                user,
+                room,
+                {
+                    message: message,
+                    fields: createdRecord,
+                }
+            );
+        }
+
         return this.context.getInteractionResponder().successResponse();
     }
 
@@ -352,6 +492,206 @@ export class ExecuteViewSubmitHandler {
         }
 
         await roomInteractionStorage.clearInteractionRoomId();
+        return this.context.getInteractionResponder().successResponse();
+    }
+
+    private async getPagePropParamObject(
+        state: object | undefined,
+        properties: object,
+        propertyElements: { data: object[] } | undefined
+    ): Promise<object> {
+        const title: string =
+            state?.[NotionPageOrRecord.TITLE_BLOCK]?.[
+                NotionPageOrRecord.TITLE_ACTION
+            ];
+
+        const { label } = await getTitleProperty(properties);
+
+        const data: object = {
+            [label]: {
+                [NotionObjectTypes.TITLE]: markdownToRichText(title),
+            },
+        };
+
+        const propertyValues: object =
+            state?.[NotionPageOrRecord.PROPERTY_SELECTED_BLOCK_ELEMENT];
+
+        propertyElements?.data?.forEach((propertyInfo: object) => {
+            const propertyObject: object =
+                propertyInfo?.[NotionObjectTypes.OBJECT];
+            const propertyName: string =
+                propertyObject?.[NotionObjectTypes.NAME];
+            const propertyType: string =
+                propertyObject?.[NotionObjectTypes.TYPE];
+            const actionId: string = propertyInfo?.[Modals.VALUE];
+            const propertyValue: string | Array<string> | undefined =
+                propertyValues?.[actionId];
+
+            switch (propertyType) {
+                case PropertyTypeValue.CHECKBOX: {
+                    data[propertyName] = {
+                        [PropertyTypeValue.CHECKBOX]:
+                            propertyValue == CheckboxEnum.TRUE,
+                    };
+                    break;
+                }
+                case PropertyTypeValue.TEXT: {
+                    if (propertyValue) {
+                        data[propertyName] = {
+                            [PropertyTypeValue.TEXT]: markdownToRichText(
+                                propertyValue as string
+                            ),
+                        };
+                    }
+                    break;
+                }
+                case PropertyTypeValue.NUMBER: {
+                    if (propertyValue) {
+                        data[propertyName] = {
+                            [PropertyTypeValue.NUMBER]: Number(propertyValue),
+                        };
+                    }
+
+                    break;
+                }
+                case PropertyTypeValue.URL: {
+                    data[propertyName] = {
+                        [PropertyTypeValue.URL]: propertyValue
+                            ? propertyValue
+                            : null,
+                    };
+                    break;
+                }
+                case PropertyTypeValue.EMAIL: {
+                    if (propertyValue) {
+                        data[propertyName] = {
+                            [PropertyTypeValue.EMAIL]: propertyValue,
+                        };
+                    }
+
+                    break;
+                }
+                case PropertyTypeValue.PHONE_NUMBER: {
+                    if (propertyValue) {
+                        data[propertyName] = {
+                            [PropertyTypeValue.PHONE_NUMBER]: propertyValue,
+                        };
+                    }
+
+                    break;
+                }
+                case PropertyTypeValue.DATE: {
+                    if (propertyValue) {
+                        data[propertyName] = {
+                            [PropertyTypeValue.DATE]: {
+                                start: propertyValue,
+                            },
+                        };
+                    }
+
+                    break;
+                }
+                case PropertyTypeValue.SELECT: {
+                    if (propertyValue) {
+                        data[propertyName] = {
+                            [PropertyTypeValue.SELECT]: {
+                                name: propertyValue,
+                            },
+                        };
+                    }
+
+                    break;
+                }
+                case PropertyTypeValue.PEOPLE: {
+                    const people: Array<object> = [];
+                    if (propertyValue) {
+                        (propertyValue as Array<string>)?.forEach((element) => {
+                            people.push(JSON.parse(element));
+                        });
+                        data[propertyName] = {
+                            [PropertyTypeValue.PEOPLE]: people,
+                        };
+                    }
+                    break;
+                }
+                case PropertyTypeValue.MULTI_SELECT: {
+                    if (propertyValue) {
+                        const multiSelect: Array<object> = [];
+                        (propertyValue as Array<string>)?.forEach((element) => {
+                            multiSelect.push({ name: element });
+                        });
+                        data[propertyName] = {
+                            [PropertyTypeValue.MULTI_SELECT]: multiSelect,
+                        };
+                    }
+                    break;
+                }
+                case "status": {
+                    if (propertyValue) {
+                        data[propertyName] = {
+                            status: {
+                                name: propertyValue,
+                            },
+                        };
+                    }
+
+                    break;
+                }
+            }
+        });
+
+        return data;
+    }
+
+    public async handleSharePage(
+        room: IRoom,
+        oAuth2Storage: OAuth2Storage,
+        modalInteraction: ModalInteractionStorage
+    ): Promise<IUIKitResponse> {
+        const { view, user } = this.context.getInteractionData();
+        const { state } = view;
+
+        const { NotionSdk } = this.app.getUtils();
+        const tokenInfo = await oAuth2Storage.getCurrentWorkspace(user.id);
+
+        if (!tokenInfo) {
+            await sendNotificationWithConnectBlock(
+                this.app,
+                user,
+                this.read,
+                this.modify,
+                room
+            );
+            return this.context.getInteractionResponder().errorResponse();
+        }
+
+        const { workspace_name, owner, access_token } = tokenInfo;
+        const pageId: string | undefined =
+            state?.[SearchPage.BLOCK_ID]?.[SharePage.ACTION_ID];
+
+        if (!pageId) {
+            return this.context.getInteractionResponder().viewErrorResponse({
+                viewId: view.id,
+                errors: {
+                    [SharePage.ACTION_ID]: "Please Select a Page to Share",
+                },
+            });
+        }
+
+        const pageInfo = await NotionSdk.retrievePage(access_token, pageId);
+
+        if (pageInfo instanceof Error) {
+            return this.context.getInteractionResponder().errorResponse();
+        }
+
+        const { name, parent, url } = pageInfo;
+
+        const message = `✨ Sharing [**${name}**](${url}) from **${workspace_name}**`;
+
+        await sendMessage(this.read, this.modify, user, room, {
+            message,
+        });
+
         return this.context.getInteractionResponder().successResponse();
     }
 }

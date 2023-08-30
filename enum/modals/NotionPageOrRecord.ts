@@ -13,7 +13,5 @@ export enum NotionPageOrRecord {
     TITLE_ACTION = "title-page-or-record-action-id",
     CHANGE_DATABASE_TEXT = "Change Database",
     CHANGE_DATABASE_ACTION = "create-page-or-record-change-database-action-id",
-    ADD_PROPERTY_ACTION = "add-property-create-page-or-record-action-id",
-    ADD_PROPERTY_BLOCK = "add-property-create-page-or-record-action-id",
-    ADD_PROPERTY_BUTTON_TEXT = "Add Property",
+    PROPERTY_SELECTED_BLOCK_ELEMENT = "property-selected-element-create-page-or-record-block-id",
 }

@@ -4,7 +4,8 @@ export enum Messages {
         • use \`/notion comment\` to comment on notion page   
         • use \`/notion create\` to create page or record   
         • use \`/notion create db\` to create database   
-        • use \`/notion workspace\` to change workspace
+        • use \`/notion workspace\` to change workspace   
+        • use \`/notion share\` to share pages
 
         `,
     HELPER_TEXT = `:wave: Need some help with \`/notion\`?`,

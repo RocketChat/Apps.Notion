@@ -99,3 +99,33 @@ export enum MissingPropertyMessage {
     EXPRESSION = "Expression is required",
     OPTION_NAME = "Option Name is required",
 }
+
+export type RecordPropertyType = Exclude<
+    PropertyTypeValue,
+    | PropertyTypeValue.CREATED_TIME
+    | PropertyTypeValue.CREATED_BY
+    | PropertyTypeValue.LAST_EDITED_TIME
+    | PropertyTypeValue.LAST_EDITED_BY
+>;
+
+export enum NotSupportedPropertyType {
+    RELATION = "relation",
+    ROLLUP = "rollup",
+}
+
+export const NotSupportedPropertyTypes = [
+    PropertyTypeValue.CREATED_TIME.toString(),
+    PropertyTypeValue.CREATED_BY.toString(),
+    PropertyTypeValue.LAST_EDITED_TIME.toString(),
+    PropertyTypeValue.LAST_EDITED_BY.toString(),
+    NotSupportedPropertyType.RELATION.toString(),
+    NotSupportedPropertyType.ROLLUP.toString(),
+    PropertyTypeValue.FILES.toString(),
+];
+
+export enum CheckboxEnum {
+    TRUE = "true",
+    FALSE = "false",
+    YES = "Yes",
+    NO = "No",
+}

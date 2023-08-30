@@ -2,6 +2,7 @@ import {
     ICommentInfo,
     ICommentObject,
     IDatabase,
+    IDatabaseProperties,
     INotionDatabase,
     INotionPage,
     INotionSDK,
@@ -27,6 +28,7 @@ import {
     ServerError,
 } from "../../errors/Error";
 import {
+    Notion,
     NotionApi,
     NotionObjectTypes,
     NotionOwnerType,
@@ -39,6 +41,13 @@ import {
     getMentionObject,
     getWhiteSpaceTextObject,
 } from "../helper/getNotionObject";
+import { Modals } from "../../enum/modals/common/Modals";
+import {
+    CheckboxEnum,
+    NotSupportedPropertyTypes,
+    PropertyTypeValue,
+} from "../../enum/modals/common/NotionProperties";
+import { IMessageAttachmentField } from "@rocket.chat/apps-engine/definition/messages";
 
 export class NotionSDK implements INotionSDK {
     baseUrl: string;
@@ -595,6 +604,382 @@ export class NotionSDK implements INotionSDK {
             };
 
             return result;
+        } catch (err) {
+            throw new AppsEngineException(err as string);
+        }
+    }
+
+    public async retrieveDatabase(
+        token: string,
+        database_id: string
+    ): Promise<object | Error> {
+        try {
+            const response = await this.http.get(
+                NotionApi.CREATE_DATABASE + `/${database_id}`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": NotionApi.CONTENT_TYPE,
+                        "User-Agent": NotionApi.USER_AGENT,
+                        "Notion-Version": this.NotionVersion,
+                    },
+                }
+            );
+
+            if (!response.statusCode.toString().startsWith("2")) {
+                return this.handleErrorResponse(
+                    response.statusCode,
+                    `Error While retrieving Database: `,
+                    response.content
+                );
+            }
+
+            const database = response.data;
+            const properties = response.data?.[NotionObjectTypes.PROPERTIES];
+            return properties;
+        } catch (err) {
+            throw new AppsEngineException(err as string);
+        }
+    }
+
+    private async getRecordPropertyObject(item): Promise<object> {
+        const properties: object = item?.[NotionObjectTypes.PROPERTIES];
+
+        let result = {};
+
+        for (const [property] of Object.entries(properties)) {
+            const propertyObject: object = properties[property];
+            const propertyType: string =
+                propertyObject?.[NotionObjectTypes.TYPE];
+            const propertyName: string =
+                propertyObject?.[NotionObjectTypes.NAME];
+            const propertyId: string = propertyObject?.[NotionObjectTypes.ID];
+
+            if (propertyType.includes(NotionObjectTypes.TITLE.toString())) {
+                result[NotionObjectTypes.TITLE] = {
+                    id: propertyId,
+                    name: propertyName,
+                    type: NotionObjectTypes.TITLE,
+                };
+            } else {
+                const commonProperties = {
+                    id: propertyId,
+                    name: propertyName,
+                    type: propertyType,
+                };
+
+                switch (propertyType) {
+                    case PropertyTypeValue.MULTI_SELECT:
+                    case PropertyTypeValue.SELECT: {
+                        const options: Array<{
+                            id: string;
+                            color: string;
+                            name: string;
+                        }> = propertyObject?.[propertyType]?.[Modals.OPTIONS];
+
+                        result[Modals.ADDITIONAL_PROP][propertyName] = {
+                            ...commonProperties,
+                            config: {
+                                [Modals.OPTIONS]: options,
+                            },
+                        };
+                        break;
+                    }
+                    case PropertyTypeValue.FORMULA: {
+                        const expression: string =
+                            propertyObject?.[propertyType]?.[
+                                NotionObjectTypes.EXPRESSION
+                            ];
+                        result[Modals.ADDITIONAL_PROP][propertyName] = {
+                            ...commonProperties,
+                            config: {
+                                [NotionObjectTypes.EXPRESSION]: expression,
+                            },
+                        };
+                        break;
+                    }
+                    case "status": {
+                        const options: Array<{
+                            id: string;
+                            color: string;
+                            name: string;
+                        }> = propertyObject?.[propertyType]?.[Modals.OPTIONS];
+
+                        const groups: Array<{
+                            id: string;
+                            name: string;
+                            color: string;
+                            options_ids: Array<string>;
+                        }> = propertyObject?.[propertyType]?.[Modals.GROUPS];
+
+                        result[Modals.ADDITIONAL_PROP][propertyName] = {
+                            ...commonProperties,
+                            config: {
+                                [Modals.OPTIONS]: options,
+                                [Modals.GROUPS]: groups,
+                            },
+                        };
+
+                        break;
+                    }
+                    default: {
+                        if (!NotSupportedPropertyTypes.includes(propertyType)) {
+                            result[Modals.ADDITIONAL_PROP][propertyName] = {
+                                ...commonProperties,
+                            };
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+        return result;
+    }
+
+    public async createRecord(
+        token: string,
+        database: IDatabase,
+        properties: object
+    ): Promise<Array<IMessageAttachmentField> | Error> {
+        try {
+            const { parent } = database;
+            const data = {
+                parent,
+                properties,
+            };
+
+            const response = await this.http.post(NotionApi.PAGES, {
+                data,
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": NotionApi.CONTENT_TYPE,
+                    "User-Agent": NotionApi.USER_AGENT,
+                    "Notion-Version": this.NotionVersion,
+                },
+            });
+
+            if (!response.statusCode.toString().startsWith("2")) {
+                return this.handleErrorResponse(
+                    response.statusCode,
+                    `Error While creating Record: `,
+                    response.content
+                );
+            }
+
+            const prop = response.data?.[NotionObjectTypes.PROPERTIES];
+            const result = await this.getFieldsFromRecord(prop);
+            return result;
+        } catch (err) {
+            throw new AppsEngineException(err as string);
+        }
+    }
+
+    private async getFieldsFromRecord(properties: object) {
+        const fields: Array<IMessageAttachmentField> = [];
+        const propertyKeys = Object.keys(properties);
+
+        for (let index = 0; index < propertyKeys.length; ++index) {
+            const propertyObject: object = properties[propertyKeys[index]];
+            const propertyType: string =
+                propertyObject?.[NotionObjectTypes.TYPE];
+
+            switch (propertyType) {
+                case PropertyTypeValue.CHECKBOX: {
+                    const value: boolean = propertyObject?.[propertyType];
+                    fields.push({
+                        short: true,
+                        title: propertyKeys[index],
+                        value: value ? CheckboxEnum.TRUE : CheckboxEnum.FALSE,
+                    });
+                    break;
+                }
+                case PropertyTypeValue.TEXT: {
+                    const value = propertyObject?.[propertyType];
+                    if (value?.length) {
+                        const markdown = await this.richTextToMarkdown(value);
+                        fields.push({
+                            title: propertyKeys[index],
+                            value: markdown,
+                        });
+                    }
+                    break;
+                }
+                case PropertyTypeValue.NUMBER: {
+                    const value: number | null = propertyObject?.[propertyType];
+                    if (value) {
+                        fields.push({
+                            short: true,
+                            title: propertyKeys[index],
+                            value: value.toString(),
+                        });
+                    }
+                    break;
+                }
+                case PropertyTypeValue.URL: {
+                    const value: string | null = propertyObject?.[propertyType];
+                    if (value) {
+                        fields.push({
+                            short: true,
+                            title: propertyKeys[index],
+                            value,
+                        });
+                    }
+
+                    break;
+                }
+                case PropertyTypeValue.EMAIL: {
+                    const value: string | null = propertyObject?.[propertyType];
+                    if (value) {
+                        fields.push({
+                            short: true,
+                            title: propertyKeys[index],
+                            value,
+                        });
+                    }
+                    break;
+                }
+                case PropertyTypeValue.PHONE_NUMBER: {
+                    const value: string | null = propertyObject?.[propertyType];
+                    if (value) {
+                        fields.push({
+                            short: true,
+                            title: propertyKeys[index],
+                            value,
+                        });
+                    }
+                    break;
+                }
+                case PropertyTypeValue.DATE: {
+                    const value: object | null = propertyObject?.[propertyType];
+                    if (value) {
+                        const date = value?.["start"];
+                        fields.push({
+                            short: true,
+                            title: propertyKeys[index],
+                            value: date,
+                        });
+                    }
+
+                    break;
+                }
+                case PropertyTypeValue.SELECT: {
+                    const value: object | null = propertyObject?.[propertyType];
+                    if (value) {
+                        const selectValue = value?.[NotionObjectTypes.NAME];
+                        fields.push({
+                            short: true,
+                            title: propertyKeys[index],
+                            value: selectValue,
+                        });
+                    }
+
+                    break;
+                }
+                case PropertyTypeValue.PEOPLE: {
+                    const value: Array<object> | null =
+                        propertyObject?.[propertyType];
+                    let fieldValue = "";
+                    if (value && value.length) {
+                        const fullLength = value.length;
+                        value.forEach((element, index) => {
+                            const name: string =
+                                element?.[NotionObjectTypes.NAME];
+                            fieldValue += `${name}`;
+
+                            if (index < fullLength - 1) {
+                                fieldValue += ", ";
+                            }
+                        });
+
+                        fields.push({
+                            short: true,
+                            title: propertyKeys[index],
+                            value: fieldValue,
+                        });
+                    }
+                    break;
+                }
+                case PropertyTypeValue.MULTI_SELECT: {
+                    const value: Array<{
+                        id: string;
+                        name: string;
+                        color: string;
+                    }> | null = propertyObject?.[propertyType];
+                    if (value && value.length) {
+                        const fullLength = value.length;
+                        let MultiSelectValue = "";
+                        value.forEach((element, index) => {
+                            const name: string =
+                                element?.[NotionObjectTypes.NAME];
+                            MultiSelectValue += `${name}`;
+
+                            if (index < fullLength - 1) {
+                                MultiSelectValue += ", ";
+                            }
+                        });
+
+                        fields.push({
+                            short: true,
+                            title: propertyKeys[index],
+                            value: MultiSelectValue,
+                        });
+                    }
+                    break;
+                }
+                case "status": {
+                    const value: object | null = propertyObject?.[propertyType];
+                    if (value) {
+                        const statusValue = value?.[NotionObjectTypes.NAME];
+                        fields.push({
+                            short: true,
+                            title: propertyKeys[index],
+                            value: statusValue,
+                        });
+                    }
+
+                    break;
+                }
+            }
+        }
+
+        return fields;
+    }
+
+    public async retrievePage(
+        token: string,
+        pageId: string
+    ): Promise<(IPage & { url: string }) | Error> {
+        try {
+            const response = await this.http.get(
+                NotionApi.PAGES + `/${pageId}`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": NotionApi.CONTENT_TYPE,
+                        "User-Agent": NotionApi.USER_AGENT,
+                        "Notion-Version": this.NotionVersion,
+                    },
+                }
+            );
+
+            if (!response.statusCode.toString().startsWith("2")) {
+                return this.handleErrorResponse(
+                    response.statusCode,
+                    `Error While retrieving Page: `,
+                    response.content
+                );
+            }
+
+            const pageInfo = response.data;
+            const page = (await this.getPageObjectFromResults(
+                pageInfo
+            )) as IPage;
+            const url: string = pageInfo?.url;
+            
+            return {
+                ...page,
+                url,
+            };
         } catch (err) {
             throw new AppsEngineException(err as string);
         }

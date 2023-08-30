@@ -10,4 +10,8 @@ export enum Modals {
     MISSING = "missing",
     VIEWERROR = "viewError",
     DATA = "data",
+    ADDITIONAL_PROP = "additionalProperties",
+    GROUPS = "groups",
+    PROPERTY = "property",
+    VALUE = "value",
 }
