@@ -27,6 +27,7 @@ import {
     ServerError,
 } from "../../errors/Error";
 import {
+    Notion,
     NotionApi,
     NotionObjectTypes,
     NotionOwnerType,
@@ -46,6 +47,8 @@ import {
     PropertyTypeValue,
 } from "../../enum/modals/common/NotionProperties";
 import { IMessageAttachmentField } from "@rocket.chat/apps-engine/definition/messages";
+import { FileType, PageContent } from "../../enum/modals/common/PageContent";
+import { TextObjectType } from "@rocket.chat/ui-kit";
 
 export class NotionSDK implements INotionSDK {
     baseUrl: string;
@@ -1381,5 +1384,257 @@ export class NotionSDK implements INotionSDK {
             });
         }
         return tableData;
+    }
+
+    public async retrievePageContent(
+        token: string,
+        pageId: string
+    ): Promise<string | Error> {
+        try {
+            const response = await this.http.get(
+                NotionApi.BLOCKS + `/${pageId}/children`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": NotionApi.CONTENT_TYPE,
+                        "User-Agent": NotionApi.USER_AGENT,
+                        "Notion-Version": this.NotionVersion,
+                    },
+                }
+            );
+
+            if (!response.statusCode.toString().startsWith("2")) {
+                return this.handleErrorResponse(
+                    response.statusCode,
+                    `Error While retrieving Page Content: `,
+                    response.content
+                );
+            }
+
+            const results: Array<object> = response.data?.results;
+            return this.getPageContentInMarkdwn(results);
+        } catch (err) {
+            throw new AppsEngineException(err as string);
+        }
+    }
+
+    private async getPageContentInMarkdwn(results): Promise<string> {
+        let pageContent = "";
+
+        results?.forEach((result) => {
+            const type = result?.[NotionObjectTypes.TYPE];
+            const propertyObject = result?.[type];
+            switch (type) {
+                case PageContent.BOOKMARK: {
+                    const bookmark: string | undefined =
+                        propertyObject?.[PropertyTypeValue.URL];
+
+                    if (bookmark) {
+                        pageContent += `[bookmark](${bookmark})\n`;
+                    }
+
+                    break;
+                }
+                case PageContent.BREADCRUMB: {
+                    // not supported yet from notion
+                    break;
+                }
+                case PageContent.NUMBER_LIST_ITEM:
+                case PageContent.BULLET_LIST_ITEM: {
+                    const bulletList = propertyObject?.[PropertyTypeValue.TEXT];
+                    if (bulletList) {
+                        const markdown =
+                            bulletList[0]?.[TextObjectType.PLAIN_TEXT] ?? "";
+                        pageContent += `- ${markdown}\n`;
+                    }
+                    break;
+                }
+                case PageContent.CALLOUT: {
+                    const callout = propertyObject?.[PropertyTypeValue.TEXT];
+                    const emoji =
+                        propertyObject?.[NotionObjectTypes.ICON]?.[
+                            NotionObjectTypes.EMOJI
+                        ];
+                    if (callout) {
+                        const markdown =
+                            callout[0]?.[TextObjectType.PLAIN_TEXT] ?? "";
+                        pageContent +=
+                            "> " +
+                            `${emoji ? `${emoji} ` : ""}` +
+                            `${markdown}\n`;
+                    }
+                    break;
+                }
+                case PageContent.CHILD_PAGE: {
+                    break;
+                }
+                case PageContent.CHILD_DATABASE: {
+                    break;
+                }
+                case PageContent.CODE: {
+                    const code = propertyObject?.[PropertyTypeValue.TEXT];
+                    if (code) {
+                        const markdown =
+                            code[0]?.[TextObjectType.PLAIN_TEXT] ?? "";
+                        pageContent += `\`\`\`\n${markdown}\n\`\`\`\n`;
+                    }
+                    break;
+                }
+                case PageContent.COLUMN: {
+                    break;
+                }
+                case PageContent.COLUMN_LIST: {
+                    break;
+                }
+                case PageContent.DIVIDER: {
+                    pageContent += `\n`;
+                    break;
+                }
+                case PageContent.EMBED: {
+                    break;
+                }
+                case PageContent.EQUATION: {
+                    const expression =
+                        propertyObject?.[NotionObjectTypes.EXPRESSION];
+                    if (expression) {
+                        pageContent += `\\[${expression}\\]\n`;
+                    }
+                    break;
+                }
+                case PageContent.FILE: {
+                    const file: string | undefined =
+                        propertyObject?.[PropertyTypeValue.URL];
+                    if (file) {
+                        pageContent += `[file](${file})\n`;
+                    }
+                    break;
+                }
+                case PageContent.HEADING_1: {
+                    const heading1 = propertyObject?.[PropertyTypeValue.TEXT];
+
+                    if (heading1) {
+                        const markdown =
+                            heading1[0]?.[NotionObjectTypes.TEXT]?.[
+                                "content"
+                            ] ?? "";
+
+                        pageContent += `## ${markdown}\n`;
+                    }
+                    break;
+                }
+                case PageContent.HEADING_2: {
+                    const heading2 = propertyObject?.[PropertyTypeValue.TEXT];
+
+                    if (heading2) {
+                        const markdown =
+                            heading2[0]?.[NotionObjectTypes.TEXT]?.[
+                                "content"
+                            ] ?? "";
+
+                        pageContent += `### ${markdown}\n`;
+                    }
+                    break;
+                }
+                case PageContent.HEADING_3: {
+                    const heading3 = propertyObject?.[PropertyTypeValue.TEXT];
+
+                    if (heading3) {
+                        const markdown =
+                            heading3[0]?.[NotionObjectTypes.TEXT]?.[
+                                "content"
+                            ] ?? "";
+
+                        pageContent += `#### ${markdown}\n`;
+                    }
+                    break;
+                }
+                case PageContent.IMAGE: {
+                    const file: { url: string } | undefined =
+                        propertyObject?.[PageContent.FILE];
+                    if (file) {
+                        pageContent += `![file](${file.url})\n`;
+                    }
+                    break;
+                }
+                case PageContent.LINK_PREVIEW: {
+                    break;
+                }
+                case PageContent.PARAGRAPH: {
+                    const paragraph = propertyObject?.[PropertyTypeValue.TEXT];
+                    if (paragraph) {
+                        const markdown =
+                            paragraph[0]?.[TextObjectType.PLAIN_TEXT] ?? "";
+                        pageContent += `${markdown}\n`;
+                    }
+
+                    break;
+                }
+                case PageContent.PDF: {
+                    const pdf: { url: string } | undefined =
+                        propertyObject?.[PageContent.FILE];
+
+                    if (pdf) {
+                        pageContent += `![pdf](${pdf.url})\n`;
+                    }
+
+                    break;
+                }
+                case PageContent.QUOTE: {
+                    const quote = propertyObject?.[PropertyTypeValue.TEXT];
+                    if (quote) {
+                        const markdown =
+                            quote[0]?.[NotionObjectTypes.TEXT]?.["content"] ??
+                            "";
+
+                        pageContent += `> ${markdown}\n`;
+                    }
+                    break;
+                }
+                case PageContent.SYNCED_BLOCK: {
+                    // not handling synced block for now
+                    break;
+                }
+                case PageContent.TABLE: {
+                    // not handling table for now
+                    break;
+                }
+                case PageContent.TABLE_OF_CONTENTS: {
+                    // not handling tableofcontents for now
+                    break;
+                }
+                case PageContent.TODO: {
+                    const todo = propertyObject?.[PropertyTypeValue.TEXT];
+                    if (todo) {
+                        const markdown =
+                            todo[0]?.[TextObjectType.PLAIN_TEXT] ?? undefined;
+                        const checked: boolean = propertyObject?.["checked"];
+                        if (markdown) {
+                            if (checked) {
+                                pageContent += `- [x] ${markdown}\n`;
+                            } else {
+                                pageContent += `- [ ] ${markdown}\n`;
+                            }
+                        }
+                    }
+                    break;
+                }
+                case PageContent.TOGGLE_BLOCKS: {
+                    break;
+                }
+                case PageContent.VIDEO: {
+                    const video: { url: string } | undefined =
+                        propertyObject?.[FileType.EXTERNAL] ??
+                        propertyObject?.[PageContent.FILE];
+
+                    if (video) {
+                        pageContent += `\n![video](${video.url})\n`;
+                    }
+
+                    break;
+                }
+            }
+        });
+
+        return pageContent;
     }
 }

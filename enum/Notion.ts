@@ -49,4 +49,6 @@ export enum NotionObjectTypes {
     PROPERTIES = "properties",
     ID = "id",
     DATABASE = "database",
+    ICON = "icon",
+    EMOJI = "emoji",
 }

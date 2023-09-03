@@ -19,7 +19,10 @@ import { ModalInteractionStorage } from "../storage/ModalInteraction";
 import { createDatabaseModal } from "../modals/createDatabaseModal";
 import { OAuth2Storage } from "../authorization/OAuth2Storage";
 import { Error } from "../../errors/Error";
-import { sendNotificationWithConnectBlock } from "../helper/message";
+import {
+    sendNotification,
+    sendNotificationWithConnectBlock,
+} from "../helper/message";
 import {
     NotSupportedPropertyTypes,
     PropertyTypeValue,
@@ -51,6 +54,7 @@ import { getPropertiesIdsObject } from "../helper/getPropertiesIdsObject";
 import { SharePage } from "../../enum/modals/SharePage";
 import { NotionTable } from "../../enum/modals/NotionTable";
 import { SendMessagePage } from "../../enum/modals/SendMessagePage";
+import { NotionPage } from "../../enum/modals/NotionPage";
 
 export class ExecuteBlockActionHandler {
     private context: UIKitBlockInteractionContext;
@@ -167,6 +171,7 @@ export class ExecuteBlockActionHandler {
                 );
                 break;
             }
+            case NotionPage.ACTION_ID:
             case SendMessagePage.ACTION_ID:
             case SharePage.ACTION_ID: {
                 return this.handleSelectPageAction();
@@ -174,6 +179,10 @@ export class ExecuteBlockActionHandler {
             }
             case NotionTable.ACTION_ID: {
                 return this.handleSelectDatabaseAction();
+                break;
+            }
+            case SharePage.VIEW_PAGE_ACTION: {
+                return this.handleViewPage(oAuth2Storage, room as IRoom);
                 break;
             }
             default: {
@@ -1007,5 +1016,51 @@ export class ExecuteBlockActionHandler {
             viewId: container.id,
             errors: {},
         });
+    }
+
+    private async handleViewPage(
+        oAuth2Storage: OAuth2Storage,
+        room: IRoom
+    ): Promise<IUIKitResponse> {
+        const { user, value } = this.context.getInteractionData();
+        const { NotionSdk } = this.app.getUtils();
+
+        const tokenInfo = await oAuth2Storage.getCurrentWorkspace(user.id);
+
+        if (!tokenInfo) {
+            await sendNotificationWithConnectBlock(
+                this.app,
+                user,
+                this.read,
+                this.modify,
+                room
+            );
+            return this.context.getInteractionResponder().errorResponse();
+        }
+
+        if (!value) {
+            return this.context.getInteractionResponder().errorResponse();
+        }
+
+        const { access_token } = tokenInfo;
+        const pageInfo: IPage & { url: string } = JSON.parse(value);
+        const { parent, name, url } = pageInfo;
+        const pageId = parent.page_id;
+
+        const pageMrkdwn = await NotionSdk.retrievePageContent(
+            access_token,
+            pageId
+        );
+
+        if (pageMrkdwn instanceof Error) {
+            return this.context.getInteractionResponder().errorResponse();
+        }
+
+        const message = `# ${name}\n` + pageMrkdwn;
+        await sendNotification(this.read, this.modify, user, room, {
+            message: message,
+        });
+
+        return this.context.getInteractionResponder().successResponse();
     }
 }

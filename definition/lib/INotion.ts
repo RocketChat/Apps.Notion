@@ -80,6 +80,7 @@ export interface INotionSDK extends INotion {
         token: string,
         databaseId: string
     ): Promise<Array<Array<string>> | Error>;
+    retrievePageContent(token: string, pageId: string): Promise<string | Error>;
 }
 
 export interface IParentPage {

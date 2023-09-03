@@ -8,4 +8,7 @@ export enum SharePage {
     SHARE = "Share",
     CLOSE = "Close",
     TITLE = "Share Notion Page",
+    VIEW = "Click to View",
+    VIEW_PAGE_ACTION = "notion-share-page-view-page-action-id",
+    VIEW_PAGE_BLOCK = "notion-share-page-view-page-block-id",
 }
