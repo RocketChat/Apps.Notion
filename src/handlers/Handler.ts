@@ -31,6 +31,8 @@ import { IMessage } from "@rocket.chat/apps-engine/definition/messages";
 import { ActionButton } from "../../enum/modals/common/ActionButtons";
 import { SendMessagePage } from "../../enum/modals/SendMessagePage";
 import { sendMessagePageModal } from "../modals/sendMessagePageModal";
+import { NotionTable } from "../../enum/modals/NotionTable";
+import { viewNotionTableModal } from "../modals/viewNotionTableModal";
 
 export class Handler implements IHandler {
     public app: NotionApp;
@@ -454,6 +456,60 @@ export class Handler implements IHandler {
                 message
             );
 
+            await this.modify
+                .getUiController()
+                .openSurfaceView(modal, { triggerId }, this.sender);
+        }
+    }
+
+    public async viewNotionTable(): Promise<void> {
+        const userId = this.sender.id;
+        const roomId = this.room.id;
+        const tokenInfo = await this.oAuth2Storage.getCurrentWorkspace(userId);
+
+        if (!tokenInfo) {
+            await sendNotificationWithConnectBlock(
+                this.app,
+                this.sender,
+                this.read,
+                this.modify,
+                this.room
+            );
+            return;
+        }
+        await this.roomInteractionStorage.storeInteractionRoomId(roomId);
+
+        const persistenceRead = this.read.getPersistenceReader();
+        const modalInteraction = new ModalInteractionStorage(
+            this.persis,
+            persistenceRead,
+            userId,
+            NotionTable.VIEW_ID
+        );
+
+        const { workspace_id } = tokenInfo;
+        await modalInteraction.clearPagesOrDatabase(workspace_id);
+
+        const modal = await viewNotionTableModal(
+            this.app,
+            this.sender,
+            this.read,
+            this.persis,
+            this.modify,
+            this.room,
+            modalInteraction,
+            tokenInfo
+        );
+
+        if (modal instanceof Error) {
+            // Something went Wrong Probably SearchPageComponent Couldn't Fetch the Pages
+            this.app.getLogger().error(modal.message);
+            return;
+        }
+
+        const triggerId = this.triggerId;
+
+        if (triggerId) {
             await this.modify
                 .getUiController()
                 .openSurfaceView(modal, { triggerId }, this.sender);

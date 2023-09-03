@@ -49,6 +49,9 @@ import { ActionButton } from "../../enum/modals/common/ActionButtons";
 import { getCredentials } from "../helper/getCredential";
 import { ICredential } from "../../definition/authorization/ICredential";
 import { SendMessagePage } from "../../enum/modals/SendMessagePage";
+import { NotionTable } from "../../enum/modals/NotionTable";
+import { SearchDatabaseComponent } from "../../enum/modals/common/SearchDatabaseComponent";
+import { table } from "table";
 
 export class ExecuteViewSubmitHandler {
     private context: UIKitViewSubmitInteractionContext;
@@ -122,6 +125,14 @@ export class ExecuteViewSubmitHandler {
             }
             case SendMessagePage.VIEW_ID: {
                 return this.handleSendMessagePage(
+                    room,
+                    oAuth2Storage,
+                    modalInteraction
+                );
+                break;
+            }
+            case NotionTable.VIEW_ID: {
+                return this.handleViewTable(
                     room,
                     oAuth2Storage,
                     modalInteraction
@@ -914,6 +925,75 @@ export class ExecuteViewSubmitHandler {
                 );
             }
         }
+
+        return this.context.getInteractionResponder().successResponse();
+    }
+
+    public async handleViewTable(
+        room: IRoom,
+        oAuth2Storage: OAuth2Storage,
+        modalInteraction: ModalInteractionStorage
+    ): Promise<IUIKitResponse> {
+        const { view, user } = this.context.getInteractionData();
+        const { state } = view;
+
+        const { NotionSdk } = this.app.getUtils();
+        const tokenInfo = await oAuth2Storage.getCurrentWorkspace(user.id);
+
+        if (!tokenInfo) {
+            await sendNotificationWithConnectBlock(
+                this.app,
+                user,
+                this.read,
+                this.modify,
+                room
+            );
+            return this.context.getInteractionResponder().errorResponse();
+        }
+
+        const databaseObject: string | undefined =
+            state?.[SearchDatabaseComponent.BLOCK_ID]?.[NotionTable.ACTION_ID];
+
+        if (!databaseObject) {
+            return this.context.getInteractionResponder().viewErrorResponse({
+                viewId: view.id,
+                errors: {
+                    [NotionTable.ACTION_ID]: "Please Select a Database to View",
+                },
+            });
+        }
+        const { workspace_name, owner, access_token } = tokenInfo;
+        const DatabaseInfo: IDatabase = JSON.parse(databaseObject);
+        const { parent, info } = DatabaseInfo;
+        const { database_id } = parent;
+        const { name } = info;
+
+        const response = await NotionSdk.queryDatabasePages(
+            access_token,
+            database_id
+        );
+
+        if (response instanceof Error) {
+            return this.context.getInteractionResponder().errorResponse();
+        }
+
+        const tableString = table(response, {
+            columnDefault: {
+                verticalAlignment: "middle",
+                wrapWord: true,
+                truncate: 100,
+            },
+            header: {
+                alignment: "center",
+                content: name,
+            },
+        });
+
+        const tableText = `\`\`\`\n${tableString}\n\`\`\``;
+
+        await sendNotification(this.read, this.modify, user, room, {
+            message: tableText,
+        });
 
         return this.context.getInteractionResponder().successResponse();
     }

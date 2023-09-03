@@ -75,6 +75,11 @@ export interface INotionSDK extends INotion {
         message: string,
         blockId: string
     ): Promise<boolean | Error>;
+    searchDatabases(token: string): Promise<Array<IDatabase> | Error>;
+    queryDatabasePages(
+        token: string,
+        databaseId: string
+    ): Promise<Array<Array<string>> | Error>;
 }
 
 export interface IParentPage {

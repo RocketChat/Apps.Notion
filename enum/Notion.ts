@@ -48,4 +48,5 @@ export enum NotionObjectTypes {
     NAME = "name",
     PROPERTIES = "properties",
     ID = "id",
+    DATABASE = "database",
 }

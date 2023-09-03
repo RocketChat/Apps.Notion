@@ -49,6 +49,8 @@ import { NotionWorkspace } from "../../enum/modals/NotionWorkspace";
 import { changeWorkspaceModal } from "../modals/changeWorkspaceModal";
 import { getPropertiesIdsObject } from "../helper/getPropertiesIdsObject";
 import { SharePage } from "../../enum/modals/SharePage";
+import { NotionTable } from "../../enum/modals/NotionTable";
+import { SendMessagePage } from "../../enum/modals/SendMessagePage";
 
 export class ExecuteBlockActionHandler {
     private context: UIKitBlockInteractionContext;
@@ -165,8 +167,13 @@ export class ExecuteBlockActionHandler {
                 );
                 break;
             }
+            case SendMessagePage.ACTION_ID:
             case SharePage.ACTION_ID: {
                 return this.handleSelectPageAction();
+                break;
+            }
+            case NotionTable.ACTION_ID: {
+                return this.handleSelectDatabaseAction();
                 break;
             }
             default: {
@@ -986,6 +993,14 @@ export class ExecuteBlockActionHandler {
     }
 
     private async handleSelectPageAction(): Promise<IUIKitResponse> {
+        return this.removeViewError();
+    }
+
+    private async handleSelectDatabaseAction(): Promise<IUIKitResponse> {
+        return this.removeViewError();
+    }
+
+    private async removeViewError(): Promise<IUIKitResponse> {
         const { value, container } = this.context.getInteractionData();
 
         return this.context.getInteractionResponder().viewErrorResponse({
