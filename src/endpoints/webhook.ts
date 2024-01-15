@@ -88,6 +88,25 @@ export class WebHookEndpoint extends ApiEndpoint {
             };
         }
 
+        const oAuth2Storage = new OAuth2Storage(persis, persistenceRead);
+
+        // Check if the user is already connected to the workspace or not
+        const userInfo = await oAuth2Storage.getAllConnectedWorkspaces(user.id);
+        if(userInfo && userInfo.length > 0) {
+            const message = `👋 You are already connected to the Workspace **${userInfo[0].workspace_name}**`;
+            await sendNotification(read, modify, user, room, { message });
+            const alreadyTemplate = getAuthPageTemplate(
+                "Already Connected",
+                OAuth2Content.failed,
+                "👋 You are already connected to the Workspace",
+                "YOU CAN NOW CLOSE THIS WINDOW"
+            );
+            return {
+                status: HttpStatusCode.OK,
+                content: alreadyTemplate,
+            };
+        }
+
         const { clientId, clientSecret, siteUrl } = appCredentials;
         const redirectUrl = new URL(this.url_path, siteUrl);
         const credentials = new Buffer(`${clientId}:${clientSecret}`).toString(
@@ -117,7 +136,6 @@ export class WebHookEndpoint extends ApiEndpoint {
             "YOU CAN NOW CLOSE THIS WINDOW"
         );
 
-        const oAuth2Storage = new OAuth2Storage(persis, persistenceRead);
         await oAuth2Storage.connectUserToWorkspace(response, state);
 
         const connectPreview = getConnectPreview(this.app.getID(), response);
