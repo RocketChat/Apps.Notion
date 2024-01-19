@@ -104,7 +104,7 @@ Where RocketChat and Notion work together seamlessly to fuel your team's success
 
 ```
 
-  👋 Need some help with /notion?
+  Need some help with /notion?
 
     • use `/notion connect` to connect your workspace
     • use `/notion disconnect` to disconnect workspace
@@ -117,7 +117,7 @@ Where RocketChat and Notion work together seamlessly to fuel your team's success
 
 ```
 
-## ✨ Glimpse :
+## Glimpse :
 
 [Video Demo Day](https://www.youtube.com/watch?v=G1fZBqy5jp8)
 
@@ -136,7 +136,7 @@ Don't forget to give the project a star! Thanks again!
 4. Push to the Branch (`git push origin feat/AmazingFeature`)
 5. Open a Pull Request
 
-## 📚 Resources
+##  Resources
 
 Here are some links to examples and documentation:
 

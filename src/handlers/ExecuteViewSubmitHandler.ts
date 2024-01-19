@@ -226,7 +226,7 @@ export class ExecuteViewSubmitHandler {
         } else {
             const name: string = response.name;
             const link: string = response.link;
-            message = `✨ Your Database [**${name}**](${link}) is created successfully in **${workspace_name}**.`;
+            message = `Your Database [**${name}**](${link}) is created successfully in **${workspace_name}**.`;
 
             await sendNotificationWithAttachments(
                 this.read,
@@ -387,7 +387,7 @@ export class ExecuteViewSubmitHandler {
             message = `🚫 Something went wrong while creating page in **${workspace_name}**.`;
         } else {
             const { name, link, title, pageId } = createdPage;
-            message = `✨ Your Page [**${title}**](${link}) is created successfully  as a subpage in **${name}**.`;
+            message = `Your Page [**${title}**](${link}) is created successfully  as a subpage in **${name}**.`;
 
             const preserveMessage = await modalInteraction.getInputElementState(
                 ActionButton.SEND_TO_NEW_PAGE_MESSAGE_ACTION
@@ -430,7 +430,7 @@ export class ExecuteViewSubmitHandler {
                     )) as ICredential;
 
                     const messageLink = `${siteUrl}/${urlPath}/${displayName}?msg=${id}`;
-                    const preserveText = `📝 Created New Page [**${title}**](${link}) and Preserved Following [Message](${messageLink}) `;
+                    const preserveText = `Created New Page [**${title}**](${link}) and Preserved Following [Message](${messageLink}) `;
 
                     await sendMessage(
                         this.read,
@@ -501,7 +501,7 @@ export class ExecuteViewSubmitHandler {
                 ];
             const { fields, url, pageId } = createdRecord;
 
-            message = `✨ Created [**${title}**](${url}) in [**${databasename}**](${databaselink})`;
+            message = `Created [**${title}**](${url}) in [**${databasename}**](${databaselink})`;
 
             const messageId = await sendMessageWithAttachments(
                 this.read,
@@ -554,7 +554,7 @@ export class ExecuteViewSubmitHandler {
                     )) as ICredential;
 
                     const messageLink = `${siteUrl}/${urlPath}/${displayName}?msg=${id}`;
-                    const preserveText = `📝 Created [**${title}**](${url}) Page and Preserved Following [Message](${messageLink}) `;
+                    const preserveText = `Created [**${title}**](${url}) Page and Preserved Following [Message](${messageLink}) `;
 
                     await sendMessage(
                         this.read,
@@ -814,7 +814,7 @@ export class ExecuteViewSubmitHandler {
 
         const { name, parent, url } = pageInfo;
 
-        const message = `✨ Sharing [**${name}**](${url}) from **${workspace_name}**`;
+        const message = `Sharing [**${name}**](${url}) from **${workspace_name}**`;
 
         await sendMessage(this.read, this.modify, user, room, {
             message,
@@ -913,7 +913,7 @@ export class ExecuteViewSubmitHandler {
                 )) as ICredential;
 
                 const messageLink = `${siteUrl}/${urlPath}/${displayName}?msg=${id}`;
-                const preserveText = `📝 Preserved Following [Message](${messageLink}) in [**${name}**](${url}) `;
+                const preserveText = `Preserved Following [Message](${messageLink}) in [**${name}**](${url}) `;
 
                 await sendMessage(
                     this.read,

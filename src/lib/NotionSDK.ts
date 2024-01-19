@@ -180,7 +180,7 @@ export class NotionSDK implements INotionSDK {
 
     private returnPage(name: string, page_id: string): IPage {
         return {
-            name: `📄 ${name}`,
+            name: `${name}`,
             parent: {
                 type: NotionObjectTypes.PAGE_ID,
                 page_id,
@@ -549,7 +549,7 @@ export class NotionSDK implements INotionSDK {
 
         return {
             info: {
-                name: `📚 ${name}`,
+                name: ` ${name}`,
                 link: item?.url,
             },
             parent: {
