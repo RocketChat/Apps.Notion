@@ -63,6 +63,7 @@ export class NotionSDK implements INotionSDK {
         credentials: string
     ): Promise<ITokenInfo | ClientError> {
         try {
+            
             const response = await this.http.post(
                 OAuth2Locator.accessTokenUrl,
                 {
@@ -107,7 +108,7 @@ export class NotionSDK implements INotionSDK {
                     "Notion-Version": this.NotionVersion,
                 },
             });
-
+    
             if (!response.statusCode.toString().startsWith("2")) {
                 return this.handleErrorResponse(
                     response.statusCode,
@@ -115,22 +116,63 @@ export class NotionSDK implements INotionSDK {
                     response.content
                 );
             }
-
-            const { results } = response.data;
-
+    
+            console.log("results", response.data.results.length);
+    
+            let results: Array<IPage> = response.data.results;
+    
+            if (response.data.has_more === true) {
+                
+                const recursiveResults = await this.recursiveSearchPages(token, response.data.next_cursor);
+                results = results.concat(recursiveResults);
+            }
+    
+            console.log("results", results.length);
             const result: Array<IPage> = [];
-            results.forEach(async (item) => {
+            for (const item of results) {
                 const pageObject = await this.getPageObjectFromResults(item);
                 if (pageObject) {
                     result.push(pageObject);
                 }
-            });
-
+            }
+    
             return result;
         } catch (err) {
             throw new AppsEngineException(err as string);
         }
     }
+    
+    private async recursiveSearchPages(token: string, cursor: string): Promise<Array<IPage>> {
+        const response = await this.http.post(NotionApi.SEARCH, {
+            data: {
+                start_cursor: cursor,
+            },
+            headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": NotionApi.CONTENT_TYPE,
+                "User-Agent": NotionApi.USER_AGENT,
+                "Notion-Version": this.NotionVersion,
+            },
+        });
+    
+        if (response.statusCode.toString().startsWith("2")) {
+            // console.log("results", response.data);
+    
+            let results: Array<IPage> = response.data.results;
+    
+            if (response.data.has_more === true) {
+                
+                const recursiveResults = await this.recursiveSearchPages(token, response.data.next_cursor);
+    
+                results = results.concat(recursiveResults);
+            }
+    
+            return results;
+        } else {
+            throw new AppsEngineException(`Error While Searching Pages: ${response.content}`);
+        }
+    }
+    
 
     private async getPageObjectFromResults(item): Promise<IPage | null> {
         const typesWithTitleProperty = [
