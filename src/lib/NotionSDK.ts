@@ -534,153 +534,32 @@ export class NotionSDK implements INotionSDK {
         }
     }
 
-    // public async searchPagesAndDatabases(
-    //     token: string
-    // ): Promise<Array<IPage | IDatabase> | Error> {
-    //     try {
-    //         const response = await this.http.post(NotionApi.SEARCH, {
-    //             headers: {
-    //                 Authorization: `Bearer ${token}`,
-    //                 "Content-Type": NotionApi.CONTENT_TYPE,
-    //                 "User-Agent": NotionApi.USER_AGENT,
-    //                 "Notion-Version": this.NotionVersion,
-    //             },
-    //         });
-
-    //         if (!response.statusCode.toString().startsWith("2")) {
-    //             return this.handleErrorResponse(
-    //                 response.statusCode,
-    //                 `Error While Searching Pages: `,
-    //                 response.content
-    //             );
-    //         }
-    //         console.log("searchPagesandDatabases", response.data.results.length)
-
-    //         const { results } = response.data;
-
-    //         const result: Array<IPage | IDatabase> = [];
-    //         results.forEach(async (item) => {
-    //             const objectType: string = item?.[NotionObjectTypes.OBJECT];
-    //             if (objectType.includes(NotionObjectTypes.PAGE)) {
-    //                 const pageObject = await this.getPageObjectFromResults(
-    //                     item
-    //                 );
-
-    //                 if (pageObject) {
-    //                     result.push(pageObject);
-    //                 }
-    //             } else {
-    //                 const databaseObject =
-    //                     await this.getDatabaseObjectFromResults(item);
-
-    //                 result.push(databaseObject);
-    //             }
-    //         });
-
-    //         return result;
-    //     } catch (err) {
-    //         throw new AppsEngineException(err as string);
-    //     }
-    // }
-
-    // public async recursiveSearchPagesAndDatabases(token: string, startCursor?: string): Promise<Array<IPage | IDatabase>> {
-    //     try {
-    //         const requestData = {
-    //             start_cursor: startCursor || "", // Include start_cursor only if provided
-    //         };
-    
-    //         const response = await this.http.post(NotionApi.SEARCH, {
-    //             data: requestData,
-    //             headers: {
-    //                 Authorization: `Bearer ${token}`,
-    //                 "Content-Type": NotionApi.CONTENT_TYPE,
-    //                 "User-Agent": NotionApi.USER_AGENT,
-    //                 "Notion-Version": this.NotionVersion,
-    //             },
-    //         });
-    
-    //         if (!response.statusCode.toString().startsWith("2")) {
-    //             throw new AppsEngineException(`Error While Searching Pages and Databases: ${response.content}`);
-    //         }
-    
-    //         console.log("searchPagesAndDatabases", response.data.results.length);
-    
-    //         const { results } = response.data;
-    
-    //         const result: Array<IPage | IDatabase> = [];
-    
-    //         for (const item of results) {
-    //             const objectType: string = item?.[NotionObjectTypes.OBJECT];
-    //             if (objectType.includes(NotionObjectTypes.PAGE)) {
-    //                 const pageObject = await this.getPageObjectFromResults(item);
-    //                 if (pageObject) {
-    //                     result.push(pageObject);
-    //                 }
-    //             } else {
-    //                 const databaseObject = await this.getDatabaseObjectFromResults(item);
-    //                 result.push(databaseObject);
-    //             }
-    //         }
-    
-    //         if (response.data.has_more === true) {
-    //             // Make a recursive call with the next_cursor
-    //             const recursiveResults = await this.recursiveSearchPagesAndDatabases(token, response.data.next_cursor);
-    
-    //             // Concatenate the current results with the recursive results
-    //             result.concat(recursiveResults);
-    //         }
-    
-    //         return result;
-    //     } catch (err) {
-    //         throw new AppsEngineException(err as string);
-    //     }
-    // }
-
     public async recursiveSearchPagesAndDatabases(token: string, startCursor?: string): Promise<Array<IPage | IDatabase>> {
         try {
-            // const requestData = {
-            //     start_cursor: startCursor || "", // Include start_cursor only if provided
-            // };
             let response;
-            // console.log("boolCheck",startCursor!==undefined, startCursor)
-            if (startCursor){
+    
+            if (startCursor) {
                 response = await this.http.post(NotionApi.SEARCH, {
                     data: {
                         start_cursor: startCursor,
                     },
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                        "Content-Type": NotionApi.CONTENT_TYPE,
-                        "User-Agent": NotionApi.USER_AGENT,
-                        "Notion-Version": this.NotionVersion,
-                    },
+                    headers: this.getNotionApiHeaders(token),
                 });
-            }
-            else{
+            } else {
                 response = await this.http.post(NotionApi.SEARCH, {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                        "Content-Type": NotionApi.CONTENT_TYPE,
-                        "User-Agent": NotionApi.USER_AGENT,
-                        "Notion-Version": this.NotionVersion,
-                    },
+                    headers: this.getNotionApiHeaders(token),
                 });
             }
-    
-            
     
             if (!response.statusCode.toString().startsWith("2")) {
                 throw new AppsEngineException(`Error While Searching Pages and Databases: ${response.content}`);
             }
     
-            // console.log("searchPagesAndDatabases", response.data.results.slice(0,3));
-            // console.log("searchPagesAndDatabases", response.data.results.length);
-    
-            const { results } = response.data;
+            const { results, has_more, next_cursor } = response.data;
     
             const result: Array<IPage | IDatabase> = [];
-
-            const databaseObjectArray:any = []
+    
+            const databaseObjectArray: any = [];
     
             for (const item of results) {
                 const objectType: string = item?.[NotionObjectTypes.OBJECT];
@@ -690,21 +569,16 @@ export class NotionSDK implements INotionSDK {
                         result.push(pageObject);
                     }
                 } else {
-                    databaseObjectArray.push(item)
+                    databaseObjectArray.push(item);
                     const databaseObject = await this.getDatabaseObjectFromResults(item);
                     result.push(databaseObject);
                 }
             }
-    
-            if (response.data.has_more === true) {
-                // Make a recursive call with the next_cursor
-                const recursiveResults = await this.recursiveSearchPagesAndDatabases(token, response.data.next_cursor);
-    
-                // Concatenate the current results with the recursive results
-                result.concat(recursiveResults);
+            if (has_more) {
+                const recursiveResults = await this.recursiveSearchPagesAndDatabases(token, next_cursor);
+                result.push(...recursiveResults);
             }
-            
-            // console.log("databaseObjectLength", databaseObjectArray.length)
+  
             return result;
         } catch (err) {
             throw new AppsEngineException(err as string);
@@ -713,14 +587,22 @@ export class NotionSDK implements INotionSDK {
     
     public async searchPagesAndDatabases(token: string): Promise<Array<IPage | IDatabase> | Error> {
         try {
-            // Call the recursive search method
             const results = await this.recursiveSearchPagesAndDatabases(token);
-    
             return results;
         } catch (err) {
             throw new AppsEngineException(err as string);
         }
     }
+    
+    private getNotionApiHeaders(token: string): Record<string, string> {
+        return {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": NotionApi.CONTENT_TYPE,
+            "User-Agent": NotionApi.USER_AGENT,
+            "Notion-Version": this.NotionVersion,
+        };
+    }
+    
     
 
     private async getDatabaseObjectFromResults(item): Promise<IDatabase> {
@@ -1239,51 +1121,66 @@ export class NotionSDK implements INotionSDK {
         }
     }
 
-    public async searchDatabases(
-        token: string
-    ): Promise<Array<IDatabase> | Error> {
+    public async recursiveSearchDatabases(token: string, startCursor?: string): Promise<Array<IDatabase>> {
         try {
-            const response = await this.http.post(NotionApi.SEARCH, {
-                data: {
-                    filter: {
-                        value: NotionObjectTypes.DATABASE,
-                        property: NotionObjectTypes.PROPERTY,
+            let response;
+    
+            if (startCursor) {
+                response = await this.http.post(NotionApi.SEARCH, {
+                    data: {
+                        filter: {
+                            value: NotionObjectTypes.DATABASE,
+                            property: NotionObjectTypes.PROPERTY,
+                        },
+                        start_cursor: startCursor,
                     },
-                },
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    "Content-Type": NotionApi.CONTENT_TYPE,
-                    "User-Agent": NotionApi.USER_AGENT,
-                    "Notion-Version": this.NotionVersion,
-                },
-            });
-
-            if (!response.statusCode.toString().startsWith("2")) {
-                return this.handleErrorResponse(
-                    response.statusCode,
-                    `Error While Searching Databases: `,
-                    response.content
-                );
+                    headers: this.getNotionApiHeaders(token),
+                });
+            } else {
+                response = await this.http.post(NotionApi.SEARCH, {
+                    data: {
+                        filter: {
+                            value: NotionObjectTypes.DATABASE,
+                            property: NotionObjectTypes.PROPERTY,
+                        },
+                    },
+                    headers: this.getNotionApiHeaders(token),
+                });
             }
 
-            // console.log("searchDatabases", response.data.results.length)
-
-            const { results } = response.data;
-
+            if (!response.statusCode.toString().startsWith("2")) {
+                throw new AppsEngineException(`Error While Searching Databases: ${response.content}`);
+            }
+    
+            const { results, has_more, next_cursor } = response.data;
+    
             const result: Array<IDatabase> = [];
+    
             results.forEach(async (item) => {
-                const objectType: string = item?.[NotionObjectTypes.OBJECT];
-                const databaseObject = await this.getDatabaseObjectFromResults(
-                    item
-                );
-
+                const databaseObject = await this.getDatabaseObjectFromResults(item);
                 result.push(databaseObject);
             });
+    
+            if (has_more) {
+                const recursiveResults = await this.recursiveSearchDatabases(token, next_cursor);
+                result.push(...recursiveResults);
+            }
+    
             return result;
         } catch (err) {
             throw new AppsEngineException(err as string);
         }
     }
+    
+    public async searchDatabases(token: string): Promise<Array<IDatabase> | Error> {
+        try {
+            const results = await this.recursiveSearchDatabases(token);
+            return results;
+        } catch (err) {
+            throw new AppsEngineException(err as string);
+        }
+    }
+    
 
     public async queryDatabasePages(
         token: string,
