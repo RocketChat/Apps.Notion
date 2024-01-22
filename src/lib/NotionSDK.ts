@@ -126,8 +126,6 @@ export class NotionSDK implements INotionSDK {
                 const recursiveResults = await this.recursiveSearchPages(token, response.data.next_cursor);
                 results = results.concat(recursiveResults);
             }
-            // console.log("results", results.slice(0,3));
-            // console.log("results", results.length);
             const result: Array<IPage> = [];
             for (const item of results) {
                 const pageObject = await this.getPageObjectFromResults(item);
@@ -156,7 +154,7 @@ export class NotionSDK implements INotionSDK {
         });
     
         if (response.statusCode.toString().startsWith("2")) {
-            // console.log("results", response.data);
+
     
             let results: Array<IPage> = response.data.results;
     
