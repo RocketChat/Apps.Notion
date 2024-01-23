@@ -218,7 +218,7 @@ export class ExecuteViewSubmitHandler {
 
         if (response instanceof Error) {
             this.app.getLogger().error(response);
-            message = `🚫 Something went wrong while creating Database in **${workspace_name}**.`;
+            message = `Something went wrong while creating Database in **${workspace_name}**.`;
 
             await sendNotification(this.read, this.modify, user, room, {
                 message: message,
@@ -341,6 +341,7 @@ export class ExecuteViewSubmitHandler {
         const parentType: string = parent.type;
 
         if (parentType.includes(NotionObjectTypes.PAGE_ID)) {
+            console.log("handleCreationofPage ", Objects)
             return this.handleCreationOfPage(
                 tokenInfo,
                 room,
@@ -349,7 +350,13 @@ export class ExecuteViewSubmitHandler {
                 Objects as IPage
             );
         }
-
+        console.log("handleCreationofRecord ", Objects)
+        // const newObjects = {
+        //     ...Objects,
+        //     info: {
+        //         name: Objects.info.name
+        //     },
+        // }
         return this.handleCreationOfRecord(
             tokenInfo,
             room,
@@ -384,7 +391,7 @@ export class ExecuteViewSubmitHandler {
 
         if (createdPage instanceof Error) {
             this.app.getLogger().error(createdPage.message);
-            message = `🚫 Something went wrong while creating page in **${workspace_name}**.`;
+            message = `Something went wrong while creating page in **${workspace_name}**.`;
         } else {
             const { name, link, title, pageId } = createdPage;
             message = `Your Page [**${title}**](${link}) is created successfully  as a subpage in **${name}**.`;
@@ -410,7 +417,7 @@ export class ExecuteViewSubmitHandler {
 
                 if (appendBlock instanceof Error) {
                     this.app.getLogger().error(appendBlock.message);
-                    message = `🚫 Something went wrong while appending message in **${workspace_name}**.`;
+                    message = `Something went wrong while appending message in **${workspace_name}**.`;
                     await sendNotification(this.read, this.modify, user, room, {
                         message,
                     });
@@ -463,6 +470,13 @@ export class ExecuteViewSubmitHandler {
         const { NotionSdk } = this.app.getUtils();
         const { access_token, workspace_name, owner } = tokenInfo;
         const username = owner.user.name;
+        const newDatabase = {
+            ...database,
+            info: {
+                name: database.info.name.replace("📚 ",""),
+                link: database.info.link,
+            },
+        }
 
         const properties = (await modalInteraction.getInputElementState(
             SearchPageAndDatabase.ACTION_ID
@@ -479,7 +493,7 @@ export class ExecuteViewSubmitHandler {
 
         const createdRecord = await NotionSdk.createRecord(
             access_token,
-            database,
+            newDatabase,
             data
         );
 
@@ -487,12 +501,12 @@ export class ExecuteViewSubmitHandler {
 
         if (createdRecord instanceof Error) {
             this.app.getLogger().error(createdRecord.message);
-            message = `🚫 Something went wrong while creating record in **${workspace_name}**.`;
+            message = `Something went wrong while creating record in **${workspace_name}**.`;
             await sendNotification(this.read, this.modify, user, room, {
                 message,
             });
         } else {
-            const { info } = database;
+            const { info } = newDatabase;
             const databasename = info.name;
             const databaselink = info.link;
             const title: string =
@@ -533,7 +547,7 @@ export class ExecuteViewSubmitHandler {
 
                 if (appendBlock instanceof Error) {
                     this.app.getLogger().error(appendBlock.message);
-                    message = `🚫 Something went wrong while appending message in **${workspace_name}**.`;
+                    message = `Something went wrong while appending message in **${workspace_name}**.`;
                     await sendNotification(this.read, this.modify, user, room, {
                         message,
                     });
@@ -878,7 +892,7 @@ export class ExecuteViewSubmitHandler {
 
             if (appendBlock instanceof Error) {
                 this.app.getLogger().error(appendBlock.message);
-                const message = `🚫 Something went wrong while appending message in **${workspace_name}**.`;
+                const message = `Something went wrong while appending message in **${workspace_name}**.`;
                 await sendNotification(this.read, this.modify, user, room, {
                     message,
                 });

@@ -113,7 +113,7 @@ export class WebHookEndpoint extends ApiEndpoint {
         const successTemplate = getAuthPageTemplate(
             "Connected to Workspace",
             OAuth2Content.success,
-            `Connected to ${response.workspace_name}❗`,
+            `👋 Connected to ${response.workspace_name}❗`,
             "YOU CAN NOW CLOSE THIS WINDOW"
         );
 

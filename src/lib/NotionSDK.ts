@@ -568,7 +568,8 @@ export class NotionSDK implements INotionSDK {
         try {
             const { name, parent } = page;
             const { title } = prop;
-
+            const nameWithoutEmoji = name.replace("📄", "");
+            console.log("name", nameWithoutEmoji , "title", title, "parent", parent)
             const data = {
                 parent,
                 properties: {
@@ -598,7 +599,7 @@ export class NotionSDK implements INotionSDK {
 
             let result: INotionPage = {
                 link: response?.data?.url,
-                name,
+                name: nameWithoutEmoji,
                 title,
             };
 
