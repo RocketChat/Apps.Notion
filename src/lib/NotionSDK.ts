@@ -132,7 +132,7 @@ export class NotionSDK implements INotionSDK {
         }
     }
 
-    private async getPageObjectFromResults(item, emoji): Promise<IPage | null> {
+    private async getPageObjectFromResults(item, emoji:boolean=false): Promise<IPage | null> {
         const typesWithTitleProperty = [
             NotionObjectTypes.WORKSPACE.toString(),
             NotionObjectTypes.PAGE_ID.toString(),
@@ -178,7 +178,7 @@ export class NotionSDK implements INotionSDK {
         return null;
     }
 
-    private returnPage(name: string, page_id: string, emoji: boolean): IPage {
+    private returnPage(name: string, page_id: string, emoji: boolean=false): IPage {
         return {
             name: `${emoji ? "📄" : ""} ${name}`,
             parent: {
@@ -541,7 +541,7 @@ export class NotionSDK implements INotionSDK {
         }
     }
 
-    private async getDatabaseObjectFromResults(item, emoji:boolean): Promise<IDatabase> {
+    private async getDatabaseObjectFromResults(item, emoji:boolean=false): Promise<IDatabase> {
         const databaseNameTitleObject = item?.[NotionObjectTypes.TITLE];
         const name: string = databaseNameTitleObject.length
             ? databaseNameTitleObject[0]?.plain_text
