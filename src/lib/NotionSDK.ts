@@ -569,7 +569,7 @@ export class NotionSDK implements INotionSDK {
             const { name, parent } = page;
             const { title } = prop;
             const nameWithoutEmoji = name.replace("📄", "");
-            console.log("name", nameWithoutEmoji , "title", title, "parent", parent)
+
             const data = {
                 parent,
                 properties: {

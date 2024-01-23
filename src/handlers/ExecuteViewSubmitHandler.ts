@@ -341,7 +341,7 @@ export class ExecuteViewSubmitHandler {
         const parentType: string = parent.type;
 
         if (parentType.includes(NotionObjectTypes.PAGE_ID)) {
-            console.log("handleCreationofPage ", Objects)
+    
             return this.handleCreationOfPage(
                 tokenInfo,
                 room,
@@ -350,13 +350,7 @@ export class ExecuteViewSubmitHandler {
                 Objects as IPage
             );
         }
-        console.log("handleCreationofRecord ", Objects)
-        // const newObjects = {
-        //     ...Objects,
-        //     info: {
-        //         name: Objects.info.name
-        //     },
-        // }
+        
         return this.handleCreationOfRecord(
             tokenInfo,
             room,
