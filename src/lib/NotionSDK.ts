@@ -124,14 +124,10 @@ export class NotionSDK implements INotionSDK {
             if (response.data.has_more === true) {
                 
                 const recursiveResults = await this.recursiveSearchPages(token, response.data.next_cursor);
-                results = results.concat(recursiveResults);
+                results.push(...recursiveResults);
             }
             const result: Array<IPage> = [];
             for (const item of results) {
-                if(!item){
-
-                    console.log("checking item",  item)
-                }
                 const pageObject = await this.getPageObjectFromResults(item);
                 if (pageObject) {
                     result.push(pageObject);
@@ -166,7 +162,7 @@ export class NotionSDK implements INotionSDK {
                 
                 const recursiveResults = await this.recursiveSearchPages(token, response.data.next_cursor);
     
-                results = results.concat(recursiveResults);
+                results.push(...recursiveResults);
             }
     
             return results;
