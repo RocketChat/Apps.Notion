@@ -128,6 +128,10 @@ export class NotionSDK implements INotionSDK {
             }
             const result: Array<IPage> = [];
             for (const item of results) {
+                if(!item){
+
+                    console.log("checking item",  item)
+                }
                 const pageObject = await this.getPageObjectFromResults(item);
                 if (pageObject) {
                     result.push(pageObject);
@@ -173,50 +177,59 @@ export class NotionSDK implements INotionSDK {
     
 
     private async getPageObjectFromResults(item): Promise<IPage | null> {
-        const typesWithTitleProperty = [
-            NotionObjectTypes.WORKSPACE.toString(),
-            NotionObjectTypes.PAGE_ID.toString(),
-        ];
-        const parentType: string = item.parent.type;
-        const properties = item.properties;
-        const pageId: string = item.id;
-
-        if (typesWithTitleProperty.includes(parentType)) {
-            const pageName: string =
-                properties.title.title[0]?.text?.content ||
-                NotionObjectTypes.UNTITLED;
-            return this.returnPage(pageName, pageId);
+        try {
+            const typesWithTitleProperty = [
+                NotionObjectTypes.WORKSPACE.toString(),
+                NotionObjectTypes.PAGE_ID.toString(),
+            ];
+            const parentType: string = item.parent.type;
+            const properties = item.properties;
+            const pageId: string = item.id;
+    
+            if (typesWithTitleProperty.includes(parentType)) {
+                // console.log("andar hu typesWithTitleProperties")
+                const pageName: string =
+                    properties.title.title[0]?.text?.content ||
+                    NotionObjectTypes.UNTITLED;
+                return this.returnPage(pageName, pageId);
+            }
+    
+            // title property either be at first or last position
+            const columns = Object.keys(properties);
+            const firstColumn = columns[0];
+            const lastColumn = columns[columns.length - 1];
+    
+            // title at first position and has subpage
+            if (
+                properties[firstColumn].title &&
+                properties[firstColumn].title.length
+            ) {
+                // console.log("andar hu title at first position")
+                const name: string =
+                    properties[firstColumn].title[0]?.text?.content ||
+                    NotionObjectTypes.UNTITLED;
+                return this.returnPage(name, pageId);
+            }
+    
+            // title at last position and has subpage
+            if (
+                properties[lastColumn].title &&
+                properties[lastColumn].title.length
+            ) {
+                // console.log("andar hu title at last position")
+                const name: string =
+                    properties[lastColumn].title[0]?.text?.content ||
+                    NotionObjectTypes.UNTITLED;
+                return this.returnPage(name, pageId);
+            }
+    
+            return null;
+        } catch (error) {
+            console.error("An error occurred in getPageObjectFromResults:", error, item);
+            return null
         }
-
-        // title property either be at first or last position
-        const columns = Object.keys(properties);
-        const firstColumn = columns[0];
-        const lastColumn = columns[columns.length - 1];
-
-        // title at first position and has subpage
-        if (
-            properties[firstColumn].title &&
-            properties[firstColumn].title.length
-        ) {
-            const name: string =
-                properties[firstColumn].title[0]?.text?.content ||
-                NotionObjectTypes.UNTITLED;
-            return this.returnPage(name, pageId);
-        }
-
-        //title at last position and has subpage
-        if (
-            properties[lastColumn].title &&
-            properties[lastColumn].title.length
-        ) {
-            const name: string =
-                properties[lastColumn].title[0]?.text?.content ||
-                NotionObjectTypes.UNTITLED;
-            return this.returnPage(name, pageId);
-        }
-
-        return null;
     }
+    
 
     private returnPage(name: string, page_id: string): IPage {
         return {
