@@ -120,7 +120,7 @@ export class NotionSDK implements INotionSDK {
 
             const result: Array<IPage> = [];
             results.forEach(async (item) => {
-                const pageObject = await this.getPageObjectFromResults(item, false);
+                const pageObject = await this.getPageObjectFromResults(item);
                 if (pageObject) {
                     result.push(pageObject);
                 }
@@ -132,7 +132,7 @@ export class NotionSDK implements INotionSDK {
         }
     }
 
-    private async getPageObjectFromResults(item, emoji:boolean=false): Promise<IPage | null> {
+    private async getPageObjectFromResults(item, emoji:boolean = false): Promise<IPage | null> {
         const typesWithTitleProperty = [
             NotionObjectTypes.WORKSPACE.toString(),
             NotionObjectTypes.PAGE_ID.toString(),
@@ -541,7 +541,7 @@ export class NotionSDK implements INotionSDK {
         }
     }
 
-    private async getDatabaseObjectFromResults(item, emoji:boolean=false): Promise<IDatabase> {
+    private async getDatabaseObjectFromResults(item, emoji:boolean = false): Promise<IDatabase> {
         const databaseNameTitleObject = item?.[NotionObjectTypes.TITLE];
         const name: string = databaseNameTitleObject.length
             ? databaseNameTitleObject[0]?.plain_text
@@ -566,9 +566,9 @@ export class NotionSDK implements INotionSDK {
         prop: IPageProperties
     ): Promise<(INotionPage & { pageId: string }) | Error> {
         try {
-            const { name, parent } = page;
+            const { parent } = page;
             const { title } = prop;
-            const nameWithoutEmoji = name.replace("📄", "");
+            const name = page.name.replace("📄", "");
 
             const data = {
                 parent,
@@ -599,7 +599,7 @@ export class NotionSDK implements INotionSDK {
 
             let result: INotionPage = {
                 link: response?.data?.url,
-                name: nameWithoutEmoji,
+                name: name,
                 title,
             };
 
@@ -991,8 +991,7 @@ export class NotionSDK implements INotionSDK {
 
             const pageInfo = response.data;
             const page = (await this.getPageObjectFromResults(
-                pageInfo,
-                false
+                pageInfo
             )) as IPage;
             const url: string = pageInfo?.url;
 
@@ -1092,8 +1091,7 @@ export class NotionSDK implements INotionSDK {
             results.forEach(async (item) => {
                 const objectType: string = item?.[NotionObjectTypes.OBJECT];
                 const databaseObject = await this.getDatabaseObjectFromResults(
-                    item,
-                    false
+                    item
                 );
 
                 result.push(databaseObject);

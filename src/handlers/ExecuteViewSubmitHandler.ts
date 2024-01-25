@@ -464,13 +464,6 @@ export class ExecuteViewSubmitHandler {
         const { NotionSdk } = this.app.getUtils();
         const { access_token, workspace_name, owner } = tokenInfo;
         const username = owner.user.name;
-        const newDatabase = {
-            ...database,
-            info: {
-                name: database.info.name.replace("📚 ",""),
-                link: database.info.link,
-            },
-        }
 
         const properties = (await modalInteraction.getInputElementState(
             SearchPageAndDatabase.ACTION_ID
@@ -487,7 +480,7 @@ export class ExecuteViewSubmitHandler {
 
         const createdRecord = await NotionSdk.createRecord(
             access_token,
-            newDatabase,
+            database,
             data
         );
 
@@ -500,8 +493,9 @@ export class ExecuteViewSubmitHandler {
                 message,
             });
         } else {
-            const { info } = newDatabase;
-            const databasename = info.name;
+            const { info } = database;
+            const databasename = info.name.replace("📚 ", "");
+            console.log("databaseName ", databasename)
             const databaselink = info.link;
             const title: string =
                 state?.[NotionPageOrRecord.TITLE_BLOCK]?.[

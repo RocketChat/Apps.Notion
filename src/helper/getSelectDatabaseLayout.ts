@@ -13,9 +13,8 @@ export function getSelectDatabaseLayout(
     const { workspace_icon, owner } = tokenInfo;
     const { name, avatar_url } = owner.user;
 
-    const database_name = properties.name;
+    const database_name = properties.name.replace("📚 ", "");
     const database_url = properties.link;
-    const databaseNameWithoutEmoji = database_name.replace("📚 ", "")
 
     const elementBuilder = new ElementBuilder(appId);
     const blockBuilder = new BlockBuilder(appId);
@@ -28,7 +27,7 @@ export function getSelectDatabaseLayout(
     const thumb = workspace_icon_url ? { url: workspace_icon_url } : undefined;
     const title = [
         `**Database Name**`,
-        `[**${databaseNameWithoutEmoji}**](${database_url})`,
+        `[**${database_name}**](${database_url})`,
     ];
     const description = [""];
     const avatarElement = elementBuilder.addImage({
