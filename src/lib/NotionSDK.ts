@@ -178,7 +178,7 @@ export class NotionSDK implements INotionSDK {
         return null;
     }
 
-    private returnPage(name: string, page_id: string, emoji: boolean=false): IPage {
+    private returnPage(name: string, page_id: string, emoji:boolean = false): IPage {
         return {
             name: `${emoji ? "📄" : ""} ${name}`,
             parent: {
@@ -599,7 +599,7 @@ export class NotionSDK implements INotionSDK {
 
             let result: INotionPage = {
                 link: response?.data?.url,
-                name: name,
+                name,
                 title,
             };
 

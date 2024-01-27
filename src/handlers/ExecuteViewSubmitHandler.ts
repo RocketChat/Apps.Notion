@@ -495,7 +495,6 @@ export class ExecuteViewSubmitHandler {
         } else {
             const { info } = database;
             const databasename = info.name.replace("📚 ", "");
-            console.log("databaseName ", databasename)
             const databaselink = info.link;
             const title: string =
                 state?.[NotionPageOrRecord.TITLE_BLOCK]?.[
