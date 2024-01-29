@@ -805,6 +805,7 @@ export class ExecuteBlockActionHandler {
         const OverFlowActions = [
             DatabaseModal.OVERFLOW_MENU_ACTION.toString(),
             NotionPageOrRecord.CHANGE_DATABASE_ACTION.toString(),
+            NotionPageOrRecord.OVERFLOW_MENU_ACTION.toString()
         ];
 
         if (!OverFlowActions.includes(value)) {
@@ -834,6 +835,12 @@ export class ExecuteBlockActionHandler {
                 await handler.createNotionDatabase();
                 break;
             }
+
+            case NotionPageOrRecord.OVERFLOW_MENU_ACTION:{
+                await handler.createNotionPageOrRecord();
+                break;
+            }
+
             case NotionPageOrRecord.CHANGE_DATABASE_ACTION: {
                 await handler.createNotionPageOrRecord(true);
                 break;

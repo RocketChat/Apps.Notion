@@ -15,6 +15,7 @@ import { searchPageComponent } from "./common/searchPageComponent";
 import { NotionApp } from "../../NotionApp";
 import { inputElementComponent } from "./common/inputElementComponent";
 import { ButtonInSectionComponent } from "./common/buttonInSectionComponent";
+import { OverflowMenuComponent } from "./common/OverflowMenuComponent";
 import { IUser } from "@rocket.chat/apps-engine/definition/users";
 import { ModalInteractionStorage } from "../storage/ModalInteraction";
 import { ITokenInfo } from "../../definition/authorization/IOAuth2Storage";
@@ -35,6 +36,7 @@ import {
 import { NotionObjectTypes } from "../../enum/Notion";
 import { ButtonInActionComponent } from "./common/buttonInActionComponent";
 import { SearchPage } from "../../enum/modals/common/SearchPageComponent";
+import { NotionPageOrRecord } from "../../enum/modals/NotionPageOrRecord";
 
 export async function createDatabaseModal(
     app: NotionApp,
@@ -49,6 +51,8 @@ export async function createDatabaseModal(
     const { elementBuilder, blockBuilder } = app.getUtils();
     const divider = blockBuilder.createDividerBlock();
     const connectBlock = getConnectPreview(app.getID(), tokenInfo);
+    const overFlowMenuText = [NotionPageOrRecord.OVERFLOW_MENU_TEXT.toString()];
+    const overFlowMenuValue = [NotionPageOrRecord.OVERFLOW_MENU_ACTION.toString()];
 
     const searchForPageComponent = await searchPageComponent(
         app,
@@ -60,6 +64,19 @@ export async function createDatabaseModal(
     if (searchForPageComponent instanceof Error) {
         return searchForPageComponent;
     }
+
+    const overflowMenu = await OverflowMenuComponent(
+        {
+            app,
+            text: overFlowMenuText,
+            value: overFlowMenuValue,
+        },
+        {
+            blockId: Modals.OVERFLOW_MENU_BLOCK,
+            actionId: Modals.OVERFLOW_MENU_ACTION,
+        }
+    );
+
 
     const titleOfDatabaseBlock = inputElementComponent(
         {
@@ -99,6 +116,7 @@ export async function createDatabaseModal(
         }
     );
     const blocks: Block[] = [
+        overflowMenu,
         connectBlock,
         searchForPageComponent,
         titleOfDatabaseBlock,
