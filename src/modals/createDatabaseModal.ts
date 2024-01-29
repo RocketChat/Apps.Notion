@@ -51,8 +51,14 @@ export async function createDatabaseModal(
     const { elementBuilder, blockBuilder } = app.getUtils();
     const divider = blockBuilder.createDividerBlock();
     const connectBlock = getConnectPreview(app.getID(), tokenInfo);
-    const overFlowMenuText = [NotionPageOrRecord.OVERFLOW_MENU_TEXT.toString()];
-    const overFlowMenuValue = [NotionPageOrRecord.OVERFLOW_MENU_ACTION.toString()];
+    const overFlowMenuText = [
+        NotionPageOrRecord.OVERFLOW_MENU_TEXT.toString(),
+        DatabaseModal.OVERFLOW_CHANGE_WORKSPACE_TEXT.toString(),
+    ];
+    const overFlowMenuValue = [
+        NotionPageOrRecord.OVERFLOW_MENU_ACTION.toString(),
+        DatabaseModal.OVERFLOW_CHANGE_WORKSPACE_ACTION.toString(),
+    ];
 
     const searchForPageComponent = await searchPageComponent(
         app,
