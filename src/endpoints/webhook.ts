@@ -46,7 +46,9 @@ export class WebHookEndpoint extends ApiEndpoint {
             "Something Went Wrong",
             OAuth2Content.failed,
             "🚫 Something went wrong while Connecting to Workspace",
-            "PLEASE TRY AGAIN IN CASE IT STILL DOES NOT WORK, CONTACT ADMINISTRATOR"
+            "PLEASE TRY AGAIN IN CASE IT STILL DOES NOT WORK, CONTACT ADMINISTRATOR",
+            5,
+            "Window will be closed in {seconds}"
         );
 
         // incase when user leaves in between the auth process
@@ -114,7 +116,9 @@ export class WebHookEndpoint extends ApiEndpoint {
             "Connected to Workspace",
             OAuth2Content.success,
             `👋 Connected to ${response.workspace_name}❗`,
-            "YOU CAN NOW CLOSE THIS WINDOW"
+            "YOU CAN NOW CLOSE THIS WINDOW",
+            5,
+            "Window will be closed in {seconds}"
         );
 
         const oAuth2Storage = new OAuth2Storage(persis, persistenceRead);

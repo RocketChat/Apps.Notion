@@ -2,7 +2,9 @@ export function getAuthPageTemplate(
     title: string,
     imgUrl: string,
     message: string,
-    info: string
+    info: string,
+    closeTime:number,
+    closeMessage:string
 ) {
     const template = ` 
     <html>
@@ -52,7 +54,28 @@ export function getAuthPageTemplate(
         >
           ${info}
         </p>
-      </div>
+        <p style="
+            font-family: sans-serif;
+            font-size: smaller;
+            color: #85888d;"
+            class="countdown" id="countdown">
+          </p>
+        </div>
+
+        <script>
+          let seconds = ${closeTime};
+          const countdownElement = document.getElementById('countdown');
+
+          const countdown = setInterval(function() {
+            countdownElement.textContent = '${closeMessage}'.replace('{seconds}', seconds) + ' second(s)';
+            seconds--;
+
+            if (seconds < 0) {
+              clearInterval(countdown);
+              window.close();
+            }
+          }, 1000);
+        </script>
     </body>
     </html>
     `;
