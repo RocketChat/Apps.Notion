@@ -29,3 +29,39 @@ export async function getConnectBlock(
 
     return [textBlock, actionBlock];
 }
+
+export async function getTextBlock(
+    app: NotionApp,
+    message: string
+): Promise<Array<Block>> {
+    const { blockBuilder } = app.getUtils();
+    const textBlock = blockBuilder.createSectionBlock({
+        text: message,
+    });
+
+    return [textBlock];
+}
+
+
+export async function getActionBlock(
+    app: NotionApp,
+    url: string
+): Promise<Array<Block>> {
+    const { elementBuilder, blockBuilder } = app.getUtils();
+    const buttonElement = elementBuilder.addButton(
+        {
+            text: OAuth2Content.CONNECT_TO_WORKSPACE,
+            style: ButtonStyle.PRIMARY,
+            url,
+        },
+        {
+            blockId: OAuth2Block.CONNECT_TO_WORKSPACE,
+            actionId: OAuth2Action.CONNECT_TO_WORKSPACE,
+        }
+    );
+    const actionBlock = blockBuilder.createActionBlock({
+        elements: [buttonElement],
+    });
+
+    return [actionBlock];
+}

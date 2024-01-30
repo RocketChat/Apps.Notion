@@ -8,11 +8,11 @@ import {
 import { IOAuth2Client } from "../../definition/authorization/IOAuthClient";
 import { IUser } from "@rocket.chat/apps-engine/definition/users";
 import { OAuth2Storage } from "./OAuth2Storage";
-import { sendNotification } from "../helper/message";
+import { sendNotification, sendNotificationWithBlock } from "../helper/message";
 import { getCredentials } from "../helper/getCredential";
 import { OAuth2Content, OAuth2Credential, OAuth2Locator } from "../../enum/OAuth2";
 import { URL } from "url";
-import { getConnectBlock } from "../helper/getConnectBlock";
+import { getActionBlock, getConnectBlock, getTextBlock } from "../helper/getConnectBlock";
 import { IRoom } from "@rocket.chat/apps-engine/definition/rooms";
 
 export class OAuth2Client implements IOAuth2Client {
@@ -38,14 +38,19 @@ export class OAuth2Client implements IOAuth2Client {
         }
 
         const message = `Hey **${sender.username}**!👋 Connect your Notion Workspace`;
-        const blocks = await getConnectBlock(
-            this.app,
-            message,
-            authorizationUrl
-        );
+        // const blocks = await getConnectBlock(
+        //     this.app,
+        //     message,
+        //     authorizationUrl
+        // );
 
-        await sendNotification(read, modify, sender, room, {
-            blocks,
+        const textBlock = await getTextBlock(this.app, message);
+
+        const actionBlock = await getActionBlock(this.app, authorizationUrl);
+
+        await sendNotificationWithBlock(read, modify, sender, room, authorizationUrl, {
+            message,
+            blocks: actionBlock
         });
     }
 

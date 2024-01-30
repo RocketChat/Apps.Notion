@@ -10,7 +10,7 @@ import { Block } from "@rocket.chat/ui-kit";
 import { NotionApp } from "../../NotionApp";
 import { OAuth2Content } from "../../enum/OAuth2";
 import { getConnectBlock } from "./getConnectBlock";
-import { IMessageAttachmentField } from "@rocket.chat/apps-engine/definition/messages";
+import { IMessageAttachmentField, MessageActionType } from "@rocket.chat/apps-engine/definition/messages";
 import { Messages, OnInstallContent } from "../../enum/messages";
 import { IMessageAttachment } from "@rocket.chat/apps-engine/definition/messages";
 import { getOrCreateDirectRoom } from "./getOrCreateDirectRoom";
@@ -37,6 +37,38 @@ export async function sendNotification(
     } else if (blocks) {
         messageBuilder.setBlocks(blocks);
     }
+    return read.getNotifier().notifyUser(user, messageBuilder.getMessage());
+}
+
+export async function sendNotificationWithBlock(
+    read: IRead,
+    modify: IModify,
+    user: IUser,
+    room: IRoom,
+    authorizationUrl: string,
+    content: { message: string; blocks: Array<Block> }
+): Promise<void> {
+    const appUser = (await read.getUserReader().getAppUser()) as IUser;
+    const { message, blocks } = content;
+    const messageBuilder = modify
+        .getCreator()
+        .startMessage()
+        .setSender(appUser)
+        .setRoom(room)
+        .setGroupable(false)
+        .setText(message)
+
+        const attachment: IMessageAttachment = {
+            actions: [
+              {
+                type: MessageActionType.BUTTON,
+                text: "Connect to Notion",
+                url: authorizationUrl
+              },
+            ],
+          };
+
+    messageBuilder.setAttachments([attachment]);
     return read.getNotifier().notifyUser(user, messageBuilder.getMessage());
 }
 
