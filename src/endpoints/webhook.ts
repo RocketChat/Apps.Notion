@@ -42,6 +42,9 @@ export class WebHookEndpoint extends ApiEndpoint {
     ): Promise<IApiResponse> {
         const { code, state, error } = request.query;
 
+        const customHeader = {
+            'Content-Security-Policy': "script-src 'unsafe-inline'",
+        };
         const failedTemplate = getAuthPageTemplate(
             "Something Went Wrong",
             OAuth2Content.failed,
@@ -56,6 +59,7 @@ export class WebHookEndpoint extends ApiEndpoint {
             this.app.getLogger().warn(error);
             return {
                 status: HttpStatusCode.UNAUTHORIZED,
+                headers:customHeader,
                 content: failedTemplate,
             };
         }
@@ -68,6 +72,7 @@ export class WebHookEndpoint extends ApiEndpoint {
                 .warn(`User not found before access token request`);
             return {
                 status: HttpStatusCode.NON_AUTHORITATIVE_INFORMATION,
+                headers: customHeader,
                 content: failedTemplate,
             };
         }
@@ -86,6 +91,7 @@ export class WebHookEndpoint extends ApiEndpoint {
         if (!appCredentials) {
             return {
                 status: HttpStatusCode.UNAUTHORIZED,
+                headers:customHeader,
                 content: failedTemplate,
             };
         }
@@ -108,6 +114,7 @@ export class WebHookEndpoint extends ApiEndpoint {
             this.app.getLogger().warn(response.message);
             return {
                 status: response.statusCode,
+                headers:customHeader,
                 content: failedTemplate,
             };
         }
@@ -129,7 +136,10 @@ export class WebHookEndpoint extends ApiEndpoint {
             blocks: [connectPreview],
         });
         await roomInteraction.clearInteractionRoomId();
-
-        return this.success(successTemplate);
+        return{
+            status:200,
+            headers:customHeader,
+            content:successTemplate
+        }
     }
 }
