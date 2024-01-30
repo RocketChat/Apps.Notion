@@ -59,10 +59,11 @@ export async function sendNotificationWithBlock(
         .setText(message)
 
         const attachment: IMessageAttachment = {
+            color: "#FFFFFF",
             actions: [
               {
                 type: MessageActionType.BUTTON,
-                text: "Connect to Notion",
+                text: "Connect to Workspace",
                 url: authorizationUrl
               },
             ],
@@ -197,7 +198,7 @@ export async function sendHelperMessageOnInstall(
         .setRoom(room)
         .setSender(appUser)
         .setGroupable(false)
-        .setBlocks([welcomeTextSection, installationPreview])
+        .setBlocks([installationPreview, welcomeTextSection])
         .setParseUrls(true);
 
     const textMessageBuilder = modify
