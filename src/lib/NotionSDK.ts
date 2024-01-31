@@ -132,7 +132,7 @@ export class NotionSDK implements INotionSDK {
         }
     }
 
-    private async getPageObjectFromResults(item): Promise<IPage | null> {
+    private async getPageObjectFromResults(item, emoji:boolean = false): Promise<IPage | null> {
         const typesWithTitleProperty = [
             NotionObjectTypes.WORKSPACE.toString(),
             NotionObjectTypes.PAGE_ID.toString(),
@@ -145,7 +145,7 @@ export class NotionSDK implements INotionSDK {
             const pageName: string =
                 properties.title.title[0]?.text?.content ||
                 NotionObjectTypes.UNTITLED;
-            return this.returnPage(pageName, pageId);
+            return this.returnPage(pageName, pageId, emoji);
         }
 
         // title property either be at first or last position
@@ -161,7 +161,7 @@ export class NotionSDK implements INotionSDK {
             const name: string =
                 properties[firstColumn].title[0]?.text?.content ||
                 NotionObjectTypes.UNTITLED;
-            return this.returnPage(name, pageId);
+            return this.returnPage(name, pageId, emoji);
         }
 
         //title at last position and has subpage
@@ -172,15 +172,15 @@ export class NotionSDK implements INotionSDK {
             const name: string =
                 properties[lastColumn].title[0]?.text?.content ||
                 NotionObjectTypes.UNTITLED;
-            return this.returnPage(name, pageId);
+            return this.returnPage(name, pageId, emoji);
         }
 
         return null;
     }
 
-    private returnPage(name: string, page_id: string): IPage {
+    private returnPage(name: string, page_id: string, emoji:boolean = false): IPage {
         return {
-            name: `📄 ${name}`,
+            name: `${emoji ? "📄" : ""} ${name}`,
             parent: {
                 type: NotionObjectTypes.PAGE_ID,
                 page_id,
@@ -520,7 +520,8 @@ export class NotionSDK implements INotionSDK {
                 const objectType: string = item?.[NotionObjectTypes.OBJECT];
                 if (objectType.includes(NotionObjectTypes.PAGE)) {
                     const pageObject = await this.getPageObjectFromResults(
-                        item
+                        item,
+                        true
                     );
 
                     if (pageObject) {
@@ -528,7 +529,7 @@ export class NotionSDK implements INotionSDK {
                     }
                 } else {
                     const databaseObject =
-                        await this.getDatabaseObjectFromResults(item);
+                        await this.getDatabaseObjectFromResults(item, true);
 
                     result.push(databaseObject);
                 }
@@ -540,7 +541,7 @@ export class NotionSDK implements INotionSDK {
         }
     }
 
-    private async getDatabaseObjectFromResults(item): Promise<IDatabase> {
+    private async getDatabaseObjectFromResults(item, emoji:boolean = false): Promise<IDatabase> {
         const databaseNameTitleObject = item?.[NotionObjectTypes.TITLE];
         const name: string = databaseNameTitleObject.length
             ? databaseNameTitleObject[0]?.plain_text
@@ -549,7 +550,7 @@ export class NotionSDK implements INotionSDK {
 
         return {
             info: {
-                name: `📚 ${name}`,
+                name: `${emoji ? "📚":""} ${name}`,
                 link: item?.url,
             },
             parent: {
@@ -565,8 +566,9 @@ export class NotionSDK implements INotionSDK {
         prop: IPageProperties
     ): Promise<(INotionPage & { pageId: string }) | Error> {
         try {
-            const { name, parent } = page;
+            const { parent } = page;
             const { title } = prop;
+            const name = page.name.replace("📄", "");
 
             const data = {
                 parent,

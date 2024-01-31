@@ -8,13 +8,13 @@ export enum Messages {
         • use \`/notion share\` to share pages
 
         `,
-    HELPER_TEXT = `:wave: Need some help with \`/notion\`?`,
+    HELPER_TEXT = `Need some help with \`/notion\`?`,
 }
 
 export enum OnInstallContent {
-    PREVIEW_TITLE = "[**📖 Notion App**](https://github.com/RocketChat/Apps.Notion/)",
-    PREVIEW_DESCRIPTION = "**🙌 Installed and Rollin' on your Server!**",
-    PREVIEW_CONTEXT = "[**🤝 Support's Page**](https://github.com/RocketChat/Apps.Notion/issues)",
+    PREVIEW_TITLE = "[**Notion App**](https://github.com/RocketChat/Apps.Notion/)",
+    PREVIEW_DESCRIPTION = "**Installed and Rollin' on your Server!**",
+    PREVIEW_CONTEXT = "[**Support's Page**](https://github.com/RocketChat/Apps.Notion/issues)",
     PREVIEW_IMAGE = "https://upload.wikimedia.org/wikipedia/commons/e/e9/Notion-logo.svg",
     WELCOMING_MESSAGE = `
         🔧 Setting up the Notion App is a breeze! Create a [**Notion Public Integration**](https://developers.notion.com/docs/authorization#how-to-make-an-integration-public) and Just head over to the App Settings, Provide your credentials.

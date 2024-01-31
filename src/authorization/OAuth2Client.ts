@@ -71,7 +71,7 @@ export class OAuth2Client implements IOAuth2Client {
 
         if (tokenInfo) {
             await oAuthStorage.disconnectUserFromCurrentWorkspace(userId);
-            const message = `👋 You are disconnected from the Workspace **${tokenInfo.workspace_name}**`;
+            const message = `You are disconnected from the Workspace **${tokenInfo.workspace_name}**`;
             await sendNotification(read, modify, sender, room, { message });
             return;
         }
