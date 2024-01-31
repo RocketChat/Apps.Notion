@@ -25,10 +25,10 @@ export class BlockBuilder implements IBlockBuilder {
             appId: this.appId,
             blockId,
             type: LayoutBlockType.SECTION,
-            text: {
-                type: TextObjectType.MRKDWN,
-                text: text ? text : "",
-            },
+            // text: {
+            //     type: TextObjectType.MRKDWN,
+            //     text: text ? text : "",
+            // },
             accessory,
             fields: fields ? this.createTextObjects(fields) : undefined,
         };

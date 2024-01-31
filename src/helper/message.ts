@@ -185,9 +185,13 @@ export async function sendHelperMessageOnInstall(
         footer,
         thumb,
     });
-    const text = `Hey **${
+    const text = ` 🙌 Hey **${
         user.username
     }** ! ${OnInstallContent.WELCOME_TEXT.toString()}`;
+
+
+    const combinedText = `${text} ${OnInstallContent.WELCOMING_MESSAGE.toString()}`;
+
     const welcomeTextSection = blockBuilder.createSectionBlock({
         text,
     });
@@ -208,7 +212,12 @@ export async function sendHelperMessageOnInstall(
         .setSender(appUser)
         .setGroupable(true)
         .setParseUrls(false)
-        .setText(OnInstallContent.WELCOMING_MESSAGE.toString());
+        .setText(combinedText);
+    
+    const attachment: IMessageAttachment = {
+        color: "#FFFFFF",
+        text: Messages.HELPER_COMMANDS,
+    };
 
     await modify.getCreator().finish(previewBuilder);
     await modify.getCreator().finish(textMessageBuilder);
