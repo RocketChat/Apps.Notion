@@ -13,7 +13,7 @@ export function getSelectDatabaseLayout(
     const { workspace_icon, owner } = tokenInfo;
     const { name, avatar_url } = owner.user;
 
-    const database_name = properties.name;
+    const database_name = properties.name.replace("📚 ", "");
     const database_url = properties.link;
 
     const elementBuilder = new ElementBuilder(appId);
@@ -26,7 +26,7 @@ export function getSelectDatabaseLayout(
         : undefined;
     const thumb = workspace_icon_url ? { url: workspace_icon_url } : undefined;
     const title = [
-        `**📋 Database Name**`,
+        `**Database Name**`,
         `[**${database_name}**](${database_url})`,
     ];
     const description = [""];
