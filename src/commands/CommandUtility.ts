@@ -95,10 +95,10 @@ export class CommandUtility implements ICommandUtility {
                 );
                 break;
             }
-            case CommandParam.HELPER: {
-                await sendHelperMessageOnInstall(this.app.getID(), this.sender, this.read, this.modify, this.http, this.persis);
-                break;
-            }
+            // case CommandParam.HELPER: {
+            //     await sendHelperMessageOnInstall(this.app.getID(), this.sender, this.read, this.modify, this.http, this.persis);
+            //     break;
+            // }
             case CommandParam.DISCONNECT: {
                 await oAuth2ClientInstance.disconnect(
                     this.room,
