@@ -2,7 +2,7 @@ export enum Messages {
     HELPER_COMMANDS = `• use \`/notion connect\` to connect your workspace   
         • use \`/notion disconnect\` to disconnect workspace   
         • use \`/notion comment\` to comment on notion page   
-        • use \`/notion create\` to create page or record   
+        • use \`/notion create\` to create subpage or record   
         • use \`/notion create db\` to create database   
         • use \`/notion workspace\` to change workspace   
         • use \`/notion share\` to share pages

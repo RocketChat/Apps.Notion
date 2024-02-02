@@ -502,7 +502,7 @@ export class ExecuteViewSubmitHandler {
                 ];
             const { fields, url, pageId } = createdRecord;
 
-            message = `Created [**${title}**](${url}) in [**${databasename}**](${databaselink})`;
+            message = `Created a new record with title [**${title}**](${url}) in the database [**${databasename}**](${databaselink})`;
 
             const messageId = await sendMessageWithAttachments(
                 this.read,
