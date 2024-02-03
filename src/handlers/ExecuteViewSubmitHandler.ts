@@ -52,6 +52,7 @@ import { SendMessagePage } from "../../enum/modals/SendMessagePage";
 import { NotionTable } from "../../enum/modals/NotionTable";
 import { SearchDatabaseComponent } from "../../enum/modals/common/SearchDatabaseComponent";
 import { table } from "table";
+import { NotionAppendContent } from "../../enum/modals/NotionAppendContent";
 
 export class ExecuteViewSubmitHandler {
     private context: UIKitViewSubmitInteractionContext;
@@ -138,6 +139,14 @@ export class ExecuteViewSubmitHandler {
                     modalInteraction
                 );
                 break;
+            }
+
+            case NotionAppendContent.VIEW_ID: {
+                return this.handleAppendContent(
+                    room,
+                    oAuth2Storage,
+                    modalInteraction
+                );
             }
             default: {
             }
@@ -341,7 +350,6 @@ export class ExecuteViewSubmitHandler {
         const parentType: string = parent.type;
 
         if (parentType.includes(NotionObjectTypes.PAGE_ID)) {
-    
             return this.handleCreationOfPage(
                 tokenInfo,
                 room,
@@ -350,7 +358,7 @@ export class ExecuteViewSubmitHandler {
                 Objects as IPage
             );
         }
-        
+
         return this.handleCreationOfRecord(
             tokenInfo,
             room,
@@ -994,6 +1002,100 @@ export class ExecuteViewSubmitHandler {
 
         await sendNotification(this.read, this.modify, user, room, {
             message: tableText,
+        });
+
+        return this.context.getInteractionResponder().successResponse();
+    }
+
+    private async handleAppendContent(
+        room: IRoom,
+        oAuth2Storage: OAuth2Storage,
+        modalInteraction: ModalInteractionStorage
+    ): Promise<IUIKitResponse> {
+        const { NotionSdk } = this.app.getUtils();
+        const { view, user } = this.context.getInteractionData();
+        const { state } = view;
+
+        const tokenInfo = await oAuth2Storage.getCurrentWorkspace(user.id);
+
+        if (!tokenInfo) {
+            await sendNotificationWithConnectBlock(
+                this.app,
+                user,
+                this.read,
+                this.modify,
+                room
+            );
+            return this.context.getInteractionResponder().errorResponse();
+        }
+        const { access_token, workspace_name } = tokenInfo;
+
+        const pageId: string | undefined =
+            state?.[SearchPage.BLOCK_ID]?.[SearchPage.ACTION_ID];
+
+        const headingType: string | undefined =
+            state?.[NotionAppendContent.HEADING_SELECT_BLOCK_ID]?.[NotionAppendContent.HEADING_SELECT_ACTION_ID];
+
+        const headingInput: string | undefined =
+            state?.[NotionAppendContent.HEADING_BLOCK]?.[
+                NotionAppendContent.HEADING_ACTION
+            ];
+
+        const contentInput: string | undefined =
+            state?.[NotionAppendContent.CONTENT_BLOCK]?.[
+                NotionAppendContent.CONTENT_ACTION
+            ];
+
+        if (!pageId) {
+            return this.context.getInteractionResponder().viewErrorResponse({
+                viewId: view.id,
+                errors: {
+                    [SharePage.ACTION_ID]: "Please Select a Page",
+                },
+            });
+        } else {
+            if (!contentInput) {
+                return this.context
+                    .getInteractionResponder()
+                    .viewErrorResponse({
+                        viewId: view.id,
+                        errors: {
+                            [NotionAppendContent.CONTENT_ACTION]:
+                                "Content is required. Please provide some information.",
+                        },
+                    });
+            }
+        }
+
+        const appendMsgStatus = await NotionSdk.appendContentToPage(
+            access_token,
+            pageId,
+            contentInput,
+            headingType && headingType !== "no_heading" && headingInput
+                ? { headingType, headingInput }
+                : undefined
+        );
+
+        let message: string;
+
+        if (appendMsgStatus instanceof Error) {
+            this.app.getLogger().error(appendMsgStatus.message);
+            message = `Something went wrong while appending content in **${workspace_name}**.`;
+        } else {
+            const pageInfo = await NotionSdk.retrievePage(access_token, pageId);
+
+            if (pageInfo instanceof Error) {
+                this.app.getLogger().error(pageInfo.message);
+                return this.context.getInteractionResponder().errorResponse();
+            }
+
+            const { name, url } = pageInfo;
+
+            message = `Your content has been sucessfully saved in [**${name}**](${url})`;
+        }
+
+        await sendNotification(this.read, this.modify, user, room, {
+            message,
         });
 
         return this.context.getInteractionResponder().successResponse();

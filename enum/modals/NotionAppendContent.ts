@@ -1,0 +1,23 @@
+export enum NotionAppendContent {
+    VIEW_ID = "notion-append-content-view-id",
+    TITLE = "Add Content to Page",
+    HEADING_SELECT_PLACEHOLDER = "Heading Type",
+    HEADING_SELECT_BLOCK_ID = "select-heading-component-block-id",
+    HEADING_SELECT_ACTION_ID = "select-heading-component-action-id",
+    HEADING_SELECT_LABEL = "Select Heading Type",
+    HEADING_PLACEHOLDER = "Enter Your Heading",
+    HEADING_LABEL = "Heading",
+    HEADING_BLOCK = "heading-input-block-id",
+    HEADING_ACTION = "heading-input-action-id",
+    CONTENT_PLACEHOLDER = "Enter your content...",
+    CONTENT_LABEL = "Content *",
+    CONTENT_BLOCK = "content-input-block-id",
+    CONTENT_ACTION = "content-input-action-id",
+    SAVE = "Save",
+    SAVE_ACTION = "append-content-action-id",
+    SAVE_BLOCK = "append-content-block-id",
+    CLOSE = "Close",
+    CLOSE_ACTION = "close-append-content-action-id",
+    CLOSE_BLOCK = "close-append-content-block-id",
+}
+

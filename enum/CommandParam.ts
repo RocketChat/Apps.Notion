@@ -8,6 +8,7 @@ export enum CommandParam {
     WS = "ws",
     SHARE = "share",
     VIEW = "view"
+    APPEND = "append"
 }
 
 export enum SubCommandParam {
