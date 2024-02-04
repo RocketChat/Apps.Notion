@@ -48,8 +48,6 @@ export async function createPageOrRecordModal(
     const divider = blockBuilder.createDividerBlock();
     const blocks: Block[] = [];
     const appId = app.getID();
-    const overFlowMenuText = [DatabaseModal.OVERFLOW_MENU_TEXT.toString()];
-    const overFlowMenuValue = [DatabaseModal.OVERFLOW_MENU_ACTION.toString()];
     let properties: object | undefined;
     let addedProperty: { data: Array<object> } | undefined;
     let allUsers: object | undefined;
@@ -66,28 +64,6 @@ export async function createPageOrRecordModal(
         );
     }
 
-    if (parent) {
-        overFlowMenuText.push(
-            NotionPageOrRecord.CHANGE_DATABASE_TEXT.toString()
-        );
-        overFlowMenuValue.push(
-            NotionPageOrRecord.CHANGE_DATABASE_ACTION.toString()
-        );
-    }
-
-    const overflowMenu = await OverflowMenuComponent(
-        {
-            app,
-            text: overFlowMenuText,
-            value: overFlowMenuValue,
-        },
-        {
-            blockId: Modals.OVERFLOW_MENU_BLOCK,
-            actionId: Modals.OVERFLOW_MENU_ACTION,
-        }
-    );
-
-    blocks.push(overflowMenu);
     if (!parent) {
         const connectBlock = getConnectPreview(appId, tokenInfo);
         blocks.push(connectBlock);
