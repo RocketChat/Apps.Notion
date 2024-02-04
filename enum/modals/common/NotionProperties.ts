@@ -76,6 +76,7 @@ export enum Number {
     ARGENTINE_PESO = "argentine_peso",
     URUGUAYAN_PESO = "uruguayan_peso",
     SINGAPORE_DOLLAR = "singapore_dollar",
+    AUSTRALIAN_DOLLAR = "australian_dollar",
 }
 
 export enum Color {
