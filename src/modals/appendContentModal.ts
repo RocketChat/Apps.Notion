@@ -142,7 +142,7 @@ export async function appendContentModal(
 
     return {
         id: NotionAppendContent.VIEW_ID,
-        type: UIKitSurfaceType.MODAL,
+        type: UIKitSurfaceType.CONTEXTUAL_BAR,
         title: {
             type: TextObjectType.MRKDWN,
             text: NotionAppendContent.TITLE,
