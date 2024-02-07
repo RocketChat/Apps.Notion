@@ -13,7 +13,7 @@ import {
 } from "../../definition/command/ICommandUtility";
 import { CommandParam, SubCommandParam } from "../../enum/CommandParam";
 import { Handler } from "../handlers/Handler";
-import { sendHelperMessageOnInstall, sendHelperNotification } from "../helper/message";
+import { sendHelperNotification } from "../helper/message";
 
 export class CommandUtility implements ICommandUtility {
     public app: NotionApp;
@@ -93,10 +93,6 @@ export class CommandUtility implements ICommandUtility {
                     this.http,
                     this.persis
                 );
-                break;
-            }
-            case CommandParam.HELPER: {
-                await sendHelperMessageOnInstall(this.app.getID(), this.sender, this.read, this.modify, this.http, this.persis);
                 break;
             }
             case CommandParam.DISCONNECT: {
