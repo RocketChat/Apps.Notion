@@ -52,11 +52,11 @@ export async function createDatabaseModal(
     const divider = blockBuilder.createDividerBlock();
     const connectBlock = getConnectPreview(app.getID(), tokenInfo);
     const overFlowMenuText = [
-        NotionPageOrRecord.OVERFLOW_MENU_TEXT.toString(),
+        NotionPageOrRecord.OVERFLOW_CHANGE_TO_PAGE_TEXT.toString(),
         DatabaseModal.OVERFLOW_CHANGE_WORKSPACE_TEXT.toString(),
     ];
     const overFlowMenuValue = [
-        NotionPageOrRecord.OVERFLOW_MENU_ACTION.toString(),
+        NotionPageOrRecord.OVERFLOW_CHANGE_TO_PAGE_ACTION.toString(),
         DatabaseModal.OVERFLOW_CHANGE_WORKSPACE_ACTION.toString(),
     ];
 

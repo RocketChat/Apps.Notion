@@ -14,6 +14,6 @@ export enum NotionPageOrRecord {
     CHANGE_DATABASE_TEXT = "Change Database",
     CHANGE_DATABASE_ACTION = "create-page-or-record-change-database-action-id",
     PROPERTY_SELECTED_BLOCK_ELEMENT = "property-selected-element-create-page-or-record-block-id",
-    OVERFLOW_MENU_ACTION = "create-notion-page-overflow-menu-action-id",
-    OVERFLOW_MENU_TEXT = "Create Subpage or Record",
+    OVERFLOW_CHANGE_TO_PAGE_ACTION = "create-notion-page-overflow-menu-action-id",
+    OVERFLOW_CHANGE_TO_PAGE_TEXT = "Create Subpage or Record",
 }
