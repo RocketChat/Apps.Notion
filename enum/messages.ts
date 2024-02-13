@@ -17,11 +17,11 @@ export enum OnInstallContent {
     PREVIEW_CONTEXT = "[**Support's Page**](https://github.com/RocketChat/Apps.Notion/issues)",
     PREVIEW_IMAGE = "https://upload.wikimedia.org/wikipedia/commons/e/e9/Notion-logo.svg",
     WELCOMING_MESSAGE = `
-        🔧 Setting up the Notion App is a breeze! Create a [**Notion Public Integration**](https://developers.notion.com/docs/authorization#how-to-make-an-integration-public) and Just head over to the App Settings, Provide your credentials.
-        🎉 You're all set to experience the seamless integration of Notion and RocketChat.
-        ✨ Need some help getting started? Just type \`/notion help\` to access our comprehensive command list.
-        💌 We love hearing from you! If you have any suggestions, questions, or just want to share your thoughts, simply tap on the **Support's Page** in Preview.
-        🌟 Let's streamline your productivity and collaboration together. Enjoy the journey! 
+        Setting up the Notion App is a breeze! Create a [**Notion Public Integration**](https://developers.notion.com/docs/authorization#how-to-make-an-integration-public) and Just head over to the App Settings, Provide your credentials.
+        You're all set to experience the seamless integration of Notion and RocketChat.
+        Need some help getting started? Just type \`/notion help\` to access our comprehensive command list.
+        We love hearing from you! If you have any suggestions, questions, or just want to share your thoughts, simply tap on the **Support's Page** in Preview.
+        Let's streamline your productivity and collaboration together. Enjoy the journey! 
 
         Thanks for choosing \`Notion App\`
     `,
