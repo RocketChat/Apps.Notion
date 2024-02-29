@@ -42,7 +42,7 @@ export async function createPageOrRecordModal(
     modalInteraction: ModalInteractionStorage,
     tokenInfo: ITokenInfo,
     parent?: IDatabase,
-    page?:IPage,
+    page?: IPage,
     addPropertyAction?: boolean
 ): Promise<IUIKitSurfaceViewParam | Error> {
     const { elementBuilder, blockBuilder } = app.getUtils();
@@ -140,6 +140,7 @@ export async function createPageOrRecordModal(
             actionId: NotionPageOrRecord.TITLE_ACTION,
         }
     );
+
     if(page || parent) blocks.push(titleOfPageOrRecordBlock);
 
     if (parent && addedProperty) {
