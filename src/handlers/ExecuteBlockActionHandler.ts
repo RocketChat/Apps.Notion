@@ -804,7 +804,9 @@ export class ExecuteBlockActionHandler {
         // Check if the value is pageId. if not then it is not a refresh comment action
         const OverFlowActions = [
             DatabaseModal.OVERFLOW_MENU_ACTION.toString(),
+            DatabaseModal.OVERFLOW_CHANGE_WORKSPACE_ACTION.toString(),
             NotionPageOrRecord.CHANGE_DATABASE_ACTION.toString(),
+            NotionPageOrRecord.OVERFLOW_CHANGE_TO_PAGE_ACTION.toString()
         ];
 
         if (!OverFlowActions.includes(value)) {
@@ -834,6 +836,17 @@ export class ExecuteBlockActionHandler {
                 await handler.createNotionDatabase();
                 break;
             }
+
+            case DatabaseModal.OVERFLOW_CHANGE_WORKSPACE_ACTION:{
+                await handler.changeNotionWorkspace();
+                break;
+            }
+
+            case NotionPageOrRecord.OVERFLOW_CHANGE_TO_PAGE_ACTION:{
+                await handler.createNotionPageOrRecord();
+                break;
+            }
+
             case NotionPageOrRecord.CHANGE_DATABASE_ACTION: {
                 await handler.createNotionPageOrRecord(true);
                 break;

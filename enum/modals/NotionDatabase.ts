@@ -49,4 +49,6 @@ export enum DatabaseModal {
     PROPERTY_TYPE_TITLE = "title",
     OVERFLOW_MENU_ACTION = "create-notion-database-overflow-menu-action-id",
     OVERFLOW_MENU_TEXT = "Create Database",
+    OVERFLOW_CHANGE_WORKSPACE_ACTION = "change-notion-workspace-overflow-menu-action-id",
+    OVERFLOW_CHANGE_WORKSPACE_TEXT = "Change Workspace"
 }
