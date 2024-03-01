@@ -805,8 +805,9 @@ export class ExecuteBlockActionHandler {
         const OverFlowActions = [
             DatabaseModal.OVERFLOW_MENU_ACTION.toString(),
             DatabaseModal.OVERFLOW_CHANGE_WORKSPACE_ACTION.toString(),
+            DatabaseModal.OVERFLOW_MENU_ACTION_CREATE_DB.toString(),
             NotionPageOrRecord.CHANGE_DATABASE_ACTION.toString(),
-            NotionPageOrRecord.OVERFLOW_CHANGE_TO_PAGE_ACTION.toString()
+            NotionPageOrRecord.OVERFLOW_CHANGE_TO_PAGE_ACTION.toString(),
         ];
 
         if (!OverFlowActions.includes(value)) {
@@ -832,17 +833,17 @@ export class ExecuteBlockActionHandler {
         });
 
         switch (value) {
-            case DatabaseModal.OVERFLOW_MENU_ACTION: {
+            case DatabaseModal.OVERFLOW_MENU_ACTION_CREATE_DB: {
                 await handler.createNotionDatabase();
                 break;
             }
 
-            case DatabaseModal.OVERFLOW_CHANGE_WORKSPACE_ACTION:{
+            case DatabaseModal.OVERFLOW_CHANGE_WORKSPACE_ACTION: {
                 await handler.changeNotionWorkspace();
                 break;
             }
 
-            case NotionPageOrRecord.OVERFLOW_CHANGE_TO_PAGE_ACTION:{
+            case NotionPageOrRecord.OVERFLOW_CHANGE_TO_PAGE_ACTION: {
                 await handler.createNotionPageOrRecord();
                 break;
             }
@@ -945,7 +946,6 @@ export class ExecuteBlockActionHandler {
         const tokenInfo = await oAuth2Storage.getCurrentWorkspace(user.id);
         const roomId = await roomInteractionStorage.getInteractionRoomId();
         const room = (await this.read.getRoomReader().getById(roomId)) as IRoom;
-
         if (!tokenInfo) {
             await sendNotificationWithConnectBlock(
                 this.app,

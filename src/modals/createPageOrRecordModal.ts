@@ -48,8 +48,14 @@ export async function createPageOrRecordModal(
     const divider = blockBuilder.createDividerBlock();
     const blocks: Block[] = [];
     const appId = app.getID();
-    const overFlowMenuText = [DatabaseModal.OVERFLOW_MENU_TEXT.toString()];
-    const overFlowMenuValue = [DatabaseModal.OVERFLOW_MENU_ACTION.toString()];
+    const overFlowMenuText = [
+        DatabaseModal.OVERFLOW_MENU_TEXT_CREATE_DB.toString(),
+        DatabaseModal.OVERFLOW_CHANGE_WORKSPACE_TEXT.toString(),
+    ];
+    const overFlowMenuValue = [
+        DatabaseModal.OVERFLOW_MENU_ACTION_CREATE_DB.toString(),
+        DatabaseModal.OVERFLOW_CHANGE_WORKSPACE_ACTION.toString(),
+    ];
     let properties: object | undefined;
     let addedProperty: { data: Array<object> } | undefined;
     let allUsers: object | undefined;
