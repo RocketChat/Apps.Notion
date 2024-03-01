@@ -803,7 +803,6 @@ export class ExecuteBlockActionHandler {
 
         // Check if the value is pageId. if not then it is not a refresh comment action
         const OverFlowActions = [
-            DatabaseModal.OVERFLOW_MENU_ACTION.toString(),
             DatabaseModal.OVERFLOW_CHANGE_WORKSPACE_ACTION.toString(),
             DatabaseModal.OVERFLOW_MENU_ACTION_CREATE_DB.toString(),
             NotionPageOrRecord.CHANGE_DATABASE_ACTION.toString(),
@@ -946,6 +945,7 @@ export class ExecuteBlockActionHandler {
         const tokenInfo = await oAuth2Storage.getCurrentWorkspace(user.id);
         const roomId = await roomInteractionStorage.getInteractionRoomId();
         const room = (await this.read.getRoomReader().getById(roomId)) as IRoom;
+
         if (!tokenInfo) {
             await sendNotificationWithConnectBlock(
                 this.app,

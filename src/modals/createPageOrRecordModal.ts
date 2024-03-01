@@ -73,10 +73,10 @@ export async function createPageOrRecordModal(
     }
 
     if (parent) {
-        overFlowMenuText.push(
+        overFlowMenuText.unshift(
             NotionPageOrRecord.CHANGE_DATABASE_TEXT.toString()
         );
-        overFlowMenuValue.push(
+        overFlowMenuValue.unshift(
             NotionPageOrRecord.CHANGE_DATABASE_ACTION.toString()
         );
     }
