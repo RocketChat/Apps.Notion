@@ -37,7 +37,7 @@ export class OAuth2Client implements IOAuth2Client {
             return;
         }
 
-        const message = `Hey **${sender.username}**! Connect your Notion Workspace`;
+        const message = `Connect your Notion Workspace`;
         const blocks = await getConnectBlock(
             this.app,
             message,
