@@ -886,11 +886,33 @@ export class ExecuteBlockActionHandler {
         let Object: IPage | IDatabase = JSON.parse(value);
         let parentObject: IParentPage | IParentDatabase = Object.parent;
 
-        // update the modal if database is selected
-        if (parentObject.type.includes(NotionObjectTypes.PAGE_ID)) {
-            return this.context.getInteractionResponder().successResponse();
-        }
 
+        if (parentObject.type.includes(NotionObjectTypes.PAGE_ID)) {
+            const page = Object as IPage;
+            const modal = await createPageOrRecordModal(
+                this.app,
+                user,
+                this.read,
+                this.persistence,
+                this.modify,
+                room,
+                modalInteraction,
+                tokenInfo,
+                undefined,
+                page
+            );
+
+            if (modal instanceof Error) {
+                this.app.getLogger().error(modal.message);
+                return this.context.getInteractionResponder().errorResponse();
+            }
+
+            return this.context
+                .getInteractionResponder()
+                .updateModalViewResponse(modal);
+        }
+        
+        // update the modal if database is selected
         const database = Object as IDatabase;
 
         const databaseId = database.parent.database_id;

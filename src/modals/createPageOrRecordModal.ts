@@ -23,7 +23,7 @@ import { SearchPageAndDatabase } from "../../enum/modals/common/SearchPageAndDat
 import { DatabaseModal } from "../../enum/modals/NotionDatabase";
 import { OverflowMenuComponent } from "./common/OverflowMenuComponent";
 import { Modals } from "../../enum/modals/common/Modals";
-import { IDatabase } from "../../definition/lib/INotion";
+import { IDatabase, IPage } from "../../definition/lib/INotion";
 import { getSelectDatabaseLayout } from "../helper/getSelectDatabaseLayout";
 import { getTitleProperty } from "../helper/getTitleProperty";
 import { ButtonInSectionComponent } from "./common/buttonInSectionComponent";
@@ -42,6 +42,7 @@ export async function createPageOrRecordModal(
     modalInteraction: ModalInteractionStorage,
     tokenInfo: ITokenInfo,
     parent?: IDatabase,
+    page?: IPage,
     addPropertyAction?: boolean
 ): Promise<IUIKitSurfaceViewParam | Error> {
     const { elementBuilder, blockBuilder } = app.getUtils();
@@ -146,7 +147,7 @@ export async function createPageOrRecordModal(
         }
     );
 
-    blocks.push(titleOfPageOrRecordBlock);
+    if(page || parent) blocks.push(titleOfPageOrRecordBlock);
 
     if (parent && addedProperty) {
         const data = addedProperty.data;
