@@ -75,10 +75,10 @@ export async function createPageOrRecordModal(
 
     if (parent) {
         overFlowMenuText.unshift(
-            NotionPageOrRecord.CHANGE_DATABASE_TEXT.toString()
+            NotionPageOrRecord.CHANGE_SELECTION_TEXT.toString()
         );
         overFlowMenuValue.unshift(
-            NotionPageOrRecord.CHANGE_DATABASE_ACTION.toString()
+            NotionPageOrRecord.CHANGE_SELECTION_ACTION.toString()
         );
     }
 

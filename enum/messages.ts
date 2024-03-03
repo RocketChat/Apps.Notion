@@ -5,7 +5,8 @@ export enum Messages {
         • use \`/notion create\` to create page or record   
         • use \`/notion create db\` to create database   
         • use \`/notion workspace\` to change workspace   
-        • use \`/notion share\` to share pages
+        • use \`/notion share\` to share pages   
+        • use \`/notion view\` to view database content   
 
         `,
     HELPER_TEXT = `Need some help with \`/notion\`?`,
