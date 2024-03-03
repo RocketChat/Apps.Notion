@@ -3,8 +3,8 @@ export function getAuthPageTemplate(
     imgUrl: string,
     message: string,
     info: string,
-    closeTime:number,
-    closeMessage:string
+    closeTime: number,
+    closeMessage: string
 ) {
     const template = ` 
     <html>
