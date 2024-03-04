@@ -341,7 +341,6 @@ export class ExecuteViewSubmitHandler {
         const parentType: string = parent.type;
 
         if (parentType.includes(NotionObjectTypes.PAGE_ID)) {
-    
             return this.handleCreationOfPage(
                 tokenInfo,
                 room,
@@ -350,7 +349,7 @@ export class ExecuteViewSubmitHandler {
                 Objects as IPage
             );
         }
-        
+
         return this.handleCreationOfRecord(
             tokenInfo,
             room,
@@ -604,7 +603,7 @@ export class ExecuteViewSubmitHandler {
 
         const selectedWorkspace: ITokenInfo = JSON.parse(workspaceInfo);
 
-        if (selectedWorkspace !== tokenInfo) {
+        if (selectedWorkspace.access_token !== tokenInfo.access_token) {
             await oAuth2Storage.connectUserToWorkspace(
                 selectedWorkspace,
                 user.id
