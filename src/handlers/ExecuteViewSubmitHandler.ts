@@ -52,6 +52,7 @@ import { SendMessagePage } from "../../enum/modals/SendMessagePage";
 import { NotionTable } from "../../enum/modals/NotionTable";
 import { SearchDatabaseComponent } from "../../enum/modals/common/SearchDatabaseComponent";
 import { table } from "table";
+import { NotionUpdateRecord } from "../../enum/modals/NotionUpdateRecord";
 
 export class ExecuteViewSubmitHandler {
     private context: UIKitViewSubmitInteractionContext;
@@ -133,6 +134,14 @@ export class ExecuteViewSubmitHandler {
             }
             case NotionTable.VIEW_ID: {
                 return this.handleViewTable(
+                    room,
+                    oAuth2Storage,
+                    modalInteraction
+                );
+                break;
+            }
+            case NotionUpdateRecord.VIEW_ID: {
+                return this.handleUpdateRecord(
                     room,
                     oAuth2Storage,
                     modalInteraction
@@ -341,7 +350,6 @@ export class ExecuteViewSubmitHandler {
         const parentType: string = parent.type;
 
         if (parentType.includes(NotionObjectTypes.PAGE_ID)) {
-    
             return this.handleCreationOfPage(
                 tokenInfo,
                 room,
@@ -350,7 +358,7 @@ export class ExecuteViewSubmitHandler {
                 Objects as IPage
             );
         }
-        
+
         return this.handleCreationOfRecord(
             tokenInfo,
             room,
@@ -995,6 +1003,29 @@ export class ExecuteViewSubmitHandler {
         await sendNotification(this.read, this.modify, user, room, {
             message: tableText,
         });
+
+        return this.context.getInteractionResponder().successResponse();
+    }
+
+    private async handleUpdateRecord(
+        room: IRoom,
+        oAuth2Storage: OAuth2Storage,
+        modalInteraction: ModalInteractionStorage
+    ): Promise<IUIKitResponse> {
+        const { view, user } = this.context.getInteractionData();
+
+        const tokenInfo = await oAuth2Storage.getCurrentWorkspace(user.id);
+
+        if (!tokenInfo) {
+            await sendNotificationWithConnectBlock(
+                this.app,
+                user,
+                this.read,
+                this.modify,
+                room
+            );
+            return this.context.getInteractionResponder().errorResponse();
+        }
 
         return this.context.getInteractionResponder().successResponse();
     }

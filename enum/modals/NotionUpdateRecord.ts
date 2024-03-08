@@ -1,0 +1,17 @@
+export enum NotionUpdateRecord {
+    VIEW_ID = "notion-update-record-view-id",
+    TITLE = "Update Database Record",
+    SEARCH_DB_ACTION_ID = "notion-update-record-search-database-component-action-id",
+    TITLE_BLOCK = "title-database-block-id",
+    TITLE_ACTION = "title-database-action-id",
+    PROPERTY_SELECTED_BLOCK_ELEMENT = "property-selected-element-update-record-db-block-id",
+    ADD_PROPERTY_ACTION = "add-property-notion-update-record-action-id",
+    ADD_PROPERTY_BLOCK = "add-property-notion-update-record-block-id",
+    ADD_PROPERTY_BUTTON_TEXT = "Add Property",
+    UPDATE_RECORD = "Update",
+    UPDATE_RECORD_ACTION = "update-record-action-id",
+    UPDATE_RECORD_BLOCK = "update-record-block-id",
+    CLOSE = "Close",
+    CLOSE_ACTION = "close-update-record-action-id",
+    CLOSE_BLOCK = "close-update-record-block-id",
+}

@@ -51,6 +51,8 @@ import { getPropertiesIdsObject } from "../helper/getPropertiesIdsObject";
 import { SharePage } from "../../enum/modals/SharePage";
 import { NotionTable } from "../../enum/modals/NotionTable";
 import { SendMessagePage } from "../../enum/modals/SendMessagePage";
+import { NotionUpdateRecord } from "../../enum/modals/NotionUpdateRecord";
+import { updateRecordModal } from "../modals/updateRecordModal";
 
 export class ExecuteBlockActionHandler {
     private context: UIKitBlockInteractionContext;
@@ -166,6 +168,14 @@ export class ExecuteBlockActionHandler {
                     roomInteractionStorage
                 );
                 break;
+            }
+
+            case NotionUpdateRecord.SEARCH_DB_ACTION_ID:{
+                return this.handleSearchDbUpdateRecord(
+                    modalInteraction,
+                    oAuth2Storage,
+                    roomInteractionStorage
+                )
             }
             case SendMessagePage.ACTION_ID:
             case SharePage.ACTION_ID: {
@@ -1042,5 +1052,79 @@ export class ExecuteBlockActionHandler {
             viewId: container.id,
             errors: {},
         });
+    }
+
+    private async handleSearchDbUpdateRecord(
+        modalInteraction: ModalInteractionStorage,
+        oAuth2Storage: OAuth2Storage,
+        roomInteractionStorage: RoomInteractionStorage
+    ): Promise<IUIKitResponse> {
+        const { value, user } = this.context.getInteractionData();
+
+        const tokenInfo = await oAuth2Storage.getCurrentWorkspace(user.id);
+        const roomId = await roomInteractionStorage.getInteractionRoomId();
+        const room = (await this.read.getRoomReader().getById(roomId)) as IRoom;
+
+        if (!tokenInfo) {
+            await sendNotificationWithConnectBlock(
+                this.app,
+                user,
+                this.read,
+                this.modify,
+                room
+            );
+
+            return this.context.getInteractionResponder().errorResponse();
+        }
+
+        if (!value) {
+            return this.context.getInteractionResponder().errorResponse();
+        }
+
+        let Object: IDatabase = JSON.parse(value);
+
+        const database = Object as IDatabase;
+
+        const databaseId = database.parent.database_id;
+        const { NotionSdk } = this.app.getUtils();
+        const { access_token } = tokenInfo;
+
+        const properties = await NotionSdk.retrieveDatabase(
+            access_token,
+            databaseId
+        );
+
+        if (properties instanceof Error) {
+            this.app.getLogger().error(properties.message);
+            return this.context.getInteractionResponder().errorResponse();
+        }
+
+        await modalInteraction.storeInputElementState(
+            NotionUpdateRecord.SEARCH_DB_ACTION_ID,
+            properties
+        );
+
+        await this.storeAllElements(properties, tokenInfo, modalInteraction);
+
+        const modal = await updateRecordModal(
+            this.app,
+            user,
+            this.read,
+            this.persistence,
+            this.modify,
+            room,
+            modalInteraction,
+            tokenInfo,
+            database
+        );
+
+        if (modal instanceof Error) {
+            this.app.getLogger().error(modal.message);
+            return this.context.getInteractionResponder().errorResponse();
+        }
+
+        return this.context
+            .getInteractionResponder()
+            .updateModalViewResponse(modal);
     }
 }

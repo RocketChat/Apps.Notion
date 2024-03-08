@@ -123,7 +123,7 @@ export class CommandUtility implements ICommandUtility {
                 await handler.shareNotionPage();
                 break;
             }
-            case CommandParam.VIEW : {
+            case CommandParam.VIEW: {
                 await handler.viewNotionTable();
                 break;
             }
@@ -154,6 +154,22 @@ export class CommandUtility implements ICommandUtility {
                     this.sender,
                     this.room
                 );
+                break;
+            }
+
+            case CommandParam.UPDATE: {
+                if (subparam.toLowerCase() === SubCommandParam.RECORD) {
+                    await handler.updateDatabaseRecord();
+                    return;
+                }
+
+                await sendHelperNotification(
+                    this.read,
+                    this.modify,
+                    this.sender,
+                    this.room
+                );
+
                 break;
             }
             default: {
