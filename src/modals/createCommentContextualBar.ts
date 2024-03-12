@@ -31,6 +31,7 @@ import { ButtonInActionComponent } from "./common/buttonInActionComponent";
 import { uuid } from "../helper/uuid";
 import { ButtonInSectionComponent } from "./common/buttonInSectionComponent";
 import { ICommentInfo } from "../../definition/lib/INotion";
+import { getTimeAgoFromISO } from "../helper/getTimeAgoFromISO";
 
 export async function createCommentContextualBar(
     app: NotionApp,
@@ -162,7 +163,8 @@ export async function createCommentContextualBar(
                     `https://open.rocket.chat/avatar/${commentInfo.user.name}}`,
                 altText: "",
             });
-            const userName = `**${commentInfo.user.name}** ${commentInfo.created_time}`;
+            const formattedTime = getTimeAgoFromISO(commentInfo.created_time);
+            const userName = `**${commentInfo.user.name}** ${formattedTime}`;
 
             const NameWithCreatedTime = blockBuilder.createContextBlock({
                 contextElements: [avatarElement, userName],
