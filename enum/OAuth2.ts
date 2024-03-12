@@ -6,8 +6,8 @@ export enum OAuth2Locator {
 }
 
 export enum OAuth2Content {
-    success = "https://github-production-user-asset-6210df.s3.amazonaws.com/65061890/243671111-9964efff-3b23-4223-aadd-5f4be441037c.svg",
-    failed = "https://open.rocket.chat/assets/logo.png",
+    success = "https://github.com/RocketChat/Apps.Notion/assets/78961432/01cc6f3d-f29d-41d5-9024-96199c7de419",
+    failed = "/assets/logo.png",
     NOT_CONNECTED_MESSAGE = `You are not connected to **Workspace**!`,
     NOT_CONNECTED_MESSAGE_WITH_INFO = `Connect to workspace to access \`pages\` & \`database\``,
     CONNECT_TO_WORKSPACE = "Connect to Workspace",

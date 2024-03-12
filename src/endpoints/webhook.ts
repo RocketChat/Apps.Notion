@@ -46,11 +46,12 @@ export class WebHookEndpoint extends ApiEndpoint {
             "Content-Security-Policy": "script-src 'unsafe-inline'",
         };
         const failedTemplate = getAuthPageTemplate(
+            "failure",
             "Something Went Wrong",
             OAuth2Content.failed,
-            "🚫 Something went wrong while Connecting to Workspace",
-            "PLEASE TRY AGAIN IN CASE IT STILL DOES NOT WORK, CONTACT ADMINISTRATOR",
-            5,
+            "🚫 Something went wrong while connecting to the workspace.",
+            "Please try again. If it still does not work, please contact the administrator.",
+            3,
             "Window will be closed in {seconds}"
         );
 
@@ -120,11 +121,12 @@ export class WebHookEndpoint extends ApiEndpoint {
         }
 
         const successTemplate = getAuthPageTemplate(
-            "Connected to Workspace",
+            "success",
+            "Connected to Workspace.",
             OAuth2Content.success,
-            `👋 Connected to ${response.workspace_name}❗`,
-            "YOU CAN NOW CLOSE THIS WINDOW",
-            5,
+            `👋 Connected to ${response.workspace_name}`,
+            "You can now close this window.",
+            3,
             "Window will be closed in {seconds}"
         );
 
