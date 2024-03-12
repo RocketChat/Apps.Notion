@@ -8,23 +8,29 @@ export function getTimeAgoFromISO(isoDate: string): string {
 
     if (secondsAgo < 60) {
         return "Just now";
-    } else if (minutesAgo < 60) {
-        return `${minutesAgo} minutes ago`;
-    } else if (hoursAgo < 24) {
-        return `${hoursAgo} hours ago`;
-    } else if (daysAgo === 1) {
-        return "yesterday";
-    } else if (daysAgo < 7) {
-        return `${daysAgo} days ago`;
-    } else if (daysAgo === 7) {
-        return "1 week ago";
-    } else {
-        // for dates more than 7 days ago, give a precise date
-        const fullFormatter = new Intl.DateTimeFormat("en-US", {
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-        });
-        return fullFormatter.format(date);
     }
+    if (minutesAgo < 60) {
+        return `${minutesAgo} minutes ago`;
+    }
+    if (hoursAgo < 24) {
+        return `${hoursAgo} hours ago`;
+    }
+    if (daysAgo === 1) {
+        return "yesterday";
+    }
+    if (daysAgo < 7) {
+        return `${daysAgo} days ago`;
+    }
+    if (daysAgo === 7) {
+        return "1 week ago";
+    } 
+    
+    // for dates more than 7 days ago, give a precise date
+    const fullFormatter = new Intl.DateTimeFormat("en-US", {
+         year: "numeric",
+         month: "long",
+         day: "numeric",
+    });
+   
+    return fullFormatter.format(date);
 }
