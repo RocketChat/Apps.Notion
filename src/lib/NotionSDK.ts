@@ -133,7 +133,10 @@ export class NotionSDK implements INotionSDK {
         }
     }
 
-    private async getPageObjectFromResults(item, emoji:boolean = false): Promise<IPage | null> {
+    private async getPageObjectFromResults(
+        item,
+        emoji: boolean = false
+    ): Promise<IPage | null> {
         const typesWithTitleProperty = [
             NotionObjectTypes.WORKSPACE.toString(),
             NotionObjectTypes.PAGE_ID.toString(),
@@ -179,7 +182,11 @@ export class NotionSDK implements INotionSDK {
         return null;
     }
 
-    private returnPage(name: string, page_id: string, emoji:boolean = false): IPage {
+    private returnPage(
+        name: string,
+        page_id: string,
+        emoji: boolean = false
+    ): IPage {
         return {
             name: `${emoji ? "📄" : ""} ${name}`,
             parent: {
@@ -543,7 +550,10 @@ export class NotionSDK implements INotionSDK {
         }
     }
 
-    private async getDatabaseObjectFromResults(item, emoji:boolean = false): Promise<IDatabase> {
+    private async getDatabaseObjectFromResults(
+        item,
+        emoji: boolean = false
+    ): Promise<IDatabase> {
         const databaseNameTitleObject = item?.[NotionObjectTypes.TITLE];
         const name: string = databaseNameTitleObject.length
             ? databaseNameTitleObject[0]?.plain_text
@@ -552,7 +562,7 @@ export class NotionSDK implements INotionSDK {
 
         return {
             info: {
-                name: `${emoji ? "📚":""} ${name}`,
+                name: `${emoji ? "📚" : ""} ${name}`,
                 link: item?.url,
             },
             parent: {
@@ -1385,5 +1395,75 @@ export class NotionSDK implements INotionSDK {
             });
         }
         return tableData;
+    }
+
+    public async appendContentToPage(
+        token: string,
+        blockId: string,
+        contentInput: string,
+        headingInfo: { headingType: string; headingInput: string } | undefined
+    ): Promise<boolean | Error> {
+        try {
+            const children = headingInfo
+                ? [
+                      {
+                          object: "block",
+                          type: headingInfo.headingType,
+                          [headingInfo.headingType]: {
+                              rich_text: [
+                                  {
+                                      type: "text",
+                                      text: {
+                                          content: headingInfo.headingInput,
+                                      },
+                                  },
+                              ],
+                          },
+                      },
+                  ]
+                : [];
+
+            children.push({
+                object: "block",
+                type: "paragraph",
+                paragraph: {
+                    rich_text: [
+                        {
+                            type: "text",
+                            text: {
+                                content: contentInput,
+                            },
+                        },
+                    ],
+                },
+            });
+
+            const response = await this.http.patch(
+                NotionApi.BLOCKS + `/${blockId}/children`,
+                {
+                    data: {
+                        children: children,
+                    },
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": NotionApi.CONTENT_TYPE,
+                        "User-Agent": NotionApi.USER_AGENT,
+                        "Notion-Version": this.NotionVersion,
+                    },
+                }
+            );
+
+            if (!response.statusCode.toString().startsWith("2")) {
+                return this.handleErrorResponse(
+                    response.statusCode,
+                    `Error While Appending Message Block: `,
+                    response.content
+                );
+            }
+
+            return true;
+        } catch (err) {
+            throw new AppsEngineException(err as string);
+        }
     }
 }

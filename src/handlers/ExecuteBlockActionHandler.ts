@@ -51,6 +51,8 @@ import { getPropertiesIdsObject } from "../helper/getPropertiesIdsObject";
 import { SharePage } from "../../enum/modals/SharePage";
 import { NotionTable } from "../../enum/modals/NotionTable";
 import { SendMessagePage } from "../../enum/modals/SendMessagePage";
+import { NotionAppendContent } from "../../enum/modals/NotionAppendContent";
+import { appendContentModal } from "../modals/appendContentModal";
 
 export class ExecuteBlockActionHandler {
     private context: UIKitBlockInteractionContext;
@@ -175,6 +177,14 @@ export class ExecuteBlockActionHandler {
             case NotionTable.ACTION_ID: {
                 return this.handleSelectDatabaseAction();
                 break;
+            }
+
+            case NotionAppendContent.HEADING_SELECT_ACTION_ID: {
+                return this.handleHeadingSelectAction(
+                    modalInteraction,
+                    oAuth2Storage,
+                    roomInteractionStorage
+                );
             }
             default: {
                 // Property Type Select Action
@@ -1042,5 +1052,60 @@ export class ExecuteBlockActionHandler {
             viewId: container.id,
             errors: {},
         });
+    }
+
+    private async handleHeadingSelectAction(
+        modalInteraction: ModalInteractionStorage,
+        oAuth2Storage: OAuth2Storage,
+        roomInteractionStorage: RoomInteractionStorage
+    ): Promise<IUIKitResponse> {
+        const { value, user } = this.context.getInteractionData();
+
+        const tokenInfo = await oAuth2Storage.getCurrentWorkspace(user.id);
+        const roomId = await roomInteractionStorage.getInteractionRoomId();
+        const room = (await this.read.getRoomReader().getById(roomId)) as IRoom;
+
+        if (!tokenInfo) {
+            await sendNotificationWithConnectBlock(
+                this.app,
+                user,
+                this.read,
+                this.modify,
+                room
+            );
+
+            return this.context.getInteractionResponder().errorResponse();
+        }
+
+        if (!value) {
+            return this.context.getInteractionResponder().errorResponse();
+        }
+
+        let isHeadingInput = false;
+
+        if(value !== 'no_heading'){
+            isHeadingInput = true;
+        }
+        
+        const modal = await appendContentModal(
+            this.app,
+            user,
+            this.read,
+            this.persistence,
+            this.modify,
+            room,
+            modalInteraction,
+            tokenInfo,
+            isHeadingInput
+        );
+
+        if (modal instanceof Error) {
+            this.app.getLogger().error(modal.message);
+            return this.context.getInteractionResponder().errorResponse();
+        }
+
+        return this.context
+            .getInteractionResponder()
+            .updateModalViewResponse(modal);
     }
 }

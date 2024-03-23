@@ -33,6 +33,9 @@ import { SendMessagePage } from "../../enum/modals/SendMessagePage";
 import { sendMessagePageModal } from "../modals/sendMessagePageModal";
 import { NotionTable } from "../../enum/modals/NotionTable";
 import { viewNotionTableModal } from "../modals/viewNotionTableModal";
+import { appendContentModal } from "../modals/appendContentModal";
+import { NotionAppendContent } from "../../enum/modals/NotionAppendContent";
+import { SearchPage } from "../../enum/modals/common/SearchPageComponent";
 
 export class Handler implements IHandler {
     public app: NotionApp;
@@ -64,6 +67,69 @@ export class Handler implements IHandler {
             persistenceRead,
             params.sender.id
         );
+    }
+
+    public async appendContent(
+    ): Promise<void> {
+        const userId = this.sender.id;
+        const roomId = this.room.id;
+        const tokenInfo = await this.oAuth2Storage.getCurrentWorkspace(userId);
+
+        if (!tokenInfo) {
+            await sendNotificationWithConnectBlock(
+                this.app,
+                this.sender,
+                this.read,
+                this.modify,
+                this.room
+            );
+            return;
+        }
+
+        const persistenceRead = this.read.getPersistenceReader();
+        const modalInteraction = new ModalInteractionStorage(
+            this.persis,
+            persistenceRead,
+            userId,
+            NotionAppendContent.VIEW_ID
+        );
+
+        const { workspace_id, access_token } = tokenInfo;
+
+        await Promise.all([
+            this.roomInteractionStorage.storeInteractionRoomId(roomId),
+            modalInteraction.clearPagesOrDatabase(workspace_id),
+            modalInteraction.clearInputElementState(
+                SearchPage.ACTION_ID
+            ),
+            modalInteraction.clearAllInteractionActionId(),
+        ]);
+
+        const modal = await appendContentModal(
+            this.app,
+            this.sender,
+            this.read,
+            this.persis,
+            this.modify,
+            this.room,
+            modalInteraction,
+            tokenInfo
+        );
+
+        if (modal instanceof Error) {
+            this.app.getLogger().error(modal.message);
+            return;
+        }
+
+        const triggerId = this.triggerId;
+
+        if (triggerId) {
+            await this.modify
+                .getUiController()
+                .openSurfaceView(modal, { triggerId }, this.sender);
+        }
+        
+        return;
     }
 
     public async createNotionDatabase(): Promise<void> {
