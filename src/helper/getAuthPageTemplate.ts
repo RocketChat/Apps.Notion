@@ -66,7 +66,7 @@ export function getAuthPageTemplate(
             font-size: smaller;
             color:#FFFFFF;
             class="countdown" id="countdown">
-            Window will be closed in 3 second(s)
+            Window will be closed in 5 second(s)
           </p>
         </div>
 

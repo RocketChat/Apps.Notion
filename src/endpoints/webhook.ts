@@ -51,7 +51,7 @@ export class WebHookEndpoint extends ApiEndpoint {
             OAuth2Content.failed,
             "🚫 Something went wrong while connecting to the workspace.",
             "Please try again. If it still does not work, please contact the administrator.",
-            2,
+            4,
             "Window will be closed in {seconds}"
         );
 
@@ -126,7 +126,7 @@ export class WebHookEndpoint extends ApiEndpoint {
             OAuth2Content.success,
             `👋 Connected to ${response.workspace_name}`,
             "You can now close this window.",
-            2,
+            4,
             "Window will be closed in {seconds}"
         );
 
