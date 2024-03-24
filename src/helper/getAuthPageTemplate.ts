@@ -66,6 +66,7 @@ export function getAuthPageTemplate(
             font-size: smaller;
             color:#FFFFFF;
             class="countdown" id="countdown">
+            Window will be closed in 3 second(s)
           </p>
         </div>
 
@@ -77,7 +78,7 @@ export function getAuthPageTemplate(
             countdownElement.textContent = '${closeMessage}'.replace('{seconds}', seconds) + ' second(s)';
             seconds--;
 
-            if (seconds < 0) {
+            if (seconds < 1) {
               clearInterval(countdown);
               window.close();
             }
