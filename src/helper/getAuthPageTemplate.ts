@@ -33,7 +33,7 @@ export function getAuthPageTemplate(
 
         img {
           max-width: 100%;
-          ${type === "failure" ? "max-height:2.5rem;": "max-height:6rem;"}
+          ${type === "failure" ? "max-height:2.5rem;" : "max-height:6rem;"}
           display: block;
           margin: 0 auto;
         }
@@ -80,9 +80,10 @@ export function getAuthPageTemplate(
               clearInterval(countdown);
               window.close();
             }
-            
-            countdownElement.textContent = '${closeMessage}'.replace('{seconds}', seconds) + ' second(s)';
-            seconds--;
+            else{
+              countdownElement.textContent = '${closeMessage}'.replace('{seconds}', seconds) + ' second(s)';
+              seconds--;
+            }
           }, 1000);
         </script>
     </body>
