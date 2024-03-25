@@ -75,13 +75,14 @@ export function getAuthPageTemplate(
           const countdownElement = document.getElementById('countdown');
 
           const countdown = setInterval(function() {
-            countdownElement.textContent = '${closeMessage}'.replace('{seconds}', seconds) + ' second(s)';
-            seconds--;
-
+       
             if (seconds < 1) {
               clearInterval(countdown);
               window.close();
             }
+            
+            countdownElement.textContent = '${closeMessage}'.replace('{seconds}', seconds) + ' second(s)';
+            seconds--;
           }, 1000);
         </script>
     </body>
