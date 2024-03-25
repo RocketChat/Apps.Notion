@@ -46,6 +46,7 @@ import {
     PropertyTypeValue,
 } from "../../enum/modals/common/NotionProperties";
 import { IMessageAttachmentField } from "@rocket.chat/apps-engine/definition/messages";
+import { getTimeAgoFromISO } from "../helper/getTimeAgoFromISO";
 
 export class NotionSDK implements INotionSDK {
     baseUrl: string;
@@ -292,9 +293,10 @@ export class NotionSDK implements INotionSDK {
             let comments: Array<ICommentInfo> = [];
 
             for (const result of results) {
-                const { created_by, created_time, rich_text } = result;
+                const { created_by, rich_text } = result;
                 const { id } = created_by;
                 const comment = await this.richTextToMarkdown(rich_text);
+                const created_time = getTimeAgoFromISO(result.created_time);
 
                 let user: INotionUser | INotionUserBot | undefined =
                     usersMap.get(id);
@@ -481,7 +483,7 @@ export class NotionSDK implements INotionSDK {
                 );
             }
             const addedComment = response.data;
-            const created_time = addedComment?.created_time;
+            const created_time = getTimeAgoFromISO(addedComment?.created_time)
             return {
                 comment,
                 user,
