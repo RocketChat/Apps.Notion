@@ -42,11 +42,17 @@ export class WebHookEndpoint extends ApiEndpoint {
     ): Promise<IApiResponse> {
         const { code, state, error } = request.query;
 
+        const customHeader = {
+            "Content-Security-Policy": "script-src 'unsafe-inline'",
+        };
         const failedTemplate = getAuthPageTemplate(
+            "failure",
             "Something Went Wrong",
             OAuth2Content.failed,
-            "🚫 Something went wrong while Connecting to Workspace",
-            "PLEASE TRY AGAIN IN CASE IT STILL DOES NOT WORK, CONTACT ADMINISTRATOR"
+            "🚫 Something went wrong while connecting to the workspace.",
+            "Please try again. If it still does not work, please contact the administrator.",
+            4,
+            "Window will be closed in {seconds}"
         );
 
         // incase when user leaves in between the auth process
@@ -54,6 +60,7 @@ export class WebHookEndpoint extends ApiEndpoint {
             this.app.getLogger().warn(error);
             return {
                 status: HttpStatusCode.UNAUTHORIZED,
+                headers: customHeader,
                 content: failedTemplate,
             };
         }
@@ -66,6 +73,7 @@ export class WebHookEndpoint extends ApiEndpoint {
                 .warn(`User not found before access token request`);
             return {
                 status: HttpStatusCode.NON_AUTHORITATIVE_INFORMATION,
+                headers: customHeader,
                 content: failedTemplate,
             };
         }
@@ -84,6 +92,7 @@ export class WebHookEndpoint extends ApiEndpoint {
         if (!appCredentials) {
             return {
                 status: HttpStatusCode.UNAUTHORIZED,
+                headers: customHeader,
                 content: failedTemplate,
             };
         }
@@ -106,15 +115,19 @@ export class WebHookEndpoint extends ApiEndpoint {
             this.app.getLogger().warn(response.message);
             return {
                 status: response.statusCode,
+                headers: customHeader,
                 content: failedTemplate,
             };
         }
 
         const successTemplate = getAuthPageTemplate(
-            "Connected to Workspace",
+            "success",
+            "Connected to Workspace.",
             OAuth2Content.success,
-            `👋 Connected to ${response.workspace_name}❗`,
-            "YOU CAN NOW CLOSE THIS WINDOW"
+            `👋 Connected to ${response.workspace_name}`,
+            "You can now close this window.",
+            4,
+            "Window will be closed in {seconds}"
         );
 
         const oAuth2Storage = new OAuth2Storage(persis, persistenceRead);
@@ -125,7 +138,10 @@ export class WebHookEndpoint extends ApiEndpoint {
             blocks: [connectPreview],
         });
         await roomInteraction.clearInteractionRoomId();
-
-        return this.success(successTemplate);
+        return {
+            status: 200,
+            headers: customHeader,
+            content: successTemplate,
+        };
     }
 }
