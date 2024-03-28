@@ -604,7 +604,7 @@ export class ExecuteViewSubmitHandler {
 
         const selectedWorkspace: ITokenInfo = JSON.parse(workspaceInfo);
 
-        if (selectedWorkspace !== tokenInfo) {
+        if (selectedWorkspace.workspace_id !== tokenInfo.workspace_id) {
             await oAuth2Storage.connectUserToWorkspace(
                 selectedWorkspace,
                 user.id
