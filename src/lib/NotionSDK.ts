@@ -92,23 +92,25 @@ export class NotionSDK implements INotionSDK {
         }
     }
 
-    public async searchPages(token: string): Promise<Array<IPage> | Error> {
+    public async searchPages(
+        token: string,
+        cursor?: string
+    ): Promise<Array<IPage> | Error> {
+
         try {
+            const data = {
+                filter: {
+                    value: NotionObjectTypes.PAGE,
+                    property: NotionObjectTypes.PROPERTY,
+                },
+                start_cursor: cursor,
+            };
+
             const response = await this.http.post(NotionApi.SEARCH, {
-                data: {
-                    filter: {
-                        value: NotionObjectTypes.PAGE,
-                        property: NotionObjectTypes.PROPERTY,
-                    },
-                },
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    "Content-Type": NotionApi.CONTENT_TYPE,
-                    "User-Agent": NotionApi.USER_AGENT,
-                    "Notion-Version": this.NotionVersion,
-                },
+                data,
+headers: this.getNotionApiHeaders(token),
             });
-    
+
             if (!response.statusCode.toString().startsWith("2")) {
                 return this.handleErrorResponse(
                     response.statusCode,
@@ -116,63 +118,46 @@ export class NotionSDK implements INotionSDK {
                     response.content
                 );
             }
-    
-            
-    
-            let results: Array<IPage> = response.data.results;
-    
-            if (response.data.has_more === true) {
-                
-                const recursiveResults = await this.recursiveSearchPages(token, response.data.next_cursor);
+
+            const { results, next_cursor, has_more } = response.data;
+            if (has_more === true) {
+                const recursiveResults = await this.searchPages(
+                    token,
+                    next_cursor
+                );
+
+                if (recursiveResults instanceof Error) {
+                    return recursiveResults;
+                }
+
                 results.push(...recursiveResults);
             }
+
+            if (cursor) return results;
+
             const result: Array<IPage> = [];
-            for (const item of results) {
+            results.forEach(async (item) => {
                 const pageObject = await this.getPageObjectFromResults(item);
                 if (pageObject) {
                     result.push(pageObject);
                 }
-            }
-    
+            })
             return result;
         } catch (err) {
-            throw new AppsEngineException(err as string);
-        }
-    }
-    
-    private async recursiveSearchPages(token: string, cursor: string): Promise<Array<IPage>> {
-        const response = await this.http.post(NotionApi.SEARCH, {
-            data: {
-                start_cursor: cursor,
-            },
-            headers: {
-                Authorization: `Bearer ${token}`,
-                "Content-Type": NotionApi.CONTENT_TYPE,
-                "User-Agent": NotionApi.USER_AGENT,
-                "Notion-Version": this.NotionVersion,
-            },
-        });
-    
-        if (response.statusCode.toString().startsWith("2")) {
-
-    
-            let results: Array<IPage> = response.data.results;
-    
-            if (response.data.has_more === true) {
-                
-                const recursiveResults = await this.recursiveSearchPages(token, response.data.next_cursor);
-    
-                results.push(...recursiveResults);
-            }
-    
-            return results;
-        } else {
-            throw new AppsEngineException(`Error While Searching Pages: ${response.content}`);
+            return this.handleErrorResponse(
+                err.statusCode,
+                `Error While Searching Databases: `,
+                err.content
+            );
         }
     }
     
 
-    private async getPageObjectFromResults(item, emoji:boolean = false): Promise<IPage | null> {
+
+    private async getPageObjectFromResults(
+        item,
+        emoji: boolean = false
+    ): Promise<IPage | null> {
         const typesWithTitleProperty = [
             NotionObjectTypes.WORKSPACE.toString(),
             NotionObjectTypes.PAGE_ID.toString(),
@@ -194,10 +179,7 @@ export class NotionSDK implements INotionSDK {
         const lastColumn = columns[columns.length - 1];
 
         // title at first position and has subpage
-        if (
-            properties[firstColumn].title &&
-            properties[firstColumn].title.length
-        ) {
+        if (properties[firstColumn].title) {
             const name: string =
                 properties[firstColumn].title[0]?.text?.content ||
                 NotionObjectTypes.UNTITLED;
@@ -205,10 +187,7 @@ export class NotionSDK implements INotionSDK {
         }
 
         //title at last position and has subpage
-        if (
-            properties[lastColumn].title &&
-            properties[lastColumn].title.length
-        ) {
+        if (properties[lastColumn].title) {
             const name: string =
                 properties[lastColumn].title[0]?.text?.content ||
                 NotionObjectTypes.UNTITLED;
@@ -217,6 +196,8 @@ export class NotionSDK implements INotionSDK {
 
         return null;
     }
+
+
     
 
     private returnPage(name: string, page_id: string, emoji:boolean = false): IPage {
@@ -260,12 +241,7 @@ export class NotionSDK implements INotionSDK {
         try {
             const response = await this.http.post(NotionApi.CREATE_DATABASE, {
                 data,
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    "Content-Type": NotionApi.CONTENT_TYPE,
-                    "User-Agent": NotionApi.USER_AGENT,
-                    "Notion-Version": this.NotionVersion,
-                },
+headers: this.getNotionApiHeaders(token),
             });
 
             if (!response.statusCode.toString().startsWith("2")) {
@@ -298,12 +274,7 @@ export class NotionSDK implements INotionSDK {
                 params: {
                     block_id: pageId,
                 },
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    "Content-Type": NotionApi.CONTENT_TYPE,
-                    "User-Agent": NotionApi.USER_AGENT,
-                    "Notion-Version": this.NotionVersion,
-                },
+headers: this.getNotionApiHeaders(token),
             });
 
             if (!response.statusCode.toString().startsWith("2")) {
@@ -426,12 +397,7 @@ export class NotionSDK implements INotionSDK {
             const response = await this.http.get(
                 NotionApi.USERS + `/${userId}`,
                 {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                        "Content-Type": NotionApi.CONTENT_TYPE,
-                        "User-Agent": NotionApi.USER_AGENT,
-                        "Notion-Version": this.NotionVersion,
-                    },
+                    headers: this.getNotionApiHeaders(token),
                 }
             );
 
@@ -455,12 +421,7 @@ export class NotionSDK implements INotionSDK {
     ): Promise<Array<INotionUser | INotionUserBot> | Error> {
         try {
             const response = await this.http.get(NotionApi.USERS, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    "Content-Type": NotionApi.CONTENT_TYPE,
-                    "User-Agent": NotionApi.USER_AGENT,
-                    "Notion-Version": this.NotionVersion,
-                },
+                headers: this.getNotionApiHeaders(token),
             });
 
             if (!response.statusCode.toString().startsWith("2")) {
@@ -506,12 +467,7 @@ export class NotionSDK implements INotionSDK {
                     },
                     rich_text,
                 },
-                headers: {
-                    Authorization: `Bearer ${access_token}`,
-                    "Content-Type": NotionApi.CONTENT_TYPE,
-                    "User-Agent": NotionApi.USER_AGENT,
-                    "Notion-Version": this.NotionVersion,
-                },
+                headers: this.getNotionApiHeaders(access_token),
             });
 
             if (!response.statusCode.toString().startsWith("2")) {
@@ -533,34 +489,44 @@ export class NotionSDK implements INotionSDK {
         }
     }
 
-    public async recursiveSearchPagesAndDatabases(token: string, startCursor?: string): Promise<Array<IPage | IDatabase>> {
+    public async searchPagesAndDatabases(
+        token: string,
+        cursor?: string
+    ): Promise<Array<IPage | IDatabase> | Error> {
         try {
-            let response;
-    
-            if (startCursor) {
-                response = await this.http.post(NotionApi.SEARCH, {
-                    data: {
-                        start_cursor: startCursor,
-                    },
-                    headers: this.getNotionApiHeaders(token),
-                });
-            } else {
-                response = await this.http.post(NotionApi.SEARCH, {
-                    headers: this.getNotionApiHeaders(token),
-                });
-            }
-    
+
+            const data = {
+                start_cursor: cursor,
+            };
+
+            const response = await this.http.post(NotionApi.SEARCH, {
+                data,
+headers: this.getNotionApiHeaders(token),
+            });
+
             if (!response.statusCode.toString().startsWith("2")) {
-                throw new AppsEngineException(`Error While Searching Pages and Databases: ${response.content}`);
+                return this.handleErrorResponse(
+                    response.statusCode,
+                    `Error While Searching Pages: `,
+                    response.content
+                );
             }
-    
-            const { results, has_more, next_cursor } = response.data;
-    
+
+            const { results, next_cursor, has_more } = response.data;
+
+            if(has_more === true) {
+                const recursiveResults = await this.searchPagesAndDatabases(token, next_cursor);
+                if (recursiveResults instanceof Error) {
+                    return recursiveResults;
+                }
+                results.push(...recursiveResults);
+
+            }
+
+            if(cursor) return results;
+
             const result: Array<IPage | IDatabase> = [];
-    
-            const databaseObjectArray: any = [];
-    
-            for (const item of results) {
+            results.forEach(async (item) => {
                 const objectType: string = item?.[NotionObjectTypes.OBJECT];
                 if (objectType.includes(NotionObjectTypes.PAGE)) {
                     const pageObject = await this.getPageObjectFromResults(
@@ -577,24 +543,15 @@ export class NotionSDK implements INotionSDK {
 
                     result.push(databaseObject);
                 }
-            }
-            if (has_more) {
-                const recursiveResults = await this.recursiveSearchPagesAndDatabases(token, next_cursor);
-                result.push(...recursiveResults);
-            }
-  
+            });
+
             return result;
         } catch (err) {
-            throw new AppsEngineException(err as string);
-        }
-    }
-    
-    public async searchPagesAndDatabases(token: string): Promise<Array<IPage | IDatabase> | Error> {
-        try {
-            const results = await this.recursiveSearchPagesAndDatabases(token);
-            return results;
-        } catch (err) {
-            throw new AppsEngineException(err as string);
+            return this.handleErrorResponse(
+                err.statusCode,
+                `Error While Searching Databases: `,
+                err.content
+            );
         }
     }
     
@@ -649,12 +606,7 @@ export class NotionSDK implements INotionSDK {
 
             const response = await this.http.post(NotionApi.PAGES, {
                 data,
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    "Content-Type": NotionApi.CONTENT_TYPE,
-                    "User-Agent": NotionApi.USER_AGENT,
-                    "Notion-Version": this.NotionVersion,
-                },
+headers: this.getNotionApiHeaders(token),
             });
 
             if (!response.statusCode.toString().startsWith("2")) {
@@ -690,12 +642,7 @@ export class NotionSDK implements INotionSDK {
             const response = await this.http.get(
                 NotionApi.CREATE_DATABASE + `/${database_id}`,
                 {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                        "Content-Type": NotionApi.CONTENT_TYPE,
-                        "User-Agent": NotionApi.USER_AGENT,
-                        "Notion-Version": this.NotionVersion,
-                    },
+                    headers: this.getNotionApiHeaders(token),
                 }
             );
 
@@ -830,12 +777,7 @@ export class NotionSDK implements INotionSDK {
 
             const response = await this.http.post(NotionApi.PAGES, {
                 data,
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    "Content-Type": NotionApi.CONTENT_TYPE,
-                    "User-Agent": NotionApi.USER_AGENT,
-                    "Notion-Version": this.NotionVersion,
-                },
+                headers: this.getNotionApiHeaders(token),
             });
 
             if (!response.statusCode.toString().startsWith("2")) {
@@ -1040,12 +982,7 @@ export class NotionSDK implements INotionSDK {
             const response = await this.http.get(
                 NotionApi.PAGES + `/${pageId}`,
                 {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                        "Content-Type": NotionApi.CONTENT_TYPE,
-                        "User-Agent": NotionApi.USER_AGENT,
-                        "Notion-Version": this.NotionVersion,
-                    },
+                    headers: this.getNotionApiHeaders(token),
                 }
             );
 
@@ -1103,12 +1040,7 @@ export class NotionSDK implements INotionSDK {
                             },
                         ],
                     },
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                        "Content-Type": NotionApi.CONTENT_TYPE,
-                        "User-Agent": NotionApi.USER_AGENT,
-                        "Notion-Version": this.NotionVersion,
-                    },
+                    headers: this.getNotionApiHeaders(token),
                 }
             );
 
@@ -1126,63 +1058,59 @@ export class NotionSDK implements INotionSDK {
         }
     }
 
-    public async recursiveSearchDatabases(token: string, startCursor?: string): Promise<Array<IDatabase>> {
+    public async searchDatabases(
+        token: string,
+        cursor?: string
+    ): Promise<Array<IDatabase> | Error> {
         try {
-            let response;
-    
-            if (startCursor) {
-                response = await this.http.post(NotionApi.SEARCH, {
-                    data: {
-                        filter: {
-                            value: NotionObjectTypes.DATABASE,
-                            property: NotionObjectTypes.PROPERTY,
-                        },
-                        start_cursor: startCursor,
+            const response = await this.http.post(NotionApi.SEARCH, {
+                data: {
+                    filter: {
+                        value: NotionObjectTypes.DATABASE,
+                        property: NotionObjectTypes.PROPERTY,
                     },
-                    headers: this.getNotionApiHeaders(token),
-                });
-            } else {
-                response = await this.http.post(NotionApi.SEARCH, {
-                    data: {
-                        filter: {
-                            value: NotionObjectTypes.DATABASE,
-                            property: NotionObjectTypes.PROPERTY,
-                        },
-                    },
-                    headers: this.getNotionApiHeaders(token),
-                });
-            }
+                    start_cursor: cursor,
+                },
+headers: this.getNotionApiHeaders(token),
+            });
 
             if (!response.statusCode.toString().startsWith("2")) {
-                throw new AppsEngineException(`Error While Searching Databases: ${response.content}`);
+                return this.handleErrorResponse(
+                    response.statusCode,
+                    `Error While Searching Databases: `,
+                    response.content
+                );
             }
-    
-            const { results, has_more, next_cursor } = response.data;
-    
+
+            const { results, next_cursor, has_more } = response.data;
+
+            if(has_more === true) {
+                const recursiveResults = await this.searchDatabases(token, next_cursor);
+                if (recursiveResults instanceof Error) {
+                    return recursiveResults;
+                }
+                results.push(...recursiveResults);
+
+            }
+
+            if(cursor) return results;
+
             const result: Array<IDatabase> = [];
-    
             results.forEach(async (item) => {
-                const databaseObject = await this.getDatabaseObjectFromResults(item);
+                const objectType: string = item?.[NotionObjectTypes.OBJECT];
+                const databaseObject = await this.getDatabaseObjectFromResults(
+                    item
+                );
+
                 result.push(databaseObject);
             });
-    
-            if (has_more) {
-                const recursiveResults = await this.recursiveSearchDatabases(token, next_cursor);
-                result.push(...recursiveResults);
-            }
-    
             return result;
         } catch (err) {
-            throw new AppsEngineException(err as string);
-        }
-    }
-    
-    public async searchDatabases(token: string): Promise<Array<IDatabase> | Error> {
-        try {
-            const results = await this.recursiveSearchDatabases(token);
-            return results;
-        } catch (err) {
-            throw new AppsEngineException(err as string);
+            return this.handleErrorResponse(
+                err.statusCode,
+                `Error While Searching Databases: `,
+                err.content
+            );
         }
     }
     
@@ -1195,12 +1123,7 @@ export class NotionSDK implements INotionSDK {
             const response = await this.http.post(
                 NotionApi.CREATE_DATABASE + `/${databaseId}/query`,
                 {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                        "Content-Type": NotionApi.CONTENT_TYPE,
-                        "User-Agent": NotionApi.USER_AGENT,
-                        "Notion-Version": this.NotionVersion,
-                    },
+                    headers: this.getNotionApiHeaders(token),
                 }
             );
 
