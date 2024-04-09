@@ -265,16 +265,11 @@ export class NotionSDK implements INotionSDK {
         cursor?: string
     ): Promise<Array<ICommentInfo> | Error> {
         try {
-            const params: Record<string, string> = {
-                block_id: pageId,
-            };
-
-            if (cursor !== undefined) {
-                params.start_cursor = cursor;
-            }
-
             const response = await this.http.get(NotionApi.COMMENTS, {
-                params,
+                params: {
+                    block_id: pageId,
+                    ...(cursor && { start_cursor: cursor }),
+                },
                 headers: this.getNotionApiHeaders(token),
             });
 
