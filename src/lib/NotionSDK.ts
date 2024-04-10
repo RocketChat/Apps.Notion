@@ -261,12 +261,14 @@ export class NotionSDK implements INotionSDK {
 
     public async retrieveCommentsOnpage(
         pageId: string,
-        token: string
+        token: string,
+        cursor?: string
     ): Promise<Array<ICommentInfo> | Error> {
         try {
             const response = await this.http.get(NotionApi.COMMENTS, {
                 params: {
                     block_id: pageId,
+                    ...(cursor && { start_cursor: cursor }),
                 },
                 headers: this.getNotionApiHeaders(token),
             });
@@ -293,7 +295,23 @@ export class NotionSDK implements INotionSDK {
 
             // Note: Every User has a bot user with different Id but same name
 
-            const results: Array<ICommentObject> = response.data?.results;
+            const { results, next_cursor, has_more } = response.data;
+            if (has_more === true) {
+                const recursiveResults = await this.retrieveCommentsOnpage(
+                    pageId,
+                    token,
+                    next_cursor
+                );
+
+                if (recursiveResults instanceof Error) {
+                    return recursiveResults;
+                }
+
+                results.push(...recursiveResults);
+            }
+
+            if (cursor) return results;
+
             results.reverse();
             let comments: Array<ICommentInfo> = [];
 
@@ -473,7 +491,7 @@ export class NotionSDK implements INotionSDK {
                 );
             }
             const addedComment = response.data;
-            const created_time = getTimeAgoFromISO(addedComment?.created_time)
+            const created_time = getTimeAgoFromISO(addedComment?.created_time);
             return {
                 comment,
                 user,
