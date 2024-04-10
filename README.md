@@ -58,18 +58,20 @@
     rc-apps deploy --url <url> --username <username> --password <password>
     ```
 
-4. Once its deploy, Go to Installed Apps and Settings tab in RC,you would see two input fields:
-
+4. After deployment, Go to **Private Apps** within your Notion workspace. Click on the **settings** tab and enter your **Notion Client ID** and **Notion Client Secret**.
     ```
 
-     # notion-client-id
-     # notion-client-secret
-     // Generate above Credentials from Notion By Creating the *Public* Integration.
+     // On creating a *Public* Integration in Notion, **notion-client-id** and **notion-client-secret** will be automatically generated.
      // https://developers.notion.com/docs/authorization#how-to-make-an-integration-public
 
     ```
 
-5. Once Its done save the changes, and now under the Notion Integration Provide the Webhook GET endpoint in Redirect URI field of Notion, GET Webhook Endpoint: you can find on the Current App Info under Detail tab in RC.
+5. One its done, save the changes, and then go to you **Notion Public Integration** and provide the **Webhook GET endpoint** in Redirect URI field of Notion.
+    ```
+
+     GET Webhook Endpoint: you can find it on the Detail tab of App Info of your Notion App
+
+    ```
 
 <!-- ABOUT THE PROJECT -->
 
