@@ -19,6 +19,7 @@ import { IRoom } from "@rocket.chat/apps-engine/definition/rooms";
 import { searchDatabaseComponent } from "./common/searchDatabaseComponent";
 import { NotionUpdateRecord } from "../../enum/modals/NotionUpdateRecord";
 import { IDatabase } from "../../definition/lib/INotion";
+import { getSelectDatabaseLayout } from "../helper/getSelectDatabaseLayout";
 
 export async function updateRecordModal(
     app: NotionApp,
@@ -32,8 +33,7 @@ export async function updateRecordModal(
     parent?: IDatabase
 ): Promise<IUIKitSurfaceViewParam | Error> {
     const { elementBuilder, blockBuilder } = app.getUtils();
-    const divider = blockBuilder.createDividerBlock();
-    const connectBlock = getConnectPreview(app.getID(), tokenInfo);
+    const appId = app.getID();
 
     const searchForDatabaseComponent = await searchDatabaseComponent(
         app,
@@ -46,7 +46,13 @@ export async function updateRecordModal(
         return searchForDatabaseComponent;
     }
 
-    const blocks: Block[] = [connectBlock, searchForDatabaseComponent];
+    const blocks: Block[] = [];
+    if(!parent){
+        const connectBlock = getConnectPreview(app.getID(), tokenInfo);
+        blocks.push(connectBlock);
+        blocks.push(searchForDatabaseComponent);
+    }
+
 
     const submit = elementBuilder.addButton(
         { text: NotionUpdateRecord.UPDATE_RECORD, style: ButtonStyle.PRIMARY },
@@ -67,7 +73,14 @@ export async function updateRecordModal(
 
     if (parent) {
         app.getLogger().debug(parent);
-        // Handle fetching record of DB and UI Changes
+        const { info } = parent;
+        const SelectedDatabaseLayout = getSelectDatabaseLayout(
+            appId,
+            tokenInfo,
+            info
+        );
+
+        blocks.push(SelectedDatabaseLayout);
     }
 
     return {
