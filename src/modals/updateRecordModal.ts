@@ -17,6 +17,7 @@ import { ITokenInfo } from "../../definition/authorization/IOAuth2Storage";
 import { getConnectPreview } from "../helper/getConnectLayout";
 import { IRoom } from "@rocket.chat/apps-engine/definition/rooms";
 import { searchDatabaseComponent } from "./common/searchDatabaseComponent";
+import { searchRecordComponent } from "./common/searchRecordComponent";
 import { NotionUpdateRecord } from "../../enum/modals/NotionUpdateRecord";
 import { IDatabase } from "../../definition/lib/INotion";
 import { getSelectDatabaseLayout } from "../helper/getSelectDatabaseLayout";
@@ -47,12 +48,11 @@ export async function updateRecordModal(
     }
 
     const blocks: Block[] = [];
-    if(!parent){
+    if (!parent) {
         const connectBlock = getConnectPreview(app.getID(), tokenInfo);
         blocks.push(connectBlock);
-        blocks.push(searchForDatabaseComponent);
     }
-
+    blocks.push(searchForDatabaseComponent);
 
     const submit = elementBuilder.addButton(
         { text: NotionUpdateRecord.UPDATE_RECORD, style: ButtonStyle.PRIMARY },
@@ -70,17 +70,28 @@ export async function updateRecordModal(
         }
     );
 
-
     if (parent) {
-        app.getLogger().debug(parent);
         const { info } = parent;
         const SelectedDatabaseLayout = getSelectDatabaseLayout(
             appId,
             tokenInfo,
             info
         );
-
         blocks.push(SelectedDatabaseLayout);
+        let properties = await modalInteraction.getInputElementState(
+            NotionUpdateRecord.SEARCH_DB_ACTION_ID
+        );
+        const searchForRecordComponent = await searchRecordComponent(
+            app,
+            modalInteraction,
+            tokenInfo,
+            properties,
+            parent,
+            NotionUpdateRecord.SEARCH_DB_ACTION_ID
+        );
+
+        if (!(searchForRecordComponent instanceof Error))
+            blocks.push(searchForRecordComponent);
     }
 
     return {
