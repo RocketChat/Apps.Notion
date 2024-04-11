@@ -20,6 +20,7 @@ import { createCommentContextualBar } from "../modals/createCommentContextualBar
 import { NotionPageOrRecord } from "../../enum/modals/NotionPageOrRecord";
 import { createPageOrRecordModal } from "../modals/createPageOrRecordModal";
 import { changeWorkspaceModal } from "../modals/changeWorkspaceModal";
+import { updateRecordModal } from "../modals/updateRecordModal"; 
 import { NotionWorkspace } from "../../enum/modals/NotionWorkspace";
 import { SearchPageAndDatabase } from "../../enum/modals/common/SearchPageAndDatabaseComponent";
 import { NotionOwnerType } from "../../enum/Notion";
@@ -33,6 +34,7 @@ import { SendMessagePage } from "../../enum/modals/SendMessagePage";
 import { sendMessagePageModal } from "../modals/sendMessagePageModal";
 import { NotionTable } from "../../enum/modals/NotionTable";
 import { viewNotionTableModal } from "../modals/viewNotionTableModal";
+import { NotionUpdateRecord } from "../../enum/modals/NotionUpdateRecord";
 
 export class Handler implements IHandler {
     public app: NotionApp;
@@ -515,4 +517,64 @@ export class Handler implements IHandler {
                 .openSurfaceView(modal, { triggerId }, this.sender);
         }
     }
+
+
+    public async updateDatabaseRecord(
+        ): Promise<void> {
+            const userId = this.sender.id;
+            const roomId = this.room.id;
+            const tokenInfo = await this.oAuth2Storage.getCurrentWorkspace(userId);
+    
+            if (!tokenInfo) {
+                await sendNotificationWithConnectBlock(
+                    this.app,
+                    this.sender,
+                    this.read,
+                    this.modify,
+                    this.room
+                );
+                return;
+            }
+    
+            const persistenceRead = this.read.getPersistenceReader();
+            const modalInteraction = new ModalInteractionStorage(
+                this.persis,
+                persistenceRead,
+                userId,
+                NotionUpdateRecord.VIEW_ID
+            );
+
+            const { workspace_id, access_token } = tokenInfo;
+    
+            await Promise.all([
+                this.roomInteractionStorage.storeInteractionRoomId(roomId),
+                modalInteraction.clearAllInteractionActionId(),
+            ]);
+    
+            const modal = await updateRecordModal(
+                this.app,
+                this.sender,
+                this.read,
+                this.persis,
+                this.modify,
+                this.room,
+                modalInteraction,
+                tokenInfo
+            );
+    
+            if (modal instanceof Error) {
+                this.app.getLogger().error(modal.message);
+                return;
+            }
+    
+            const triggerId = this.triggerId;
+    
+            if (triggerId) {
+                await this.modify
+                    .getUiController()
+                    .openSurfaceView(modal, { triggerId }, this.sender);
+            }
+    
+            return;
+        }
 }
